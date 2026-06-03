@@ -1,0 +1,12 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "playerstats": {
+            "steamID": "76561198148125221",
+            "gameName": "Dead by Daylight"
+        }
+    }
+}

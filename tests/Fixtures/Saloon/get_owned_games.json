@@ -1,0 +1,21 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "game_count": 1,
+            "games": [
+                {
+                    "appid": 381210,
+                    "playtime_forever": 12345,
+                    "playtime_2weeks": 120,
+                    "name": "Dead by Daylight",
+                    "img_icon_url": "95be6d131fc61f145797317ca437c9765f24b41c",
+                    "has_community_visible_stats": true
+                }
+            ]
+        }
+    }
+}

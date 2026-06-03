@@ -1,0 +1,22 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "playerstats": {
+            "steamID": "76561198148125221",
+            "gameName": "Dead by Daylight",
+            "achievements": [
+                {
+                    "apiname": "ACH_SACRIFICE_4_SURVIVORS_IAM",
+                    "achieved": 1,
+                    "unlocktime": 1514326953,
+                    "name": "I Am Inevitable",
+                    "description": "Sacrifice 4 Survivors in a single match."
+                }
+            ],
+            "success": true
+        }
+    }
+}

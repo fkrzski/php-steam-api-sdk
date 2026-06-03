@@ -1,0 +1,32 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "playerstats": {
+            "steamID": "76561198148125221",
+            "gameName": "Dead by Daylight",
+            "stats": [
+                {
+                    "name": "DBD_KillerSkulls",
+                    "value": 70
+                },
+                {
+                    "name": "DBD_CamperSkulls",
+                    "value": 85
+                }
+            ],
+            "achievements": [
+                {
+                    "name": "ACH_SACRIFICE_4_SURVIVORS_IAM",
+                    "achieved": 1
+                },
+                {
+                    "name": "ACH_SACRIFICE_100_CAMPERS",
+                    "achieved": 0
+                }
+            ]
+        }
+    }
+}

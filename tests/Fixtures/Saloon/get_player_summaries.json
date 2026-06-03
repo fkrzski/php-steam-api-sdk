@@ -1,0 +1,51 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "players": [
+                {
+                    "steamid": "76561198000000000",
+                    "communityvisibilitystate": 3,
+                    "profilestate": 1,
+                    "personaname": "tester-one",
+                    "commentpermission": 1,
+                    "profileurl": "https://steamcommunity.com/profiles/76561198000000000/",
+                    "avatar": "https://avatars.steamstatic.com/0000000000000000000000000000000000000001.jpg",
+                    "avatarmedium": "https://avatars.steamstatic.com/0000000000000000000000000000000000000001_medium.jpg",
+                    "avatarfull": "https://avatars.steamstatic.com/0000000000000000000000000000000000000001_full.jpg",
+                    "avatarhash": "0000000000000000000000000000000000000001",
+                    "personastate": 1,
+                    "primaryclanid": "103582791429521408",
+                    "timecreated": 1407003640,
+                    "personastateflags": 0,
+                    "gameextrainfo": "Dead by Daylight",
+                    "gameid": "381210"
+                },
+                {
+                    "steamid": "76561198000000001",
+                    "communityvisibilitystate": 3,
+                    "profilestate": 1,
+                    "personaname": "tester-two",
+                    "commentpermission": 2,
+                    "profileurl": "https://steamcommunity.com/id/tester-two/",
+                    "avatar": "https://avatars.steamstatic.com/0000000000000000000000000000000000000002.jpg",
+                    "avatarmedium": "https://avatars.steamstatic.com/0000000000000000000000000000000000000002_medium.jpg",
+                    "avatarfull": "https://avatars.steamstatic.com/0000000000000000000000000000000000000002_full.jpg",
+                    "avatarhash": "0000000000000000000000000000000000000002",
+                    "lastlogoff": 1768203860,
+                    "personastate": 0,
+                    "realname": "Test User",
+                    "primaryclanid": "103582791470999338",
+                    "timecreated": 1433676282,
+                    "gameserverip": "1.2.3.4:27015",
+                    "loccountrycode": "PL",
+                    "locstatecode": "MZ",
+                    "loccityid": 12345
+                }
+            ]
+        }
+    }
+}

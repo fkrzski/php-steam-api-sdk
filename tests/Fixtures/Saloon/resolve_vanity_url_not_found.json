@@ -1,0 +1,12 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "success": 42,
+            "message": "No match"
+        }
+    }
+}

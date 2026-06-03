@@ -9,7 +9,6 @@ use Fkrzski\SteamApiSdk\Enums\CommentPermission;
 use Fkrzski\SteamApiSdk\Enums\CommunityVisibility;
 use Fkrzski\SteamApiSdk\Enums\PersonaState;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
-use InvalidArgumentException;
 
 final readonly class PlayerSummary
 {
@@ -91,12 +90,6 @@ final readonly class PlayerSummary
 
     private static function timestamp(int $unix): DateTimeImmutable
     {
-        $dt = DateTimeImmutable::createFromFormat('U', (string) $unix);
-
-        if ($dt === false) {
-            throw new InvalidArgumentException(sprintf('Invalid unix timestamp "%d".', $unix));
-        }
-
-        return $dt;
+        return (new DateTimeImmutable)->setTimestamp($unix);
     }
 }

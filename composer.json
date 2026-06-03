@@ -1,0 +1,65 @@
+{
+    "name": "fkrzski/php-steam-api-sdk",
+    "description": "Framework-agnostic PHP SDK for the Steam Web API, built on Saloon.",
+    "keywords": ["php", "steam", "steam-api", "saloon", "sdk"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Filip Krzyżanowski",
+            "email": "contact@fkrzski.dev"
+        }
+    ],
+    "require": {
+        "php": "^8.5.0",
+        "saloonphp/saloon": "^4.0",
+        "saloonphp/rate-limit-plugin": "^2.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.29.1",
+        "pestphp/pest": "^5.0.0",
+        "pestphp/pest-plugin-type-coverage": "^5.0.0",
+        "phpstan/phpstan": "^2.1.54",
+        "rector/rector": "^2.4.2",
+        "symfony/var-dumper": "^8.0.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "Fkrzski\\SteamApiSdk\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "lint": [
+            "pint --parallel",
+            "rector"
+        ],
+        "test:type-coverage": "pest --type-coverage --min=100",
+        "test:lint": [
+            "pint --parallel --test",
+            "rector --dry-run"
+        ],
+        "test:unit": "pest --parallel --coverage --exactly=100",
+        "test:types": "phpstan",
+        "test:profanity": "pest --profanity",
+        "test": [
+            "@test:profanity",
+            "@test:lint",
+            "@test:types",
+            "@test:unit",
+            "@test:type-coverage"
+        ]
+    }
+}

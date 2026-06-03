@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest a new capability or improvement for php-steam-api-sdk.
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! Please keep proposals focused — one feature per issue.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that the SDK does not currently support? What is the user-facing pain?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the API or behaviour you would like. Include a code sketch if helpful.
+      render: php
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you already tried, or other designs you weighed.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Steam API endpoint docs, related issues, or anything else relevant.

@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a defect in php-steam-api-sdk.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in the sections below so the issue can be reproduced and triaged quickly.
+
+        **Security issues:** do NOT open a public issue. Follow the [SECURITY policy](../SECURITY.md) instead.
+  - type: input
+    id: sdk-version
+    attributes:
+      label: SDK version
+      description: Output of `composer show fkrzski/php-steam-api-sdk` (or commit SHA if installed from source).
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      description: Output of `php -v`.
+      placeholder: "8.5.0"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences describing what's wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Minimal code that reproduces the issue. Include the Steam request being sent and any custom configuration (e.g. rate limit store).
+      render: php
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include the full exception class, message, and stack trace if applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Anything else worth knowing (logs, screenshots, related issues).

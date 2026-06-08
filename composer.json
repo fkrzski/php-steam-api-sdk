@@ -15,6 +15,7 @@
         "saloonphp/rate-limit-plugin": "^2.0"
     },
     "require-dev": {
+        "laravel/pao": "^1.1",
         "laravel/pint": "^1.29.1",
         "pestphp/pest": "^4.0.0",
         "pestphp/pest-plugin-type-coverage": "^4.0.0",

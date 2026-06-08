@@ -13,6 +13,9 @@ return RectorConfig::configure()
     ->withSkip([
         AddOverrideAttributeToOverriddenMethodsRector::class,
     ])
+    ->withCache(
+        cacheDirectory: __DIR__.'/.cache/rector',
+    )
     ->withPreparedSets(
         deadCode: true,
         codeQuality: true,

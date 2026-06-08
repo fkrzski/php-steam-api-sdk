@@ -38,6 +38,13 @@ jobs:
         key: dependencies-php-8.5-os-ubuntu-latest-composer-${{ hashFiles('composer.json') }}
         restore-keys: dependencies-php-8.5-os-ubuntu-latest-composer-
 
+    - name: Cache static analysis tools
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+      with:
+        path: .cache
+        key: tools-php-8.5-os-ubuntu-latest-${{ github.run_id }}
+        restore-keys: tools-php-8.5-os-ubuntu-latest-
+
     - name: Install Composer dependencies
       run: composer update --prefer-stable --no-interaction --prefer-dist
 

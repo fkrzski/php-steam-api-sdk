@@ -1,6 +1,7 @@
 /.phpunit.result.cache
 /.phpunit.cache
 /.php-cs-fixer.cache
+/.cache
 /.php-cs-fixer.php
 /composer.lock
 /phpunit.xml

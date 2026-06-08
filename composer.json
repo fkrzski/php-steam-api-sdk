@@ -16,8 +16,8 @@
     },
     "require-dev": {
         "laravel/pint": "^1.29.1",
-        "pestphp/pest": "^5.0.0",
-        "pestphp/pest-plugin-type-coverage": "^5.0.0",
+        "pestphp/pest": "^4.0.0",
+        "pestphp/pest-plugin-type-coverage": "^4.0.0",
         "phpstan/phpstan": "^2.1.54",
         "rector/rector": "^2.4.2",
         "symfony/var-dumper": "^8.0.8"
@@ -52,6 +52,7 @@
             "rector --dry-run"
         ],
         "test:unit": "pest --parallel --coverage --exactly=100",
+        "test:mutate": "pest --mutate --parallel --covered-only --min=100",
         "test:types": "phpstan",
         "test:profanity": "pest --profanity",
         "test": [
@@ -59,7 +60,8 @@
             "@test:lint",
             "@test:types",
             "@test:unit",
-            "@test:type-coverage"
+            "@test:type-coverage",
+            "@test:mutate"
         ]
     }
 }

@@ -11,6 +11,8 @@ use Saloon\Http\Faking\MockResponse;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
+covers([SteamRateLimitException::class, SteamConnector::class]);
+
 beforeEach(function (): void {
     MemoryStore::clear();
 });

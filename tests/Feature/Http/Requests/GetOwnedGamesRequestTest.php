@@ -11,6 +11,8 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
+covers([GetOwnedGamesRequest::class, OwnedGame::class]);
+
 function ownedGamesConnector(): SteamConnector
 {
     return new SteamConnector(new SteamConfig('test-key'));
@@ -54,6 +56,23 @@ test('query includes optional flags when true', function (): void {
 
     expect($request->query()->all())
         ->toMatchArray(['include_appinfo' => 1, 'include_played_free_games' => 1]);
+});
+
+test('query omits optional flags by default', function (): void {
+    $request = new GetOwnedGamesRequest(testSteamId());
+
+    expect($request->query()->all())
+        ->not->toHaveKey('include_appinfo')
+        ->not->toHaveKey('include_played_free_games');
+});
+
+test('OwnedGame defaults hasCommunityVisibleStats to false when key absent', function (): void {
+    $game = OwnedGame::fromArray([
+        'appid' => 1,
+        'playtime_forever' => 0,
+    ]);
+
+    expect($game->hasCommunityVisibleStats)->toBeFalse();
 });
 
 test('fixture response parses into OwnedGame DTOs', function (): void {

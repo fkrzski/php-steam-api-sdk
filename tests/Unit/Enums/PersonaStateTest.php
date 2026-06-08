@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Enums\PersonaState;
 
+covers(PersonaState::class);
+
 test('all documented persona state values map to enum cases', function (int $value, PersonaState $expected): void {
     expect(PersonaState::from($value))->toBe($expected);
 })->with([

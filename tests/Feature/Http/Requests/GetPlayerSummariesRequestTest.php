@@ -14,6 +14,8 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
+covers([GetPlayerSummariesRequest::class, PlayerSummary::class, TooManySteamIdsException::class]);
+
 function summariesConnector(): SteamConnector
 {
     return new SteamConnector(new SteamConfig('test-key'));
@@ -31,6 +33,40 @@ function makeSteamIds(int $count): array
         range(0, $count - 1),
     );
 }
+
+test('PlayerSummary defaults profilestate and personastate when keys absent', function (): void {
+    $summary = PlayerSummary::fromArray([
+        'steamid' => '76561198000000000',
+        'personaname' => 'x',
+        'profileurl' => 'u',
+        'avatar' => 'a',
+        'avatarmedium' => 'am',
+        'avatarfull' => 'af',
+        'avatarhash' => 'h',
+        'communityvisibilitystate' => 3,
+        'timecreated' => 1407003640,
+    ]);
+
+    expect($summary->hasCommunityProfile)->toBeFalse()
+        ->and($summary->personaState)->toBe(PersonaState::Offline);
+});
+
+test('PlayerSummary marks hasCommunityProfile false when profilestate is not 1', function (): void {
+    $summary = PlayerSummary::fromArray([
+        'steamid' => '76561198000000000',
+        'personaname' => 'x',
+        'profileurl' => 'u',
+        'avatar' => 'a',
+        'avatarmedium' => 'am',
+        'avatarfull' => 'af',
+        'avatarhash' => 'h',
+        'communityvisibilitystate' => 3,
+        'profilestate' => 2,
+        'timecreated' => 1407003640,
+    ]);
+
+    expect($summary->hasCommunityProfile)->toBeFalse();
+});
 
 test('endpoint targets GetPlayerSummaries v2', function (): void {
     $request = new GetPlayerSummariesRequest(makeSteamIds(1));

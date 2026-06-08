@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Exceptions\InvalidSteamIdException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
+covers(SteamId::class, InvalidSteamIdException::class);
+
 test('fromSteamId64 accepts a 17-digit numeric string', function (): void {
     $id = SteamId::fromSteamId64('76561198000000000');
 

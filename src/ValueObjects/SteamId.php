@@ -37,10 +37,6 @@ final readonly class SteamId implements Stringable
     {
         $input = trim($input);
 
-        if ($input === '') {
-            return null;
-        }
-
         if (preg_match(self::STEAM_ID_64_PATTERN, $input) === 1) {
             return new self($input);
         }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Enums\CommentPermission;
 
+covers(CommentPermission::class);
+
 test('maps API integer values to enum cases', function (?int $value, CommentPermission $expected): void {
     expect(CommentPermission::fromApiValue($value))->toBe($expected);
 })->with([

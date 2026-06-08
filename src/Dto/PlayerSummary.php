@@ -72,7 +72,7 @@ final readonly class PlayerSummary
             avatarFullUrl: $payload['avatarfull'],
             avatarHash: $payload['avatarhash'],
             communityVisibility: CommunityVisibility::fromApiValue($payload['communityvisibilitystate']),
-            hasCommunityProfile: ($payload['profilestate'] ?? 0) === 1,
+            hasCommunityProfile: isset($payload['profilestate']) && $payload['profilestate'] === 1,
             commentPermission: CommentPermission::fromApiValue($payload['commentpermission'] ?? null),
             personaState: PersonaState::from($payload['personastate'] ?? 0),
             realName: $payload['realname'] ?? null,

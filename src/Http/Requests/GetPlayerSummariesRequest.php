@@ -84,7 +84,7 @@ final class GetPlayerSummariesRequest extends Request
     protected function defaultQuery(): array
     {
         return [
-            'steamids' => implode(',', array_map(static fn (SteamId $id): string => $id->value, $this->steamIds)),
+            'steamids' => implode(',', $this->steamIds),
         ];
     }
 }

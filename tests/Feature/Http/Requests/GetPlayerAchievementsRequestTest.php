@@ -12,6 +12,8 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
+covers([GetPlayerAchievementsRequest::class, PlayerAchievements::class, PlayerAchievement::class]);
+
 function playerAchievementsConnector(): SteamConnector
 {
     return new SteamConnector(new SteamConfig('test-key'));

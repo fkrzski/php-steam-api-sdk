@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Enums\CommunityVisibility;
 
+covers(CommunityVisibility::class);
+
 test('maps API values to enum cases', function (int $value, CommunityVisibility $expected): void {
     expect(CommunityVisibility::fromApiValue($value))->toBe($expected);
 })->with([

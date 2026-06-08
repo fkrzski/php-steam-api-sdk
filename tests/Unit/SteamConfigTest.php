@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\SteamConfig;
 
+covers(SteamConfig::class);
+
 test('SteamConfig stores api key', function (): void {
     $config = new SteamConfig(apiKey: 'test-key');
 

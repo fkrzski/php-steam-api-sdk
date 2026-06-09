@@ -43,4 +43,4 @@ Initial release.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
 [0.2.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.2.0
-[0.1.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/v0.1.0
+[0.1.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.1.0

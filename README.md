@@ -2,6 +2,11 @@
 
 ![Banner of PHP Steam API SDK](art/banner.png)
 
+[![License](https://img.shields.io/packagist/l/fkrzski/php-steam-api-sdk.svg?style=for-the-badge)](https://packagist.org/packages/fkrzski/php-steam-api-sdk)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/fkrzski/php-steam-api-sdk.svg?style=for-the-badge)](https://packagist.org/packages/fkrzski/php-steam-api-sdk)
+[![Total Downloads](https://img.shields.io/packagist/dt/fkrzski/php-steam-api-sdk.svg?style=for-the-badge)](https://packagist.org/packages/fkrzski/php-steam-api-sdk)
+[![Tests](https://img.shields.io/github/actions/workflow/status/fkrzski/php-steam-api-sdk/tests.yml?branch=master&label=tests&style=for-the-badge)](https://github.com/fkrzski/php-steam-api-sdk/actions/workflows/tests.yml)
+
 Framework-agnostic PHP SDK for the [Steam Web API](https://steamcommunity.com/dev), built on top of [Saloon](https://docs.saloon.dev/) v4.
 
 - Strong types (PHP 8.5, PHPStan max, 100% type coverage).

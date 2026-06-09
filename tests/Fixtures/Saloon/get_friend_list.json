@@ -1,0 +1,32 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "friendslist": {
+            "friends": [
+                {
+                    "steamid": "76561198000408055",
+                    "relationship": "friend",
+                    "friend_since": 1750068880
+                },
+                {
+                    "steamid": "76561198076234377",
+                    "relationship": "friend",
+                    "friend_since": 1569950369
+                },
+                {
+                    "steamid": "76561198086432305",
+                    "relationship": "friend",
+                    "friend_since": 1499363198
+                },
+                {
+                    "steamid": "76561198112001746",
+                    "relationship": "friend",
+                    "friend_since": 1548669134
+                }
+            ]
+        }
+    }
+}

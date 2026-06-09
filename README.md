@@ -18,6 +18,7 @@ Framework-agnostic PHP SDK for the [Steam Web API](https://steamcommunity.com/de
 ## Requirements
 
 - PHP **8.5+**
+- Saloon **4+**
 
 ## Installation
 

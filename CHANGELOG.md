@@ -5,6 +5,12 @@ All notable changes to `php-steam-api-sdk` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Pin GitHub Actions to version tags instead of commit hashes for readability.
+
 ## [0.2.0] - 2026-06-08
 
 Maintenance release focused on tooling, testing and CI. No user-facing API changes.

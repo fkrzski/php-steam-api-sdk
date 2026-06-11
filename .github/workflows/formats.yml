@@ -17,10 +17,10 @@ jobs:
     steps:
 
     - name: Checkout
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      uses: actions/checkout@v6.0.3
 
     - name: Setup PHP
-      uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
+      uses: shivammathur/setup-php@2.37.2
       with:
         php-version: 8.5
         extensions: dom, mbstring, zip
@@ -32,14 +32,14 @@ jobs:
       run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
     - name: Cache dependencies
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+      uses: actions/cache@v5.0.5
       with:
         path: ${{ steps.composer-cache.outputs.dir }}
         key: dependencies-php-8.5-os-ubuntu-latest-composer-${{ hashFiles('composer.json') }}
         restore-keys: dependencies-php-8.5-os-ubuntu-latest-composer-
 
     - name: Cache static analysis tools
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+      uses: actions/cache@v5.0.5
       with:
         path: .cache
         key: tools-php-8.5-os-ubuntu-latest-${{ github.run_id }}

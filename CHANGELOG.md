@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `GetFriendList` endpoint (`ISteamUser`) with the `Friend` DTO and `FriendRelationship` enum.
 
+### Changed
+
+- Pin GitHub Actions to version tags instead of commit hashes for readability.
+
 ## [0.2.0] - 2026-06-08
 
 Maintenance release focused on tooling, testing and CI. No user-facing API changes.

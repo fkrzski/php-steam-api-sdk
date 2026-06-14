@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Fkrzski\SteamApiSdk\Http\Requests;
+namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
-use Fkrzski\SteamApiSdk\Dto\UserStats;
+use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
@@ -12,7 +12,7 @@ use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-final class GetUserStatsForGameRequest extends Request
+final class GetPlayerAchievementsRequest extends Request
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -25,26 +25,26 @@ final class GetUserStatsForGameRequest extends Request
 
     public function resolveEndpoint(): string
     {
-        return '/ISteamUserStats/GetUserStatsForGame/v2/';
+        return '/ISteamUserStats/GetPlayerAchievements/v1/';
     }
 
-    public function createDtoFromResponse(Response $response): UserStats
+    public function createDtoFromResponse(Response $response): PlayerAchievements
     {
         /**
          * @var array{playerstats?: array{
          *     steamID: string,
          *     gameName: string,
-         *     stats?: list<array{name: string, value: int|float}>,
-         *     achievements?: list<array{name: string, achieved: int}>,
+         *     achievements: list<array{apiname: string, achieved: int, unlocktime: int, name?: string, description?: string}>,
+         *     success: bool,
          * }} $body
          */
         $body = $response->json();
 
-        if (! array_key_exists('playerstats', $body)) {
+        if (! isset($body['playerstats']['success']) || $body['playerstats']['success'] === false) {
             throw new ProfileNotPublicException('Steam profile is not public.');
         }
 
-        return UserStats::fromArray($body['playerstats']);
+        return PlayerAchievements::fromArray($body['playerstats']);
     }
 
     /**

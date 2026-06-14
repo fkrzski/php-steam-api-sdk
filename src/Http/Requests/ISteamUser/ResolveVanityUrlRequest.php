@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Fkrzski\SteamApiSdk\Http\Requests;
+namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
 use Fkrzski\SteamApiSdk\Exceptions\SteamUserNotFoundException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;

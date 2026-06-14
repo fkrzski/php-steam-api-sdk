@@ -29,7 +29,7 @@ composer require fkrzski/php-steam-api-sdk
 ## Quickstart
 
 ```php
-use Fkrzski\SteamApiSdk\Http\Requests\GetPlayerSummariesRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
@@ -68,7 +68,7 @@ $vanity = SteamId::extractVanityName('https://steamcommunity.com/id/gabelogannew
 
 ```php
 use Fkrzski\SteamApiSdk\Exceptions\SteamUserNotFoundException;
-use Fkrzski\SteamApiSdk\Http\Requests\ResolveVanityUrlRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 
 try {
     $steamId = $connector->send(new ResolveVanityUrlRequest('gabelogannewell'))->dto();
@@ -81,7 +81,7 @@ try {
 
 ```php
 use Fkrzski\SteamApiSdk\Exceptions\TooManySteamIdsException;
-use Fkrzski\SteamApiSdk\Http\Requests\GetPlayerSummariesRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 
 $summaries = $connector->send(new GetPlayerSummariesRequest([$steamId]))->dto();
 
@@ -96,7 +96,7 @@ Passing more than 100 IDs throws `TooManySteamIdsException`.
 
 ```php
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
-use Fkrzski\SteamApiSdk\Http\Requests\GetOwnedGamesRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
 
 try {
     $library = $connector->send(new GetOwnedGamesRequest(
@@ -113,7 +113,7 @@ try {
 ### User stats for a single game
 
 ```php
-use Fkrzski\SteamApiSdk\Http\Requests\GetUserStatsForGameRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
 
 $stats = $connector->send(new GetUserStatsForGameRequest(
     steamId: $steamId,
@@ -129,7 +129,7 @@ foreach ($stats->stats as $stat) {
 ### Player achievements
 
 ```php
-use Fkrzski\SteamApiSdk\Http\Requests\GetPlayerAchievementsRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
 
 $achievements = $connector->send(new GetPlayerAchievementsRequest(
     steamId: $steamId,

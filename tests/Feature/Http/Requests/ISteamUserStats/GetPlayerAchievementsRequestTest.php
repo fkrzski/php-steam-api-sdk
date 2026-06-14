@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievement;
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
-use Fkrzski\SteamApiSdk\Http\Requests\GetPlayerAchievementsRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;

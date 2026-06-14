@@ -7,7 +7,7 @@ use Fkrzski\SteamApiSdk\Enums\CommentPermission;
 use Fkrzski\SteamApiSdk\Enums\CommunityVisibility;
 use Fkrzski\SteamApiSdk\Enums\PersonaState;
 use Fkrzski\SteamApiSdk\Exceptions\TooManySteamIdsException;
-use Fkrzski\SteamApiSdk\Http\Requests\GetPlayerSummariesRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;

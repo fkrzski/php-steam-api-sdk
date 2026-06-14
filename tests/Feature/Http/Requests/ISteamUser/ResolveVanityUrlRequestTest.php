@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Exceptions\SteamUserNotFoundException;
-use Fkrzski\SteamApiSdk\Http\Requests\ResolveVanityUrlRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;

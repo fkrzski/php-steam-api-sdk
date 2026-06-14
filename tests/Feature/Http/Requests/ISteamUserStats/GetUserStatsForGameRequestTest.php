@@ -6,7 +6,7 @@ use Fkrzski\SteamApiSdk\Dto\UserStat;
 use Fkrzski\SteamApiSdk\Dto\UserStatAchievement;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
-use Fkrzski\SteamApiSdk\Http\Requests\GetUserStatsForGameRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;

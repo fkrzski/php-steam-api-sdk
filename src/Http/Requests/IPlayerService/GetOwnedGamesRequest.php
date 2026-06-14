@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Fkrzski\SteamApiSdk\Http\Requests;
+namespace Fkrzski\SteamApiSdk\Http\Requests\IPlayerService;
 
 use Fkrzski\SteamApiSdk\Dto\OwnedGame;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;

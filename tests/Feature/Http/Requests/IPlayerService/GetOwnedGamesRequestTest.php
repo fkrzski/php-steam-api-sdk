@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\OwnedGame;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
-use Fkrzski\SteamApiSdk\Http\Requests\GetOwnedGamesRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;

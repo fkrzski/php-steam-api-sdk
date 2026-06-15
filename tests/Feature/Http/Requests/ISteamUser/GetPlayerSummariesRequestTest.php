@@ -98,7 +98,7 @@ test('exactly 100 steamids accepted', function (): void {
 
 test('fixture response parses into PlayerSummary DTOs', function (): void {
     $mock = new MockClient([
-        GetPlayerSummariesRequest::class => MockResponse::fixture('get_player_summaries'),
+        GetPlayerSummariesRequest::class => MockResponse::fixture('ISteamUser/GetPlayerSummaries/default'),
     ]);
 
     $connector = summariesConnector();

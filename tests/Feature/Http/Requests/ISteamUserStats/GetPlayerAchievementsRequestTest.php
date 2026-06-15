@@ -53,7 +53,7 @@ test('query omits language when null', function (): void {
 
 test('fixture response parses into PlayerAchievements DTO', function (): void {
     $mock = new MockClient([
-        GetPlayerAchievementsRequest::class => MockResponse::fixture('get_player_achievements'),
+        GetPlayerAchievementsRequest::class => MockResponse::fixture('ISteamUserStats/GetPlayerAchievements/default'),
     ]);
 
     $connector = playerAchievementsConnector();
@@ -75,7 +75,7 @@ test('fixture response parses into PlayerAchievements DTO', function (): void {
 
 test('achieved=0 and unlocktime=0 map to false and null', function (): void {
     $mock = new MockClient([
-        GetPlayerAchievementsRequest::class => MockResponse::fixture('get_player_achievements'),
+        GetPlayerAchievementsRequest::class => MockResponse::fixture('ISteamUserStats/GetPlayerAchievements/default'),
     ]);
 
     $connector = playerAchievementsConnector();
@@ -90,7 +90,7 @@ test('achieved=0 and unlocktime=0 map to false and null', function (): void {
 
 test('localized fixture populates name and description', function (): void {
     $mock = new MockClient([
-        GetPlayerAchievementsRequest::class => MockResponse::fixture('get_player_achievements_localized'),
+        GetPlayerAchievementsRequest::class => MockResponse::fixture('ISteamUserStats/GetPlayerAchievements/localized'),
     ]);
 
     $connector = playerAchievementsConnector();
@@ -105,7 +105,7 @@ test('localized fixture populates name and description', function (): void {
 
 test('achievement without localized data has null name and description', function (): void {
     $mock = new MockClient([
-        GetPlayerAchievementsRequest::class => MockResponse::fixture('get_player_achievements'),
+        GetPlayerAchievementsRequest::class => MockResponse::fixture('ISteamUserStats/GetPlayerAchievements/default'),
     ]);
 
     $connector = playerAchievementsConnector();
@@ -120,7 +120,7 @@ test('achievement without localized data has null name and description', functio
 
 test('private profile throws ProfileNotPublicException', function (): void {
     $mock = new MockClient([
-        GetPlayerAchievementsRequest::class => MockResponse::fixture('get_player_achievements_private'),
+        GetPlayerAchievementsRequest::class => MockResponse::fixture('ISteamUserStats/GetPlayerAchievements/private'),
     ]);
 
     $connector = playerAchievementsConnector();

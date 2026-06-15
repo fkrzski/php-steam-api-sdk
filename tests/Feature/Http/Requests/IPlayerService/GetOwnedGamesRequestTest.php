@@ -77,7 +77,7 @@ test('OwnedGame defaults hasCommunityVisibleStats to false when key absent', fun
 
 test('fixture response parses into OwnedGame DTOs', function (): void {
     $mock = new MockClient([
-        GetOwnedGamesRequest::class => MockResponse::fixture('get_owned_games'),
+        GetOwnedGamesRequest::class => MockResponse::fixture('IPlayerService/GetOwnedGames/default'),
     ]);
 
     $connector = ownedGamesConnector();
@@ -98,7 +98,7 @@ test('fixture response parses into OwnedGame DTOs', function (): void {
 
 test('not owned fixture returns empty list', function (): void {
     $mock = new MockClient([
-        GetOwnedGamesRequest::class => MockResponse::fixture('get_owned_games_not_owned'),
+        GetOwnedGamesRequest::class => MockResponse::fixture('IPlayerService/GetOwnedGames/not_owned'),
     ]);
 
     $connector = ownedGamesConnector();
@@ -111,7 +111,7 @@ test('not owned fixture returns empty list', function (): void {
 
 test('private profile throws ProfileNotPublicException', function (): void {
     $mock = new MockClient([
-        GetOwnedGamesRequest::class => MockResponse::fixture('get_owned_games_private'),
+        GetOwnedGamesRequest::class => MockResponse::fixture('IPlayerService/GetOwnedGames/private'),
     ]);
 
     $connector = ownedGamesConnector();

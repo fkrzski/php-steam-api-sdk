@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\Friend;
 use Fkrzski\SteamApiSdk\Enums\FriendRelationship;
-use Fkrzski\SteamApiSdk\Http\Requests\GetFriendListRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
@@ -54,7 +54,7 @@ test('query omits relationship by default', function (): void {
 
 test('fixture response parses into Friend DTOs', function (): void {
     $mock = new MockClient([
-        GetFriendListRequest::class => MockResponse::fixture('get_friend_list'),
+        GetFriendListRequest::class => MockResponse::fixture('ISteamUser/GetFriendList/default'),
     ]);
 
     $connector = friendListConnector();
@@ -73,7 +73,7 @@ test('fixture response parses into Friend DTOs', function (): void {
 
 test('empty or private fixture returns empty list', function (): void {
     $mock = new MockClient([
-        GetFriendListRequest::class => MockResponse::fixture('get_friend_list_empty'),
+        GetFriendListRequest::class => MockResponse::fixture('ISteamUser/GetFriendList/empty'),
     ]);
 
     $connector = friendListConnector();

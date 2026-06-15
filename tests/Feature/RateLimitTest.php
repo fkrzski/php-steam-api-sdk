@@ -52,7 +52,7 @@ test('hitting the limit throws SteamRateLimitException with the offending limit'
     };
 
     $mock = new MockClient([
-        ResolveVanityUrlRequest::class => MockResponse::fixture('resolve_vanity_url_success'),
+        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),
     ]);
 
     $connector->withMockClient($mock);

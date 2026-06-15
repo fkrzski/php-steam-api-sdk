@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Reorganize request classes into per-interface subnamespaces (`Http\Requests\ISteamUser`, `Http\Requests\ISteamUserStats`, `Http\Requests\IPlayerService`). Update imports when upgrading.
+- Reorganize test fixtures into per-interface, per-request folders (`tests/Fixtures/Saloon/<Interface>/<Request>/`) with shortened variant filenames (`default`, `empty`, `private`, …), mirroring the request and test layout.
 - Pin GitHub Actions to version tags instead of commit hashes for readability.
 - Store the PHPUnit cache under `.cache/phpunit` so all tools (PHPStan, Rector, PHPUnit) share the `.cache` directory.
 

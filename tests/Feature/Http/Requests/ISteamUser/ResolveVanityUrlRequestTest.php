@@ -31,7 +31,7 @@ test('query carries vanityurl parameter', function (): void {
 
 test('success response yields SteamId value object', function (): void {
     $mock = new MockClient([
-        ResolveVanityUrlRequest::class => MockResponse::fixture('resolve_vanity_url_success'),
+        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),
     ]);
 
     $connector = connector();
@@ -45,7 +45,7 @@ test('success response yields SteamId value object', function (): void {
 
 test('not-found response throws SteamUserNotFoundException', function (): void {
     $mock = new MockClient([
-        ResolveVanityUrlRequest::class => MockResponse::fixture('resolve_vanity_url_not_found'),
+        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/not_found'),
     ]);
 
     $connector = connector();

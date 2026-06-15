@@ -54,7 +54,7 @@ test('query omits language when null', function (): void {
 
 test('fixture response parses into UserStats DTO', function (): void {
     $mock = new MockClient([
-        GetUserStatsForGameRequest::class => MockResponse::fixture('get_user_stats_for_game'),
+        GetUserStatsForGameRequest::class => MockResponse::fixture('ISteamUserStats/GetUserStatsForGame/default'),
     ]);
 
     $connector = userStatsConnector();
@@ -79,7 +79,7 @@ test('fixture response parses into UserStats DTO', function (): void {
 
 test('empty stats and achievements parse to empty lists', function (): void {
     $mock = new MockClient([
-        GetUserStatsForGameRequest::class => MockResponse::fixture('get_user_stats_for_game_empty'),
+        GetUserStatsForGameRequest::class => MockResponse::fixture('ISteamUserStats/GetUserStatsForGame/empty'),
     ]);
 
     $connector = userStatsConnector();
@@ -94,7 +94,7 @@ test('empty stats and achievements parse to empty lists', function (): void {
 
 test('private profile throws ProfileNotPublicException', function (): void {
     $mock = new MockClient([
-        GetUserStatsForGameRequest::class => MockResponse::fixture('get_user_stats_for_game_private'),
+        GetUserStatsForGameRequest::class => MockResponse::fixture('ISteamUserStats/GetUserStatsForGame/private'),
     ]);
 
     $connector = userStatsConnector();

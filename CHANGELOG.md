@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Reorganize request classes into per-interface subnamespaces (`Http\Requests\ISteamUser`, `Http\Requests\ISteamUserStats`, `Http\Requests\IPlayerService`). Update imports when upgrading.
 - Pin GitHub Actions to version tags instead of commit hashes for readability.
+- Store the PHPUnit cache under `.cache/phpunit` so all tools (PHPStan, Rector, PHPUnit) share the `.cache` directory.
+
+### Removed
+
+- Drop dead `.gitignore` entries for unused tooling (`.php-cs-fixer.php`, `.php-cs-fixer.cache`, `.phpunit.result.cache`, `.phpunit.cache`).
 
 ## [0.2.0] - 2026-06-08
 

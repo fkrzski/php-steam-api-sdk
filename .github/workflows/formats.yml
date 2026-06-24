@@ -32,14 +32,14 @@ jobs:
       run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
     - name: Cache dependencies
-      uses: actions/cache@v5.0.5
+      uses: actions/cache@v6.0.0
       with:
         path: ${{ steps.composer-cache.outputs.dir }}
         key: dependencies-php-8.5-os-ubuntu-latest-composer-${{ hashFiles('composer.json') }}
         restore-keys: dependencies-php-8.5-os-ubuntu-latest-composer-
 
     - name: Cache static analysis tools
-      uses: actions/cache@v5.0.5
+      uses: actions/cache@v6.0.0
       with:
         path: .cache
         key: tools-php-8.5-os-ubuntu-latest-${{ github.run_id }}

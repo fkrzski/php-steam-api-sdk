@@ -11,6 +11,7 @@
 # Exclude from `composer install --prefer-dist` archives
 /.github           export-ignore
 /art               export-ignore
+/docs              export-ignore
 /tests             export-ignore
 .editorconfig      export-ignore
 .gitattributes     export-ignore

@@ -3,7 +3,7 @@ title: Guide
 description: The core building blocks — the SteamId value object, how requests turn into readonly DTOs, and the exception hierarchy every SDK failure shares.
 ---
 
-Once you have a [configured connector](./php-steam-api-sdk/configuration), three concepts carry the
+Once you have a [configured connector](/php-steam-api-sdk/configuration), three concepts carry the
 rest: the **`SteamId`** value object every request accepts, the **requests** you
 send, and the readonly **DTOs** you get back.
 
@@ -44,7 +44,7 @@ $summaries = $connector
 The connector uses Saloon's `AlwaysThrowOnErrors`, so a non-2xx response raises a
 Saloon exception before you ever reach `->dto()`. Domain-level problems (a private
 profile, an unknown vanity URL) surface as SDK exceptions instead — see below. Which
-request returns which DTO is listed in the [API reference](./php-steam-api-sdk/api-reference).
+request returns which DTO is listed in the [API reference](/php-steam-api-sdk/api-reference).
 
 ## Exceptions
 
@@ -60,5 +60,5 @@ SteamApiException                (root, extends RuntimeException)
 ```
 
 Catch the leaf you care about, or the root `SteamApiException` to handle every
-SDK failure uniformly. The [API reference](./php-steam-api-sdk/api-reference) notes which request throws
+SDK failure uniformly. The [API reference](/php-steam-api-sdk/api-reference) notes which request throws
 which exception.

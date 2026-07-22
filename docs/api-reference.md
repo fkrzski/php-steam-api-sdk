@@ -5,8 +5,8 @@ description: Every request the SDK ships — constructor signature, query parame
 
 Each request is a Saloon `Request`; send it with `$connector->send($request)` and
 call `->dto()` on the response. Every constructor argument that identifies a user
-is a [`SteamId`](./php-steam-api-sdk/guide#the-steamid-value-object). The shapes returned here are
-documented in [Data objects](./php-steam-api-sdk/dto-reference).
+is a [`SteamId`](/php-steam-api-sdk/guide#the-steamid-value-object). The shapes returned here are
+documented in [Data objects](/php-steam-api-sdk/dto-reference).
 
 ## ResolveVanityUrlRequest
 

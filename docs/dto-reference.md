@@ -9,7 +9,7 @@ incomplete profiles. Timestamps are always `DateTimeImmutable`.
 
 ## PlayerSummary
 
-Returned by [`GetPlayerSummariesRequest`](./php-steam-api-sdk/api-reference#getplayersummariesrequest).
+Returned by [`GetPlayerSummariesRequest`](/php-steam-api-sdk/api-reference#getplayersummariesrequest).
 
 | Property | Type | Notes |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ Returned by [`GetPlayerSummariesRequest`](./php-steam-api-sdk/api-reference#getp
 
 ## Friend
 
-Returned by [`GetFriendListRequest`](./php-steam-api-sdk/api-reference#getfriendlistrequest).
+Returned by [`GetFriendListRequest`](/php-steam-api-sdk/api-reference#getfriendlistrequest).
 
 | Property | Type | Notes |
 | --- | --- | --- |
@@ -47,7 +47,7 @@ Returned by [`GetFriendListRequest`](./php-steam-api-sdk/api-reference#getfriend
 
 ## OwnedGame
 
-Returned by [`GetOwnedGamesRequest`](./php-steam-api-sdk/api-reference#getownedgamesrequest).
+Returned by [`GetOwnedGamesRequest`](/php-steam-api-sdk/api-reference#getownedgamesrequest).
 
 | Property | Type | Notes |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ Returned by [`GetOwnedGamesRequest`](./php-steam-api-sdk/api-reference#getownedg
 
 ## UserStats
 
-Returned by [`GetUserStatsForGameRequest`](./php-steam-api-sdk/api-reference#getuserstatsforgamerequest).
+Returned by [`GetUserStatsForGameRequest`](/php-steam-api-sdk/api-reference#getuserstatsforgamerequest).
 
 | Property | Type | Notes |
 | --- | --- | --- |
@@ -74,7 +74,7 @@ has `name` (`string`) and `achieved` (`bool`).
 
 ## PlayerAchievements
 
-Returned by [`GetPlayerAchievementsRequest`](./php-steam-api-sdk/api-reference#getplayerachievementsrequest).
+Returned by [`GetPlayerAchievementsRequest`](/php-steam-api-sdk/api-reference#getplayerachievementsrequest).
 
 | Property | Type | Notes |
 | --- | --- | --- |

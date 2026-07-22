@@ -51,7 +51,7 @@ Call `->dto()` on any Saloon response to get the readonly DTO for that request.
 
 ## Next steps
 
-- [Guide](./php-steam-api-sdk/guide) — the `SteamId` value object, sending requests, and the exception hierarchy.
-- [Configuration](./php-steam-api-sdk/configuration) — the connector, `SteamConfig` options, and rate limiting.
-- [API reference](./php-steam-api-sdk/api-reference) — every request, its parameters, return type, and errors.
-- [Data objects](./php-steam-api-sdk/dto-reference) — the DTOs and enums the SDK decodes responses into.
+- [Guide](/php-steam-api-sdk/guide) — the `SteamId` value object, sending requests, and the exception hierarchy.
+- [Configuration](/php-steam-api-sdk/configuration) — the connector, `SteamConfig` options, and rate limiting.
+- [API reference](/php-steam-api-sdk/api-reference) — every request, its parameters, return type, and errors.
+- [Data objects](/php-steam-api-sdk/dto-reference) — the DTOs and enums the SDK decodes responses into.

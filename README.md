@@ -13,7 +13,7 @@ Framework-agnostic PHP SDK for the [Steam Web API](https://steamcommunity.com/de
 - Readonly DTOs with `DateTimeImmutable` instead of framework date objects.
 - Domain exception hierarchy rooted at `SteamApiException`.
 - Daily 100 000-request rate limit baked in via [`saloonphp/rate-limit-plugin`](https://github.com/saloonphp/rate-limit-plugin).
-- Zero framework coupling — a Laravel bridge package ships separately.
+- Zero framework coupling — a [Laravel bridge package](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
 
 ## Requirements
 

@@ -17,7 +17,7 @@ fails with a domain exception instead of a silent `null`.
 - **Readonly DTOs** — immutable objects with `DateTimeImmutable`, never framework date wrappers.
 - **Domain exceptions** — one hierarchy rooted at `SteamApiException` for every failure.
 - **Rate limit baked in** — the 100 000 requests/day quota is enforced by the connector.
-- **Zero framework coupling** — plain Saloon; a Laravel bridge ships separately.
+- **Zero framework coupling** — plain Saloon; a [Laravel bridge](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
 
 ## Requirements
 

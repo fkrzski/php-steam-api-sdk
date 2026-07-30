@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-30
+
 ### Added
 
 - `GetFriendList` endpoint (`ISteamUser`) with the `Friend` DTO and `FriendRelationship` enum.
@@ -60,5 +62,6 @@ Initial release.
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
+[0.3.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.3.0
 [0.2.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.2.0
 [0.1.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.1.0

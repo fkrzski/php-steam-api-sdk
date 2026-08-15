@@ -11,9 +11,9 @@ final readonly class SteamId implements Stringable
 {
     private const string STEAM_ID_64_PATTERN = '/^\d{17}$/';
 
-    private const string PROFILE_URL_PATTERN = '#/profiles/(\d{17})/?$#';
+    private const string PROFILE_URL_PATTERN = '#/profiles/(\d{17})(?:[/?\#]|$)#';
 
-    private const string VANITY_URL_PATTERN = '#/id/([^/]+)/?$#';
+    private const string VANITY_URL_PATTERN = '#/id/([^/?\#]+)#';
 
     private function __construct(
         public string $value,

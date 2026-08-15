@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BC break.** `CommentPermission` and `CommunityVisibility` are now backed enums. `CommunityVisibility` is backed by `int` using Steam's own `communityvisibilitystate` codes (`Hidden = 1`, `Visible = 3`); `CommentPermission` is backed by `string` (`'everyone'`, `'nobody'`, `'friends_only'`), because Steam omits the `commentpermission` key entirely for the friends-only case and so has no wire integer for it. Case names are unchanged and `fromApiValue()` keeps its signature and its `UnexpectedValueException` on unknown input — only code that relies on these being pure enums (a `UnitEnum` type hint, or `instanceof UnitEnum` checks) needs updating.
 
+### Added
+
+- `SteamId` now implements `JsonSerializable` and encodes to a bare string. Previously `json_encode()` emitted `{"value":"<id>"}`, since the promoted `value` property is public. Part of [#25](https://github.com/fkrzski/php-steam-api-sdk/issues/25); `DateTimeImmutable` properties on the DTOs still serialize as PHP's internal shape and remain open there.
+
 ### Fixed
 
 - `PlayerSummary` can now be passed to `json_encode()`. Both enums it exposes were pure, and PHP has no default serialization for those, so encoding a `PlayerSummary` — or any structure containing one — returned `false` with `Non-backed enums have no default serialization`. See [#25](https://github.com/fkrzski/php-steam-api-sdk/issues/25); `DateTimeImmutable` properties still serialize as PHP's internal shape and remain open there.

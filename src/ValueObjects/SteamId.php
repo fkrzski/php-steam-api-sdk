@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\ValueObjects;
 
 use Fkrzski\SteamApiSdk\Exceptions\InvalidSteamIdException;
+use JsonSerializable;
 use Stringable;
 
-final readonly class SteamId implements Stringable
+final readonly class SteamId implements JsonSerializable, Stringable
 {
     private const string STEAM_ID_64_PATTERN = '/^\d{17}$/';
 
@@ -20,6 +21,11 @@ final readonly class SteamId implements Stringable
     ) {}
 
     public function __toString(): string
+    {
+        return $this->value;
+    }
+
+    public function jsonSerialize(): string
     {
         return $this->value;
     }

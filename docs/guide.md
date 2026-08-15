@@ -28,6 +28,11 @@ $vanity = SteamId::extractVanityName('https://steamcommunity.com/id/gabelogannew
 The underlying value is available as `$id->value` (or `(string) $id`), and two IDs
 compare with `$id->equals($other)`.
 
+`SteamId` implements `JsonSerializable`, so it encodes as a bare string —
+`json_encode(['steam_id' => $id])` yields `{"steam_id":"76561198000000000"}`, not a
+nested object. Decoding is not symmetric: rebuild the value object with
+`SteamId::fromSteamId64()` on the way back.
+
 ## Sending requests
 
 Every request is a plain Saloon `Request`. Send it through the connector and call

@@ -6,17 +6,14 @@ namespace Fkrzski\SteamApiSdk\Enums;
 
 use UnexpectedValueException;
 
-enum CommunityVisibility
+enum CommunityVisibility: int
 {
-    case Hidden;
-    case Visible;
+    case Hidden = 1;
+    case Visible = 3;
 
     public static function fromApiValue(int $value): self
     {
-        return match ($value) {
-            1 => self::Hidden,
-            3 => self::Visible,
-            default => throw new UnexpectedValueException(sprintf('Unknown communityvisibilitystate value "%d".', $value)),
-        };
+        return self::tryFrom($value)
+            ?? throw new UnexpectedValueException(sprintf('Unknown communityvisibilitystate value "%d".', $value));
     }
 }

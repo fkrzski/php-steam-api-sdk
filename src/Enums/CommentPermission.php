@@ -6,11 +6,11 @@ namespace Fkrzski\SteamApiSdk\Enums;
 
 use UnexpectedValueException;
 
-enum CommentPermission
+enum CommentPermission: string
 {
-    case Everyone;
-    case Nobody;
-    case FriendsOnly;
+    case Everyone = 'everyone';
+    case Nobody = 'nobody';
+    case FriendsOnly = 'friends_only';
 
     public static function fromApiValue(?int $value): self
     {

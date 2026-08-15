@@ -106,8 +106,13 @@ Each `PlayerAchievement` carries:
 | `LookingToTrade` | `5` |
 | `LookingToPlay` | `6` |
 
-`CommunityVisibility` — `Hidden`, `Visible`.
+`CommunityVisibility` (backed by `int`) — `Hidden` (`1`), `Visible` (`3`). The backing
+values are Steam's own `communityvisibilitystate` codes.
 
-`CommentPermission` — `Everyone`, `Nobody`, `FriendsOnly`.
+`CommentPermission` (backed by `string`) — `Everyone` (`'everyone'`), `Nobody`
+(`'nobody'`), `FriendsOnly` (`'friends_only'`). Steam sends `commentpermission` as an
+integer and omits the key entirely for the friends-only case, so these backing values
+are the SDK's own vocabulary rather than the wire values. Use `fromApiValue()` to map
+from the raw API payload.
 
 `FriendRelationship` (backed by `string`) — `All` (`'all'`), `Friend` (`'friend'`).

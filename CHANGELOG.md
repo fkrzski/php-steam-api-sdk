@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `SteamId` now implements `JsonSerializable` and encodes to a bare string. Previously `json_encode()` emitted `{"value":"<id>"}`, since the promoted `value` property is public. Part of [#25](https://github.com/fkrzski/php-steam-api-sdk/issues/25); `DateTimeImmutable` properties on the DTOs still serialize as PHP's internal shape and remain open there.
+
 ### Fixed
 
 - `SteamId::tryFromInput()` and `SteamId::extractVanityName()` now parse profile and vanity URLs that carry a sub-path, query string or fragment (e.g. `/profiles/<id>/stats/`, `/id/<nick>?snr=…`). Previously the trailing segment made `tryFromInput()` return `null`, while `extractVanityName()` silently returned an unusable slug.

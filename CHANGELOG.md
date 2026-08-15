@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `GetUserGroupList` endpoint (`ISteamUser`) with the `UserGroup` DTO. Closes [#19](https://github.com/fkrzski/php-steam-api-sdk/issues/19).
 - `SteamId` now implements `JsonSerializable` and encodes to a bare string. Previously `json_encode()` emitted `{"value":"<id>"}`, since the promoted `value` property is public. Part of [#25](https://github.com/fkrzski/php-steam-api-sdk/issues/25); `DateTimeImmutable` properties on the DTOs still serialize as PHP's internal shape and remain open there.
 
 ### Fixed

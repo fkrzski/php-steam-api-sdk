@@ -45,6 +45,14 @@ Returned by [`GetFriendListRequest`](/php-steam-api-sdk/api-reference#getfriendl
 | `relationship` | `FriendRelationship` | Relationship to the queried user. |
 | `friendSince` | `DateTimeImmutable` | When the friendship was formed. |
 
+## UserGroup
+
+Returned by [`GetUserGroupListRequest`](/php-steam-api-sdk/api-reference#getusergrouplistrequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `gid` | `string` | Steam group ID. |
+
 ## OwnedGame
 
 Returned by [`GetOwnedGamesRequest`](/php-steam-api-sdk/api-reference#getownedgamesrequest).

@@ -59,7 +59,7 @@ Every SDK failure extends `SteamApiException`, so one catch handles them all:
 SteamApiException                (root, extends RuntimeException)
 ├── InvalidSteamIdException      Malformed SteamID64.
 ├── SteamUserNotFoundException   Vanity URL unresolved or profile missing.
-├── ProfileNotPublicException    Profile, games list, or stats are private.
+├── ProfileNotPublicException    Profile, games list, groups, or stats are private.
 ├── TooManySteamIdsException     More than 100 IDs in a batch request.
 └── SteamRateLimitException      Daily 100k quota reached; exposes the offending Limit.
 ```

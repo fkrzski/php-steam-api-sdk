@@ -1,0 +1,25 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "success": true,
+            "groups": [
+                {
+                    "gid": "4218398"
+                },
+                {
+                    "gid": "25358940"
+                },
+                {
+                    "gid": "25380952"
+                },
+                {
+                    "gid": "25392543"
+                }
+            ]
+        }
+    }
+}

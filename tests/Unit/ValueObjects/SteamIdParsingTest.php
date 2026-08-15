@@ -71,3 +71,11 @@ test('equals compares by value', function (): void {
     expect($a->equals($b))->toBeTrue()
         ->and($a->equals($c))->toBeFalse();
 });
+
+test('jsonSerialize encodes to a bare string, not an object', function (): void {
+    $id = SteamId::fromSteamId64('76561198000000000');
+
+    expect($id->jsonSerialize())->toBe('76561198000000000')
+        ->and(json_encode($id, JSON_THROW_ON_ERROR))->toBe('"76561198000000000"')
+        ->and(json_encode(['steam_id' => $id], JSON_THROW_ON_ERROR))->toBe('{"steam_id":"76561198000000000"}');
+});

@@ -53,6 +53,20 @@ Returned by [`GetUserGroupListRequest`](/php-steam-api-sdk/api-reference#getuser
 | --- | --- | --- |
 | `gid` | `string` | Steam group ID. |
 
+## PlayerBan
+
+Returned by [`GetPlayerBansRequest`](/php-steam-api-sdk/api-reference#getplayerbansrequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `steamId` | `SteamId` | The player's 64-bit ID. |
+| `isCommunityBanned` | `bool` | Banned from Steam Community. |
+| `isVacBanned` | `bool` | Has an active VAC ban. |
+| `numberOfVacBans` | `int` | Total VAC bans on record. |
+| `numberOfGameBans` | `int` | Total developer-issued game bans. |
+| `daysSinceLastBan` | `int` | Days since the most recent ban. Steam reports `0` for players with no VAC or game bans, so read it together with the two counters. |
+| `economyBan` | `EconomyBan` | Trade/market ban status. |
+
 ## OwnedGame
 
 Returned by [`GetOwnedGamesRequest`](/php-steam-api-sdk/api-reference#getownedgamesrequest).
@@ -124,3 +138,10 @@ are the SDK's own vocabulary rather than the wire values. Use `fromApiValue()` t
 from the raw API payload.
 
 `FriendRelationship` (backed by `string`) — `All` (`'all'`), `Friend` (`'friend'`).
+
+`EconomyBan` (backed by `string`) — `None` (`'none'`), `Probation` (`'probation'`),
+`Banned` (`'banned'`), `Unknown` (`'unknown'`). Steam sends this field as a string and
+documents only `none` and `probation` before trailing off with "and so forth" —
+`banned` is observed on live accounts but undocumented, so the value set is provably
+open. `fromApiValue()` therefore maps anything unrecognised to `Unknown` rather than
+throwing, so a new ban state shipped by Valve cannot break callers.

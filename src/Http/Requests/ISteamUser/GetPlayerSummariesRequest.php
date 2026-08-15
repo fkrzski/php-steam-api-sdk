@@ -33,7 +33,7 @@ final class GetPlayerSummariesRequest extends Request
         }
 
         if ($count > self::MAX_STEAM_IDS) {
-            throw TooManySteamIdsException::forCount($count);
+            throw TooManySteamIdsException::forCount($count, 'GetPlayerSummaries');
         }
     }
 

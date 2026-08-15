@@ -1,0 +1,19 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "players": [
+            {
+                "SteamId": "76561198000000002",
+                "CommunityBanned": true,
+                "VACBanned": true,
+                "NumberOfVACBans": 63,
+                "DaysSinceLastBan": 209,
+                "NumberOfGameBans": 85,
+                "EconomyBan": "none"
+            }
+        ]
+    }
+}

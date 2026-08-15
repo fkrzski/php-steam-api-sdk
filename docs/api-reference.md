@@ -90,6 +90,30 @@ foreach ($groups as $group) {
 }
 ```
 
+## GetPlayerBansRequest
+
+```text
+new GetPlayerBansRequest(list<SteamId> $steamIds)
+```
+
+Fetches VAC, game, community and economy ban status for a batch of players. Accepts
+**1 to 100** IDs. Unlike the other batch endpoints this one needs no public profile —
+ban status comes back for private profiles too.
+
+- Returns `list<PlayerBan>`.
+- Throws `InvalidArgumentException` on an empty list.
+- Throws `TooManySteamIdsException` when more than 100 IDs are passed.
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerBansRequest;
+
+$bans = $connector->send(new GetPlayerBansRequest([$steamId]))->dto();
+
+foreach ($bans as $ban) {
+    echo $ban->steamId, ' — VAC bans: ', $ban->numberOfVacBans, PHP_EOL;
+}
+```
+
 ## GetOwnedGamesRequest
 
 ```text

@@ -39,11 +39,16 @@ test('tryFromInput parses numeric and profile URL inputs', function (string $inp
     'plain 17-digit' => ['76561198000000000', '76561198000000000'],
     'profile URL' => ['https://steamcommunity.com/profiles/76561198000000000', '76561198000000000'],
     'profile URL trailing slash' => ['https://steamcommunity.com/profiles/76561198000000000/', '76561198000000000'],
+    'profile URL sub-path' => ['https://steamcommunity.com/profiles/76561198000000000/stats/', '76561198000000000'],
+    'profile URL query string' => ['https://steamcommunity.com/profiles/76561198000000000?snr=1_4_4__12', '76561198000000000'],
+    'profile URL fragment' => ['https://steamcommunity.com/profiles/76561198000000000#comments', '76561198000000000'],
     'whitespace padded numeric' => ['  76561198000000000  ', '76561198000000000'],
     'vanity URL → null' => ['https://steamcommunity.com/id/gabelogannewell', null],
     'bare vanity → null' => ['gabelogannewell', null],
     'empty → null' => ['', null],
     'too short numeric → null' => ['1234567890', null],
+    'profile URL with over-long digit run → null' => ['https://steamcommunity.com/profiles/765611980000000001234', null],
+    'profile URL with letters after ID → null' => ['https://steamcommunity.com/profiles/76561198000000000abc', null],
 ]);
 
 test('extractVanityName pulls slug from id-URL, else returns input', function (string $input, string $expected): void {
@@ -51,6 +56,9 @@ test('extractVanityName pulls slug from id-URL, else returns input', function (s
 })->with([
     'vanity URL' => ['https://steamcommunity.com/id/gabelogannewell', 'gabelogannewell'],
     'vanity URL trailing slash' => ['https://steamcommunity.com/id/gabelogannewell/', 'gabelogannewell'],
+    'vanity URL sub-path' => ['https://steamcommunity.com/id/gabelogannewell/screenshots/', 'gabelogannewell'],
+    'vanity URL query string' => ['https://steamcommunity.com/id/gabelogannewell?snr=1_4_4__12', 'gabelogannewell'],
+    'vanity URL fragment' => ['https://steamcommunity.com/id/gabelogannewell#comments', 'gabelogannewell'],
     'bare nick' => ['gabelogannewell', 'gabelogannewell'],
     'nick with spaces' => ['  someUser  ', 'someUser'],
 ]);

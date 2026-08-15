@@ -68,6 +68,28 @@ $friends = $connector
     ->dto();
 ```
 
+## GetUserGroupListRequest
+
+```text
+new GetUserGroupListRequest(SteamId $steamId)
+```
+
+Lists the Steam groups a player belongs to. Only the group IDs come back — Steam
+exposes no group metadata on this endpoint.
+
+- Returns `list<UserGroup>`.
+- Throws `ProfileNotPublicException` when the profile is hidden.
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetUserGroupListRequest;
+
+$groups = $connector->send(new GetUserGroupListRequest($steamId))->dto();
+
+foreach ($groups as $group) {
+    echo $group->gid, PHP_EOL;
+}
+```
+
 ## GetOwnedGamesRequest
 
 ```text

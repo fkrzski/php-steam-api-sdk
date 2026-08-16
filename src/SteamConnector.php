@@ -80,9 +80,22 @@ class SteamConnector extends Connector
         ];
     }
 
+    /**
+     * MemoryStore keeps its backing array static, so the default budget is shared
+     * process-wide rather than per instance.
+     */
     protected function resolveRateLimitStore(): RateLimitStore
     {
         return $this->steamConfig->rateLimitStore ?? new MemoryStore;
+    }
+
+    /**
+     * The quota belongs to the API key, not to the connector class. The key is hashed
+     * so it never lands in a shared store.
+     */
+    protected function getLimiterPrefix(): ?string
+    {
+        return sprintf('SteamConnector:%s', hash('sha256', $this->steamConfig->apiKey));
     }
 
     protected function throwLimitException(Limit $limit): void

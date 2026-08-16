@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Dto\UserStat;
 use Fkrzski\SteamApiSdk\Dto\UserStatAchievement;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
+use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
@@ -101,4 +102,26 @@ test('private profile throws ProfileNotPublicException', function (): void {
     $connector->withMockClient($mock);
 
     $connector->send(new GetUserStatsForGameRequest(userStatsSteamId(), 381210))->dto();
+})->throws(ProfileNotPublicException::class, 'Steam profile 76561198148125221 is not public.');
+
+test('a 403 from Steam maps to ProfileNotPublicException via the connector', function (): void {
+    $mock = new MockClient([
+        GetUserStatsForGameRequest::class => MockResponse::make(['playerstats' => ['success' => false]], 403),
+    ]);
+
+    $connector = userStatsConnector();
+    $connector->withMockClient($mock);
+
+    $connector->send(new GetUserStatsForGameRequest(userStatsSteamId(), 381210))->dto();
 })->throws(ProfileNotPublicException::class, 'Steam profile is not public.');
+
+test('a 400 caused by a missing key is left to the connector', function (): void {
+    $mock = new MockClient([
+        GetUserStatsForGameRequest::class => MockResponse::fixture('Errors/missing-key'),
+    ]);
+
+    $connector = userStatsConnector();
+    $connector->withMockClient($mock);
+
+    $connector->send(new GetUserStatsForGameRequest(userStatsSteamId(), 381210))->dto();
+})->throws(InvalidApiKeyException::class, 'Steam API key is missing. Check the key passed to SteamConfig.');

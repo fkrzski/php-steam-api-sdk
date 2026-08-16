@@ -1,0 +1,7 @@
+{
+    "statusCode": 403,
+    "headers": {
+        "Content-Type": "text/html; charset=UTF-8"
+    },
+    "data": "<html>\n    <head>\n        <title>Forbidden</title>\n    </head>\n    <body>\n        <h1>Forbidden</h1>\n        Access is denied. Retrying will not help. Please verify your <pre>key=</pre>\n        parameter.\n    </body>\n</html>"
+}

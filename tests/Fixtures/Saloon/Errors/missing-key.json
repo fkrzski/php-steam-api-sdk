@@ -1,0 +1,7 @@
+{
+    "statusCode": 400,
+    "headers": {
+        "Content-Type": "text/html; charset=UTF-8"
+    },
+    "data": "<html>\n    <head>\n        <title>Bad Request</title>\n    </head>\n    <body>\n        <h1>Bad Request</h1>\n        Required parameter 'key' is missing\n    </body>\n</html>"
+}

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievement;
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
-use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
+use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
@@ -12,7 +13,7 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
-covers([GetPlayerAchievementsRequest::class, PlayerAchievements::class, PlayerAchievement::class]);
+covers([GetPlayerAchievementsRequest::class, PlayerAchievements::class, PlayerAchievement::class, StatsUnavailableException::class]);
 
 function playerAchievementsConnector(): SteamConnector
 {
@@ -118,13 +119,24 @@ test('achievement without localized data has null name and description', functio
         ->and($dto->achievements[0]->description)->toBeNull();
 });
 
-test('private profile throws ProfileNotPublicException', function (): void {
+test('a 400 caused by a missing key is left to the connector, not read as a bad appid', function (): void {
     $mock = new MockClient([
-        GetPlayerAchievementsRequest::class => MockResponse::fixture('ISteamUserStats/GetPlayerAchievements/private'),
+        GetPlayerAchievementsRequest::class => MockResponse::fixture('Errors/missing-key'),
     ]);
 
     $connector = playerAchievementsConnector();
     $connector->withMockClient($mock);
 
     $connector->send(new GetPlayerAchievementsRequest(playerAchievementsSteamId(), 381210))->dto();
-})->throws(ProfileNotPublicException::class, 'Steam profile is not public.');
+})->throws(InvalidApiKeyException::class, 'Steam API key is missing. Check the key passed to SteamConfig.');
+
+test('a private profile and an app without stats are reported identically', function (): void {
+    $mock = new MockClient([
+        GetPlayerAchievementsRequest::class => MockResponse::fixture('ISteamUserStats/GetPlayerAchievements/stats-unavailable'),
+    ]);
+
+    $connector = playerAchievementsConnector();
+    $connector->withMockClient($mock);
+
+    $connector->send(new GetPlayerAchievementsRequest(playerAchievementsSteamId(), 381210))->dto();
+})->throws(StatsUnavailableException::class, 'Steam returned no stats for app 381210: it exposes none, or the profile is private.');

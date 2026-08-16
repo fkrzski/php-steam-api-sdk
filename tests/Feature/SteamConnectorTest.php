@@ -2,13 +2,21 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
+use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+use Saloon\Http\Faking\Fixture;
+use Saloon\Http\Faking\MockClient;
+use Saloon\Http\Faking\MockResponse;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 
-covers(SteamConnector::class);
+covers([SteamConnector::class, InvalidApiKeyException::class, ProfileNotPublicException::class]);
 
 test('base URL resolves to Steam Web API host', function (): void {
     $connector = new SteamConnector(new SteamConfig('any'));
@@ -51,4 +59,76 @@ test('resolveRateLimitStore falls back to a fresh in-memory store', function ():
     $rateLimitStore = $connector->rateLimitStore();
 
     expect($rateLimitStore)->toBeInstanceOf(MemoryStore::class);
+});
+
+/**
+ * Send through the connector so the failure travels the real middleware path.
+ */
+function sendFailing(MockResponse|Fixture $response): Throwable
+{
+    $connector = new SteamConnector(new SteamConfig('any'));
+    $connector->withMockClient(new MockClient([GetFriendListRequest::class => $response]));
+
+    try {
+        $connector->send(new GetFriendListRequest(SteamId::fromSteamId64('76561198148125221')));
+    } catch (Throwable $throwable) {
+        return $throwable;
+    }
+
+    throw new RuntimeException('Expected the request to fail.');
+}
+
+test('401 maps to ProfileNotPublicException', function (): void {
+    expect(sendFailing(MockResponse::make([], 401)))
+        ->toBeInstanceOf(ProfileNotPublicException::class)
+        ->and(sendFailing(MockResponse::make([], 401))->getMessage())->toBe('Steam profile is not public.');
+});
+
+test('403 carrying a JSON body maps to ProfileNotPublicException', function (): void {
+    expect(sendFailing(MockResponse::make(['playerstats' => ['success' => false]], 403)))
+        ->toBeInstanceOf(ProfileNotPublicException::class);
+});
+
+test('403 naming the key parameter maps to InvalidApiKeyException', function (): void {
+    $thrown = sendFailing(MockResponse::fixture('Errors/invalid-key'));
+
+    expect($thrown)->toBeInstanceOf(InvalidApiKeyException::class)
+        ->and($thrown->getMessage())->toBe('Steam rejected the API key. Check that it is valid and active.');
+});
+
+test('400 reporting a missing key maps to InvalidApiKeyException', function (): void {
+    $thrown = sendFailing(MockResponse::fixture('Errors/missing-key'));
+
+    expect($thrown)->toBeInstanceOf(InvalidApiKeyException::class)
+        ->and($thrown->getMessage())->toBe('Steam API key is missing. Check the key passed to SteamConfig.');
+});
+
+test('400 unrelated to the key falls back to SteamApiException', function (): void {
+    $thrown = sendFailing(MockResponse::make(['error' => 'whatever'], 400));
+
+    expect($thrown)->toBeInstanceOf(SteamApiException::class)
+        ->and($thrown->getMessage())->toBe('Steam API request failed with HTTP 400.');
+});
+
+test('server errors fall back to SteamApiException', function (): void {
+    $thrown = sendFailing(MockResponse::make('<html>Server Error</html>', 500));
+
+    expect($thrown)->toBeInstanceOf(SteamApiException::class)
+        ->and($thrown->getMessage())->toBe('Steam API request failed with HTTP 500.');
+});
+
+test('mapped exceptions carry the status code and the originating response', function (): void {
+    /** @var SteamApiException $thrown */
+    $thrown = sendFailing(MockResponse::make([], 401));
+
+    expect($thrown->getCode())->toBe(401)
+        ->and($thrown->response)->not->toBeNull()
+        ->and($thrown->response?->status())->toBe(401);
+});
+
+test('every mapped failure stays inside the SDK exception hierarchy', function (): void {
+    expect(sendFailing(MockResponse::make([], 401)))->toBeInstanceOf(SteamApiException::class)
+        ->and(sendFailing(MockResponse::fixture('Errors/invalid-key')))->toBeInstanceOf(SteamApiException::class)
+        ->and(sendFailing(MockResponse::fixture('Errors/missing-key')))->toBeInstanceOf(SteamApiException::class)
+        ->and(sendFailing(MockResponse::make('', 503)))->toBeInstanceOf(SteamApiException::class);
 });

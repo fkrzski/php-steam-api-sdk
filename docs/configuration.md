@@ -37,6 +37,12 @@ The Steam Web API allows **100 000 requests per API key per day**. The connector
 enforces this via [`saloonphp/rate-limit-plugin`](https://github.com/saloonphp/rate-limit-plugin)
 and throws `SteamRateLimitException` once the budget is spent.
 
+## Multiple API keys
+
+The budget is tracked per API key, so a process — or a shared store — can serve several
+keys without them draining each other's quota. Only a SHA-256 hash of the key ever
+reaches the store.
+
 ## Sharing the budget across processes
 
 The default `MemoryStore` only tracks usage within a single PHP process — fine for a

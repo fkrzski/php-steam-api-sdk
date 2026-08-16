@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `PlayerSummary` can now be passed to `json_encode()`. Both enums it exposes were pure, and PHP has no default serialization for those, so encoding a `PlayerSummary` — or any structure containing one — returned `false` with `Non-backed enums have no default serialization`. See [#25](https://github.com/fkrzski/php-steam-api-sdk/issues/25); `DateTimeImmutable` properties still serialize as PHP's internal shape and remain open there.
 - `SteamId::tryFromInput()` and `SteamId::extractVanityName()` now parse profile and vanity URLs that carry a sub-path, query string or fragment (e.g. `/profiles/<id>/stats/`, `/id/<nick>?snr=…`). Previously the trailing segment made `tryFromInput()` return `null`, while `extractVanityName()` silently returned an unusable slug.
+- Rate limit counters are now scoped to the API key instead of being shared by every connector in the process, so one key can no longer spend another's daily budget. The key is hashed into the store key, never written in plaintext. Counters already held in a persistent store use the old key format and restart from zero once. Closes [#30](https://github.com/fkrzski/php-steam-api-sdk/issues/30).
 
 ## [0.3.0] - 2026-07-30
 

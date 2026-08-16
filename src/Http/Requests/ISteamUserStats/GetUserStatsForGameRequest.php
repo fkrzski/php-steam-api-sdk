@@ -11,6 +11,7 @@ use Override;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
+use Throwable;
 
 final class GetUserStatsForGameRequest extends Request
 {
@@ -28,10 +29,24 @@ final class GetUserStatsForGameRequest extends Request
         return '/ISteamUserStats/GetUserStatsForGame/v2/';
     }
 
+    /**
+     * A private profile answers 400 with an empty JSON object; a missing API key
+     * answers 400 with HTML, which belongs to the connector.
+     */
+    #[Override]
+    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    {
+        if ($response->status() !== 400 || ! json_validate($response->body())) {
+            return null;
+        }
+
+        return ProfileNotPublicException::forSteamId($this->steamId, $response);
+    }
+
     public function createDtoFromResponse(Response $response): UserStats
     {
         /**
-         * @var array{playerstats?: array{
+         * @var array{playerstats: array{
          *     steamID: string,
          *     gameName: string,
          *     stats?: list<array{name: string, value: int|float}>,
@@ -39,10 +54,6 @@ final class GetUserStatsForGameRequest extends Request
          * }} $body
          */
         $body = $response->json();
-
-        if (! array_key_exists('playerstats', $body)) {
-            throw new ProfileNotPublicException('Steam profile is not public.');
-        }
 
         return UserStats::fromArray($body['playerstats']);
     }

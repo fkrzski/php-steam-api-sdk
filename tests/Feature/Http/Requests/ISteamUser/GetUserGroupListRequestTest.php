@@ -67,7 +67,7 @@ test('membership-free fixture returns empty list', function (): void {
     expect($dtos)->toBeEmpty();
 });
 
-test('response without a success flag throws ProfileNotPublicException', function (): void {
+test('response without a groups key yields an empty list', function (): void {
     $mock = new MockClient([
         GetUserGroupListRequest::class => MockResponse::make(['response' => []]),
     ]);
@@ -75,8 +75,8 @@ test('response without a success flag throws ProfileNotPublicException', functio
     $connector = userGroupListConnector();
     $connector->withMockClient($mock);
 
-    $connector->send(new GetUserGroupListRequest(userGroupTestSteamId()))->dto();
-})->throws(ProfileNotPublicException::class, 'Steam profile is not public.');
+    expect($connector->send(new GetUserGroupListRequest(userGroupTestSteamId()))->dto())->toBeEmpty();
+});
 
 test('private profile throws ProfileNotPublicException', function (): void {
     $mock = new MockClient([

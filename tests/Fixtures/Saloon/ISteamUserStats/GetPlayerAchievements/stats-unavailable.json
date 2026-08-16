@@ -1,11 +1,11 @@
 {
-    "statusCode": 200,
+    "statusCode": 400,
     "headers": {
         "Content-Type": "application/json; charset=UTF-8"
     },
     "data": {
         "playerstats": {
-            "error": "Profile is not public",
+            "error": "Requested app has no stats",
             "success": false
         }
     }

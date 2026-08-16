@@ -46,10 +46,10 @@ $summaries = $connector
     ->dto();
 ```
 
-The connector uses Saloon's `AlwaysThrowOnErrors`, so a non-2xx response raises a
-Saloon exception before you ever reach `->dto()`. Domain-level problems (a private
-profile, an unknown vanity URL) surface as SDK exceptions instead — see below. Which
-request returns which DTO is listed in the [API reference](/php-steam-api-sdk/api-reference).
+The connector uses Saloon's `AlwaysThrowOnErrors`, so a non-2xx response fails before
+you ever reach `->dto()`. Those failures are translated into the SDK's own exceptions,
+so no Saloon class ever escapes — see below. Which request returns which DTO is listed
+in the [API reference](/php-steam-api-sdk/api-reference).
 
 ## Exceptions
 
@@ -60,6 +60,8 @@ SteamApiException                (root, extends RuntimeException)
 ├── InvalidSteamIdException      Malformed SteamID64.
 ├── SteamUserNotFoundException   Vanity URL unresolved or profile missing.
 ├── ProfileNotPublicException    Profile, games list, groups, or stats are private.
+├── InvalidApiKeyException       API key missing, wrong, or revoked.
+├── StatsUnavailableException    Stats withheld: no such stats, or private profile.
 ├── TooManySteamIdsException     More than 100 IDs in a batch request.
 └── SteamRateLimitException      Daily 100k quota reached; exposes the offending Limit.
 ```
@@ -67,3 +69,44 @@ SteamApiException                (root, extends RuntimeException)
 Catch the leaf you care about, or the root `SteamApiException` to handle every
 SDK failure uniformly. The [API reference](/php-steam-api-sdk/api-reference) notes which request throws
 which exception.
+
+### Inspecting the failed response
+
+Exceptions raised from an HTTP failure carry the response that produced them, and
+their code is the HTTP status:
+
+```php
+use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+
+try {
+    $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+} catch (SteamApiException $e) {
+    $e->getCode();          // 403
+    $e->response?->body();  // raw Steam payload, or null for client-side failures
+}
+```
+
+`response` is `null` for failures raised before a request went out — a malformed
+SteamID64, an oversized batch, or the daily quota being exhausted locally.
+
+### How statuses are mapped
+
+Steam signals failure in two different ways, and the SDK reads both:
+
+| Steam's answer | Exception |
+| --- | --- |
+| `400` + HTML naming the `key` parameter | `InvalidApiKeyException` (missing) |
+| `403` + HTML naming the `key` parameter | `InvalidApiKeyException` (rejected) |
+| `400` + JSON, on `ISteamUserStats` | `StatsUnavailableException` / `ProfileNotPublicException` |
+| `401` or `403` | `ProfileNotPublicException` |
+| `429` | `SteamRateLimitException` |
+| any other `4xx` / `5xx` | `SteamApiException` |
+| `200` with an empty or `success: 42` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` |
+
+Steam overloads `400` across unrelated causes. Key errors are the one case it answers
+with HTML rather than JSON, which is what keeps a misconfigured key from being reported
+as a data problem. `GetPlayerAchievements` goes further and returns a byte-identical
+`Requested app has no stats` body whether the app has no achievements or the profile is
+private, so `StatsUnavailableException` names both causes rather than guessing between
+them. `GetUserStatsForGame` answers an empty object for a private profile, which is
+unambiguous and maps to `ProfileNotPublicException`.

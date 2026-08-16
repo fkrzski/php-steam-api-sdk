@@ -51,7 +51,7 @@ final class GetOwnedGamesRequest extends Request
         $responseBody = $body['response'] ?? [];
 
         if (! array_key_exists('game_count', $responseBody)) {
-            throw new ProfileNotPublicException('Steam profile is not public.');
+            throw ProfileNotPublicException::forSteamId($this->steamId);
         }
 
         return array_map(OwnedGame::fromArray(...), $responseBody['games'] ?? []);

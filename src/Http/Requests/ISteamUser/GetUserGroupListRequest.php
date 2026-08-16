@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
 use Fkrzski\SteamApiSdk\Dto\UserGroup;
-use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
 use Saloon\Enums\Method;
@@ -31,21 +30,10 @@ final class GetUserGroupListRequest extends Request
      */
     public function createDtoFromResponse(Response $response): array
     {
-        /**
-         * @var array{response?: array{
-         *     success?: bool,
-         *     error?: string,
-         *     groups?: list<array{gid: string}>,
-         * }} $body
-         */
+        /** @var array{response?: array{groups?: list<array{gid: string}>}} $body */
         $body = $response->json();
-        $responseBody = $body['response'] ?? [];
 
-        if (($responseBody['success'] ?? null) !== true) {
-            throw new ProfileNotPublicException('Steam profile is not public.');
-        }
-
-        return array_map(UserGroup::fromArray(...), $responseBody['groups'] ?? []);
+        return array_map(UserGroup::fromArray(...), $body['response']['groups'] ?? []);
     }
 
     /**

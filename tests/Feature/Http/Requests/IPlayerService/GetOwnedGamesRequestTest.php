@@ -11,7 +11,7 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
-covers([GetOwnedGamesRequest::class, OwnedGame::class]);
+covers([GetOwnedGamesRequest::class, OwnedGame::class, ProfileNotPublicException::class]);
 
 function ownedGamesConnector(): SteamConnector
 {
@@ -118,4 +118,4 @@ test('private profile throws ProfileNotPublicException', function (): void {
     $connector->withMockClient($mock);
 
     $connector->send(new GetOwnedGamesRequest(testSteamId()))->dto();
-})->throws(ProfileNotPublicException::class, 'Steam profile is not public.');
+})->throws(ProfileNotPublicException::class, 'Steam profile 76561198000000000 is not public.');

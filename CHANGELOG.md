@@ -9,11 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BC break.** `SteamApiException` declares its own constructor, `__construct(string $message, ?Response $response = null)`. `getCode()` is now the HTTP status, or `0` when the failure was raised before a request went out.
+- HTTP failures now raise SDK exceptions instead of Saloon's `RequestException` subclasses, so catching `SteamApiException` really does cover every failure. Closes [#20](https://github.com/fkrzski/php-steam-api-sdk/issues/20).
+- `GetPlayerAchievements`, `GetUserStatsForGame` and `GetUserGroupList` no longer detect a private profile from the response body. Steam answers with an error status in all three cases (400, 400 and 403), so none of those checks ever ran and the request failed with a Saloon exception instead.
 - **BC break.** `TooManySteamIdsException::forCount()` now takes a required `string $endpoint`, so the message names the request that hit the cap.
 - **BC break.** `CommentPermission` and `CommunityVisibility` are now backed enums. `CommunityVisibility` is backed by `int` using Steam's own `communityvisibilitystate` codes (`Hidden = 1`, `Visible = 3`); `CommentPermission` is backed by `string` (`'everyone'`, `'nobody'`, `'friends_only'`), because Steam omits the `commentpermission` key entirely for the friends-only case and so has no wire integer for it. Case names are unchanged and `fromApiValue()` keeps its signature and its `UnexpectedValueException` on unknown input — only code that relies on these being pure enums (a `UnitEnum` type hint, or `instanceof UnitEnum` checks) needs updating.
 
 ### Added
 
+- `InvalidApiKeyException` for a missing (HTTP 400) or rejected (HTTP 403) API key. Steam reports both as HTML, which is what tells them apart from a private profile on the same status.
+- `StatsUnavailableException`, thrown by `GetPlayerAchievements` when Steam withholds achievements. It deliberately names both possible causes: Steam returns an identical `Requested app has no stats` body for an app without achievements and for a private profile.
+- `SteamApiException::$response` exposes the response behind an HTTP failure.
 - `GetPlayerBans` endpoint (`ISteamUser`) with the `PlayerBan` DTO and `EconomyBan` enum. Steam's `EconomyBan` value set is open, so unrecognised values fall back to `Unknown` instead of throwing. Closes [#18](https://github.com/fkrzski/php-steam-api-sdk/issues/18).
 - `GetUserGroupList` endpoint (`ISteamUser`) with the `UserGroup` DTO. Closes [#19](https://github.com/fkrzski/php-steam-api-sdk/issues/19).
 - `SteamId` now implements `JsonSerializable` and encodes to a bare string. Previously `json_encode()` emitted `{"value":"<id>"}`, since the promoted `value` property is public. Part of [#25](https://github.com/fkrzski/php-steam-api-sdk/issues/25); `DateTimeImmutable` properties on the DTOs still serialize as PHP's internal shape and remain open there.

@@ -176,7 +176,7 @@ Returns a player's achievements for one game, each with its unlock state and tim
 `language` localises the achievement name and description.
 
 - Returns `PlayerAchievements`.
-- Throws `ProfileNotPublicException` when the profile is hidden.
+- Throws `StatsUnavailableException` when `appId` exposes no achievements **or** the profile is hidden — Steam reports both identically.
 
 ```php
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;

@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation pages are `.mdx` and use Starlight components — tabs for alternatives, asides for caveats, steps for setup, badges for what each request throws, and filename bars on code blocks.
 
+### Fixed
+
+- **BC break.** `PlayerSummary::$timeCreated` is nullable, because Steam omits `timecreated` for a hidden profile and reading it unguarded fataled the whole `GetPlayerSummaries` batch. Callers reading the date need a null check ([#33](https://github.com/fkrzski/php-steam-api-sdk/issues/33)).
+
 ## [0.4.0] - 2026-08-16
 
 ### Added

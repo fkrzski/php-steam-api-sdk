@@ -62,7 +62,7 @@ final class GetPlayerSummariesRequest extends Request
          *     personastate?: int,
          *     realname?: string,
          *     primaryclanid?: string,
-         *     timecreated: int,
+         *     timecreated?: int,
          *     lastlogoff?: int,
          *     gameid?: string,
          *     gameextrainfo?: string,

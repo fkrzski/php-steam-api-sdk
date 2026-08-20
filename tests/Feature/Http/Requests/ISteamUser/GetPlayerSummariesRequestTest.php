@@ -55,6 +55,27 @@ test('PlayerSummary marks hasCommunityProfile false when profilestate is not 1',
     expect($summary->hasCommunityProfile)->toBeFalse();
 });
 
+test('PlayerSummary leaves timeCreated null when Steam omits timecreated', function (): void {
+    $summary = PlayerSummary::fromArray([
+        'steamid' => '76561198000000000',
+        'personaname' => 'x',
+        'profileurl' => 'u',
+        'avatar' => 'a',
+        'avatarmedium' => 'am',
+        'avatarfull' => 'af',
+        'avatarhash' => 'h',
+        'communityvisibilitystate' => 1,
+        'profilestate' => 1,
+        'commentpermission' => 1,
+        'lastlogoff' => 1600000000,
+        'personastate' => 0,
+    ]);
+
+    expect($summary->timeCreated)->toBeNull()
+        ->and($summary->communityVisibility)->toBe(CommunityVisibility::Hidden)
+        ->and($summary->lastLogOff?->getTimestamp())->toBe(1600000000);
+});
+
 test('endpoint targets GetPlayerSummaries v2', function (): void {
     $request = new GetPlayerSummariesRequest(makeSteamIds(1));
 
@@ -111,7 +132,7 @@ test('fixture response parses into PlayerSummary DTOs', function (): void {
         ->and($dtos[0]->countryCode)->toBeNull()
         ->and($dtos[0]->stateCode)->toBeNull()
         ->and($dtos[0]->cityId)->toBeNull()
-        ->and($dtos[0]->timeCreated->getTimestamp())->toBe(1407003640)
+        ->and($dtos[0]->timeCreated?->getTimestamp())->toBe(1407003640)
         ->and($dtos[1]->steamId->value)->toBe('76561198000000001')
         ->and($dtos[1]->commentPermission)->toBe(CommentPermission::Nobody)
         ->and($dtos[1]->personaState)->toBe(PersonaState::Offline)
@@ -125,4 +146,25 @@ test('fixture response parses into PlayerSummary DTOs', function (): void {
         ->and($dtos[1]->stateCode)->toBe('MZ')
         ->and($dtos[1]->cityId)->toBe(12345)
         ->and($dtos[1]->primaryClanId)->toBe('103582791470999338');
+});
+
+test('hidden profile in a batch does not break the other summaries', function (): void {
+    $mock = new MockClient([
+        GetPlayerSummariesRequest::class => MockResponse::fixture('ISteamUser/GetPlayerSummaries/hidden'),
+    ]);
+
+    $connector = summariesConnector();
+    $connector->withMockClient($mock);
+
+    /** @var list<PlayerSummary> $dtos */
+    $dtos = $connector->send(new GetPlayerSummariesRequest(makeSteamIds(2)))->dto();
+
+    expect($dtos)->toHaveCount(2)
+        ->and($dtos[0]->communityVisibility)->toBe(CommunityVisibility::Hidden)
+        ->and($dtos[0]->timeCreated)->toBeNull()
+        ->and($dtos[0]->realName)->toBeNull()
+        ->and($dtos[0]->primaryClanId)->toBeNull()
+        ->and($dtos[0]->countryCode)->toBeNull()
+        ->and($dtos[1]->communityVisibility)->toBe(CommunityVisibility::Visible)
+        ->and($dtos[1]->timeCreated?->getTimestamp())->toBe(1433676282);
 });

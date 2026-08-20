@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Testing guidance in the docs: faking the connector with Saloon's `MockClient`, and clearing the `MemoryStore` daily counter between tests.
+
+### Changed
+
+- Documentation pages are `.mdx` and use Starlight components — tabs for alternatives, asides for caveats, steps for setup, badges for what each request throws, and filename bars on code blocks.
+
 ## [0.4.0] - 2026-08-16
 
 ### Added

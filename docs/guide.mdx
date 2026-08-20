@@ -1,0 +1,261 @@
+---
+title: Guide
+description: The core building blocks — the SteamId value object, how requests turn into readonly DTOs, the exception hierarchy every SDK failure shares, and testing.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Once you have a [configured connector](/php-steam-api-sdk/configuration), three concepts carry the
+rest: the **`SteamId`** value object every request accepts, the **requests** you
+send, and the readonly **DTOs** you get back.
+
+## The `SteamId` value object
+
+`SteamId` is the only accepted identifier across the SDK — no raw strings. Which
+constructor you reach for depends on where the ID came from:
+
+<Tabs syncKey="steam-id-source">
+  <TabItem label="Verified ID">
+    ```php
+    use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+
+    // Throws InvalidSteamIdException on anything but a 17-digit numeric ID.
+    $id = SteamId::fromSteamId64('76561198000000000');
+    ```
+  </TabItem>
+  <TabItem label="User input">
+    ```php
+    use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+
+    // Returns null for anything that is not a SteamID64 or /profiles/<id> URL.
+    $id = SteamId::tryFromInput('https://steamcommunity.com/profiles/76561198000000000');
+    ```
+  </TabItem>
+  <TabItem label="Vanity URL">
+    ```php
+    use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
+    use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+
+    // A /id/<name> URL carries no Steam ID — pull the slug out and let Steam resolve it.
+    $vanity = SteamId::extractVanityName('https://steamcommunity.com/id/gabelogannewell/');
+
+    $id = $connector->send(new ResolveVanityUrlRequest($vanity))->dto();
+    ```
+  </TabItem>
+</Tabs>
+
+The underlying value is available as `$id->value` (or `(string) $id`), and two IDs
+compare with `$id->equals($other)`.
+
+<Aside type="caution" title="extractVanityName() never fails">
+It extracts a slug, it does not validate one — anything that is not a `/id/<name>` URL
+comes back unchanged. [`ResolveVanityUrlRequest`](/php-steam-api-sdk/api-reference#resolvevanityurlrequest)
+is what rejects an unknown name.
+</Aside>
+
+<Aside type="note" title="JSON is a one-way trip">
+`SteamId` implements `JsonSerializable`, so it encodes as a bare string, not a nested
+object. Decoding is not symmetric — rebuild it with `SteamId::fromSteamId64()`.
+</Aside>
+
+## Sending requests
+
+Every request is a plain Saloon `Request`. Send it through the connector and call
+`->dto()` to decode the response into typed objects:
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
+
+$summaries = $connector
+    ->send(new GetPlayerSummariesRequest([$id]))
+    ->dto();
+```
+
+The connector uses Saloon's `AlwaysThrowOnErrors`, so a non-2xx response fails before
+`->dto()` runs — always as an SDK exception, never a Saloon one. Which request returns
+which DTO is in the [API reference](/php-steam-api-sdk/api-reference).
+
+`->dto()` is a convenience, not a wall: the same `Saloon\Http\Response` still exposes
+`->status()`, `->json()` and `->body()`.
+
+## Exceptions
+
+Every SDK failure extends `SteamApiException`, so one catch handles them all:
+
+```text frame="none"
+SteamApiException                (root, extends RuntimeException)
+├── InvalidApiKeyException       API key missing, wrong, or revoked.
+├── InvalidSteamIdException      Malformed SteamID64.
+├── ProfileNotPublicException    Profile, games list, groups, or stats are private.
+├── StatsUnavailableException    Stats withheld: no such stats, or private profile.
+├── SteamRateLimitException      Daily 100k quota reached; exposes the offending Limit.
+├── SteamUserNotFoundException   Vanity URL unresolved or profile missing.
+└── TooManySteamIdsException     More than 100 IDs in a batch request.
+```
+
+Catch the leaf you care about, or the root to handle every SDK failure uniformly:
+
+<Tabs syncKey="steam-error-handling">
+  <TabItem label="Catch everything">
+    ```php
+    use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+
+    try {
+        $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+    } catch (SteamApiException $e) {
+        // Every SDK failure lands here — auth, privacy, quota, transport.
+        $logger->error($e->getMessage(), ['status' => $e->getCode()]);
+
+        $summaries = [];
+    }
+    ```
+  </TabItem>
+  <TabItem label="Catch specific">
+    ```php
+    use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+    use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+    use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
+
+    try {
+        $library = $connector->send(new GetOwnedGamesRequest($id))->dto();
+    } catch (ProfileNotPublicException) {
+        $library = [];  // expected — a hidden library is not an error worth logging
+    } catch (SteamRateLimitException $e) {
+        $logger->warning(sprintf('Steam quota spent, retry in %ds.', $e->limit->getRemainingSeconds()));
+
+        throw $e;
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+The [API reference](/php-steam-api-sdk/api-reference) notes which request throws which exception.
+
+### Inspecting the failed response
+
+Exceptions raised from an HTTP failure carry the response that produced them, and
+their code is the HTTP status:
+
+```php {6,7}
+use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+
+try {
+    $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+} catch (SteamApiException $e) {
+    $e->getCode();          // 403
+    $e->response?->body();  // raw Steam payload, or null for client-side failures
+}
+```
+
+<Aside type="note" title="A null response is routine, not an edge case">
+`response` is `null` for every failure raised before a request went out: a malformed
+SteamID64, an oversized batch, or the quota exhausted locally.
+</Aside>
+
+### How statuses are mapped
+
+Steam signals failure in two different ways, and the SDK reads both:
+
+| Steam's answer | Exception |
+| --- | --- |
+| `400` + HTML naming the `key` parameter | `InvalidApiKeyException` (missing) |
+| `403` + HTML naming the `key` parameter | `InvalidApiKeyException` (rejected) |
+| `400` + JSON, on `ISteamUserStats` | `StatsUnavailableException` / `ProfileNotPublicException` |
+| `401` or `403` | `ProfileNotPublicException` |
+| `429` | `SteamRateLimitException` |
+| any other `4xx` / `5xx` | `SteamApiException` |
+| `200` with an empty or `success: 42` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` |
+
+Steam overloads `400` across unrelated causes. Key errors are the one case it answers
+with HTML rather than JSON — that is what keeps a misconfigured key from surfacing as a
+data problem.
+
+<Aside type="caution" title="One endpoint answers ambiguously">
+`GetPlayerAchievements` returns a byte-identical `Requested app has no stats` body for
+an app without achievements and for a private profile, so `StatsUnavailableException`
+names both causes rather than guessing.
+</Aside>
+
+## Testing
+
+The connector is stock Saloon, so `MockClient` fakes it with no SDK-specific helper.
+`->dto()` still runs against the fake, so assertions are against real DTOs:
+
+<Tabs syncKey="php-test-runner">
+  <TabItem label="Pest">
+    ```php
+    use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
+    use Saloon\Http\Faking\MockClient;
+    use Saloon\Http\Faking\MockResponse;
+
+    it('reads the persona name off a summary', function (): void {
+        $mock = new MockClient([
+            GetPlayerSummariesRequest::class => MockResponse::make([
+                'response' => ['players' => [/* ... */]],
+            ]),
+        ]);
+
+        $connector = new SteamConnector(new SteamConfig('test-key'));
+        $connector->withMockClient($mock);
+
+        $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+
+        expect($summaries[0]->personaName)->toBe('gabelogannewell');
+    });
+    ```
+  </TabItem>
+  <TabItem label="PHPUnit">
+    ```php
+    use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
+    use Saloon\Http\Faking\MockClient;
+    use Saloon\Http\Faking\MockResponse;
+
+    final class PlayerSummariesTest extends TestCase
+    {
+        public function test_it_reads_the_persona_name_off_a_summary(): void
+        {
+            $mock = new MockClient([
+                GetPlayerSummariesRequest::class => MockResponse::make([
+                    'response' => ['players' => [/* ... */]],
+                ]),
+            ]);
+
+            $connector = new SteamConnector(new SteamConfig('test-key'));
+            $connector->withMockClient($mock);
+
+            $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+
+            $this->assertSame('gabelogannewell', $summaries[0]->personaName);
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Reset the budget between tests">
+`MemoryStore` keeps its backing array **static**, so the counter survives from one test
+to the next and a long suite can trip `SteamRateLimitException` on its own. Clear it in
+your setup hook.
+</Aside>
+
+<Tabs syncKey="php-test-runner">
+  <TabItem label="Pest">
+    ```php title="tests/Pest.php"
+    use Saloon\RateLimitPlugin\Stores\MemoryStore;
+
+    beforeEach(fn () => MemoryStore::clear());
+    ```
+  </TabItem>
+  <TabItem label="PHPUnit">
+    ```php title="tests/TestCase.php"
+    use Saloon\RateLimitPlugin\Stores\MemoryStore;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        MemoryStore::clear();
+    }
+    ```
+  </TabItem>
+</Tabs>

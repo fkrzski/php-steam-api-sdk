@@ -1,6 +1,6 @@
 ---
 title: Guide
-description: The core building blocks — the SteamId value object, how requests turn into readonly DTOs, and the exception hierarchy every SDK failure shares.
+description: The core building blocks — the SteamId value object, how requests turn into readonly DTOs, the exception hierarchy every SDK failure shares, and testing.
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -175,3 +175,87 @@ data problem.
 an app without achievements and for a private profile, so `StatsUnavailableException`
 names both causes rather than guessing.
 </Aside>
+
+## Testing
+
+The connector is stock Saloon, so `MockClient` fakes it with no SDK-specific helper.
+`->dto()` still runs against the fake, so assertions are against real DTOs:
+
+<Tabs syncKey="php-test-runner">
+  <TabItem label="Pest">
+    ```php
+    use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
+    use Saloon\Http\Faking\MockClient;
+    use Saloon\Http\Faking\MockResponse;
+
+    it('reads the persona name off a summary', function (): void {
+        $mock = new MockClient([
+            GetPlayerSummariesRequest::class => MockResponse::make([
+                'response' => ['players' => [/* ... */]],
+            ]),
+        ]);
+
+        $connector = new SteamConnector(new SteamConfig('test-key'));
+        $connector->withMockClient($mock);
+
+        $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+
+        expect($summaries[0]->personaName)->toBe('gabelogannewell');
+    });
+    ```
+  </TabItem>
+  <TabItem label="PHPUnit">
+    ```php
+    use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
+    use Saloon\Http\Faking\MockClient;
+    use Saloon\Http\Faking\MockResponse;
+
+    final class PlayerSummariesTest extends TestCase
+    {
+        public function test_it_reads_the_persona_name_off_a_summary(): void
+        {
+            $mock = new MockClient([
+                GetPlayerSummariesRequest::class => MockResponse::make([
+                    'response' => ['players' => [/* ... */]],
+                ]),
+            ]);
+
+            $connector = new SteamConnector(new SteamConfig('test-key'));
+            $connector->withMockClient($mock);
+
+            $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+
+            $this->assertSame('gabelogannewell', $summaries[0]->personaName);
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Reset the budget between tests">
+`MemoryStore` keeps its backing array **static**, so the counter survives from one test
+to the next and a long suite can trip `SteamRateLimitException` on its own. Clear it in
+your setup hook.
+</Aside>
+
+<Tabs syncKey="php-test-runner">
+  <TabItem label="Pest">
+    ```php title="tests/Pest.php"
+    use Saloon\RateLimitPlugin\Stores\MemoryStore;
+
+    beforeEach(fn () => MemoryStore::clear());
+    ```
+  </TabItem>
+  <TabItem label="PHPUnit">
+    ```php title="tests/TestCase.php"
+    use Saloon\RateLimitPlugin\Stores\MemoryStore;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        MemoryStore::clear();
+    }
+    ```
+  </TabItem>
+</Tabs>

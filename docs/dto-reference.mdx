@@ -91,7 +91,7 @@ Returned by [`GetPlayerSummariesRequest`](/php-steam-api-sdk/api-reference#getpl
 | `personaState` | `PersonaState` | Online / away / offline, etc. |
 | `realName` | `?string` | Real name, if shared. |
 | `primaryClanId` | `?string` | Primary group ID, if any. |
-| `timeCreated` | `DateTimeImmutable` | Account creation time. |
+| `timeCreated` | `?DateTimeImmutable` | Account creation time, if exposed. |
 | `lastLogOff` | `?DateTimeImmutable` | Last logout, if exposed. |
 | `gameId` | `?string` | App ID currently being played. |
 | `gameExtraInfo` | `?string` | Title of the game being played. |
@@ -99,6 +99,12 @@ Returned by [`GetPlayerSummariesRequest`](/php-steam-api-sdk/api-reference#getpl
 | `countryCode` | `?string` | ISO country code, if shared. |
 | `stateCode` | `?string` | State/region code, if shared. |
 | `cityId` | `?int` | Steam city ID, if shared. |
+
+<Aside type="caution" title="A hidden profile arrives stripped">
+When `communityVisibility` is `Hidden`, Steam sends only the identity and avatar fields —
+`timeCreated`, `realName`, `primaryClanId`, `countryCode`, `stateCode` and `cityId` all come
+back `null`, and a mixed batch returns those summaries alongside the public ones.
+</Aside>
 
 ## UserGroup
 

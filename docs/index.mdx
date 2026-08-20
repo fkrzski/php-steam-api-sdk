@@ -6,6 +6,8 @@ packagist: fkrzski/php-steam-api-sdk
 status: stable
 ---
 
+import { Aside, Steps } from '@astrojs/starlight/components';
+
 A framework-agnostic PHP SDK for the [Steam Web API](https://steamcommunity.com/dev),
 built on top of [Saloon](https://docs.saloon.dev/) v4. Every request returns a
 strongly-typed, readonly DTO — you never touch raw JSON, and a malformed profile
@@ -16,7 +18,7 @@ fails with a domain exception instead of a silent `null`.
 - **Strongly typed** — PHP 8.5, PHPStan max, 100% type coverage.
 - **Readonly DTOs** — immutable objects with `DateTimeImmutable`, never framework date wrappers.
 - **Domain exceptions** — one hierarchy rooted at `SteamApiException` for every failure.
-- **Rate limit baked in** — the 100 000 requests/day quota is enforced by the connector.
+- **Rate limit baked in** — the 100 000 requests/day quota is enforced by the connector, per API key.
 - **Zero framework coupling** — plain Saloon; a [Laravel bridge](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
 
 ## Requirements
@@ -26,19 +28,45 @@ fails with a domain exception instead of a silent `null`.
 
 ## Installation
 
-```bash
-composer require fkrzski/php-steam-api-sdk
-```
+<Steps>
+
+1. Pull the package in:
+
+   ```bash
+   composer require fkrzski/php-steam-api-sdk
+   ```
+
+2. Keep your [Steam Web API key](https://steamcommunity.com/dev) out of the source tree:
+
+   ```dotenv title=".env"
+   STEAM_API_KEY=your-steam-web-api-key
+   ```
+
+3. Build a connector from it, and reuse that one instance — it carries the key and
+   the daily budget:
+
+   ```php title="steam.php" "$_ENV['STEAM_API_KEY']"
+   use Fkrzski\SteamApiSdk\SteamConfig;
+   use Fkrzski\SteamApiSdk\SteamConnector;
+
+   $connector = new SteamConnector(new SteamConfig(
+       apiKey: $_ENV['STEAM_API_KEY'],
+   ));
+   ```
+
+</Steps>
+
+<Aside type="tip" title="On Laravel?">
+Skip the wiring — the [Laravel bridge](https://docs.fkrzski.dev/laravel-steam-api-sdk)
+auto-discovers a `Steam` facade, reads the key from config, and shares the daily budget
+through your cache store.
+</Aside>
 
 ## Quickstart
 
 ```php
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
-use Fkrzski\SteamApiSdk\SteamConfig;
-use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
-
-$connector = new SteamConnector(new SteamConfig(apiKey: 'YOUR_STEAM_API_KEY'));
 
 $summaries = $connector
     ->send(new GetPlayerSummariesRequest([SteamId::fromSteamId64('76561198000000000')]))
@@ -48,10 +76,3 @@ echo $summaries[0]->personaName;
 ```
 
 Call `->dto()` on any Saloon response to get the readonly DTO for that request.
-
-## Next steps
-
-- [Guide](/php-steam-api-sdk/guide) — the `SteamId` value object, sending requests, and the exception hierarchy.
-- [Configuration](/php-steam-api-sdk/configuration) — the connector, `SteamConfig` options, and rate limiting.
-- [API reference](/php-steam-api-sdk/api-reference) — every request, its parameters, return type, and errors.
-- [Data objects](/php-steam-api-sdk/dto-reference) — the DTOs and enums the SDK decodes responses into.

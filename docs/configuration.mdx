@@ -1,0 +1,135 @@
+---
+title: Configuration
+description: Configure the SteamConnector through the readonly SteamConfig — the API key, the rate-limit store, and how the daily quota is enforced across processes.
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The connector is configured once, through a readonly `SteamConfig` — everything the SDK
+needs at runtime lives on that object.
+
+## The connector
+
+`SteamConnector` targets `https://api.steampowered.com` and carries your credentials:
+
+<Steps>
+
+1. Keep your [Steam Web API key](https://steamcommunity.com/dev) out of the source tree:
+
+   ```dotenv title=".env"
+   STEAM_API_KEY=your-steam-web-api-key
+   ```
+
+2. Hand it to a `SteamConfig`, and the config to a connector:
+
+   ```php title="steam.php" "$_ENV['STEAM_API_KEY']"
+   use Fkrzski\SteamApiSdk\SteamConfig;
+   use Fkrzski\SteamApiSdk\SteamConnector;
+
+   $connector = new SteamConnector(new SteamConfig(
+       apiKey: $_ENV['STEAM_API_KEY'],
+   ));
+   ```
+
+3. Reuse that one connector — it carries the key and the daily budget, so building a
+   fresh one per call buys you nothing.
+
+</Steps>
+
+The key is appended to every request as the `key` query parameter, so you never pass it
+per call.
+
+## SteamConfig options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `apiKey` | `string` | — (required) | Your Steam Web API key. |
+| `rateLimitStore` | `?RateLimitStore` | `MemoryStore` | Where the daily request budget is tracked. |
+
+<Aside type="note" title="Readonly, so replace rather than mutate">
+`SteamConfig` is `final readonly` — to change a setting, construct a new config and a
+new connector.
+</Aside>
+
+## Rate limiting
+
+The Steam Web API allows **100 000 requests per API key per day**. The connector
+enforces this via [`saloonphp/rate-limit-plugin`](https://github.com/saloonphp/rate-limit-plugin)
+and throws `SteamRateLimitException` once the budget is spent — locally, before a
+request leaves your process. The exception carries the `Limit` that tripped:
+
+```php
+use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+
+try {
+    $connector->send($request)->dto();
+} catch (SteamRateLimitException $e) {
+    $seconds = $e->limit->getRemainingSeconds();
+}
+```
+
+## Multiple API keys
+
+The budget is tracked per API key, so one process — or one shared store — can serve
+several keys without them draining each other's quota.
+
+<Aside type="tip" title="Your key never reaches the store">
+The limiter key is `SteamConnector:` plus a **SHA-256 hash** of the API key, so a shared
+store holds counters, never credentials.
+</Aside>
+
+## Sharing the budget across processes
+
+The default `MemoryStore` keeps its backing array static, so the budget is process-wide.
+That is fine for a script, but every FPM or queue worker then gets a counter of its own
+and the real quota can be overrun several times over.
+
+Inject a shared store instead — any `Saloon\RateLimitPlugin\Contracts\RateLimitStore`
+is accepted:
+
+```php
+$connector = new SteamConnector(new SteamConfig(
+    apiKey: $_ENV['STEAM_API_KEY'],
+    rateLimitStore: $store,
+));
+```
+
+<Tabs syncKey="steam-rate-limit-store">
+  <TabItem label="Redis (Predis)">
+    ```php
+    use Saloon\RateLimitPlugin\Stores\PredisStore;
+
+    $store = new PredisStore(new Predis\Client());
+    ```
+  </TabItem>
+  <TabItem label="Redis (ext-redis)">
+    ```php
+    use Saloon\RateLimitPlugin\Stores\RedisStore;
+
+    $redis = new Redis();
+    $redis->connect('127.0.0.1');
+
+    $store = new RedisStore($redis);
+    ```
+  </TabItem>
+  <TabItem label="PSR-16 cache">
+    ```php
+    use Saloon\RateLimitPlugin\Stores\PsrStore;
+
+    // $cache is any Psr\SimpleCache\CacheInterface implementation.
+    $store = new PsrStore($cache);
+    ```
+  </TabItem>
+  <TabItem label="Filesystem">
+    ```php
+    use Saloon\RateLimitPlugin\Stores\FileStore;
+
+    $store = new FileStore(__DIR__.'/storage/steam-rate-limit');
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="A per-process store is not a shared one">
+`MemoryStore` and a `FileStore` on ephemeral disk both look fine in development and stop
+working the moment you scale out. Pick a store every process genuinely reaches.
+</Aside>

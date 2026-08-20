@@ -1,0 +1,234 @@
+---
+title: API reference
+description: Every request the SDK ships — constructor signature, query parameters, the readonly DTO it returns, and the exceptions each one can throw.
+---
+
+import { Aside, Badge, FileTree } from '@astrojs/starlight/components';
+
+Each request is a Saloon `Request`; send it with `$connector->send($request)` and
+call `->dto()` on the response. Every argument that identifies a user is a
+[`SteamId`](/php-steam-api-sdk/guide#the-steamid-value-object); the shapes coming back are
+documented in [Data objects](/php-steam-api-sdk/dto-reference).
+
+Badges list what a request throws on its own. On top of that, any request can raise
+`InvalidApiKeyException`, `SteamRateLimitException` or `SteamApiException` from the
+connector — see [Exceptions](/php-steam-api-sdk/guide#exceptions).
+
+Requests are namespaced by the Steam interface they belong to, so the `use` statement
+tells you which part of the Web API you are talking to:
+
+<FileTree>
+
+- src/Http/Requests
+  - IPlayerService
+    - GetOwnedGamesRequest.php
+  - ISteamUser
+    - GetFriendListRequest.php
+    - GetPlayerBansRequest.php
+    - GetPlayerSummariesRequest.php
+    - GetUserGroupListRequest.php
+    - ResolveVanityUrlRequest.php
+  - ISteamUserStats
+    - GetPlayerAchievementsRequest.php
+    - GetUserStatsForGameRequest.php
+
+</FileTree>
+
+| Request | Returns |
+| --- | --- |
+| [`GetFriendListRequest`](#getfriendlistrequest) | `list<Friend>` |
+| [`GetOwnedGamesRequest`](#getownedgamesrequest) | `list<OwnedGame>` |
+| [`GetPlayerAchievementsRequest`](#getplayerachievementsrequest) | `PlayerAchievements` |
+| [`GetPlayerBansRequest`](#getplayerbansrequest) | `list<PlayerBan>` |
+| [`GetPlayerSummariesRequest`](#getplayersummariesrequest) | `list<PlayerSummary>` |
+| [`GetUserGroupListRequest`](#getusergrouplistrequest) | `list<UserGroup>` |
+| [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `UserStats` |
+| [`ResolveVanityUrlRequest`](#resolvevanityurlrequest) | `SteamId` |
+
+## GetFriendListRequest
+
+```text frame="none"
+new GetFriendListRequest(SteamId $steamId, ?FriendRelationship $relationship = null)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+The player's friends. Pass a `FriendRelationship` to filter; omit it for all
+relationships. A private friend list is refused with a `401`, not an empty payload.
+
+```php
+use Fkrzski\SteamApiSdk\Enums\FriendRelationship;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
+
+$friends = $connector
+    ->send(new GetFriendListRequest($steamId, FriendRelationship::Friend))
+    ->dto();
+```
+
+## GetOwnedGamesRequest
+
+```text frame="none"
+new GetOwnedGamesRequest(
+    SteamId $steamId,
+    list<int> $appIdsFilter = [],
+    bool $includeAppInfo = false,
+    bool $includePlayedFreeGames = false,
+)
+```
+
+<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+The games a player owns. `appIdsFilter` narrows the result to specific app IDs;
+`includeAppInfo` adds names and icons; `includePlayedFreeGames` includes free games
+the player has launched.
+
+```php "includeAppInfo: true"
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
+
+$library = $connector->send(new GetOwnedGamesRequest(
+    steamId: $steamId,
+    appIdsFilter: [381210],
+    includeAppInfo: true,
+))->dto();
+```
+
+<Aside type="caution" title="name and imgIconUrl are opt-in">
+Without `includeAppInfo: true` both properties on every
+[`OwnedGame`](/php-steam-api-sdk/dto-reference#ownedgame) are `null` — Steam does not send them.
+</Aside>
+
+## GetPlayerAchievementsRequest
+
+```text frame="none"
+new GetPlayerAchievementsRequest(SteamId $steamId, int $appId, ?string $language = null)
+```
+
+<p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws StatsUnavailableException" variant="danger" size="small" /></p>
+
+A player's achievements for one game, each with its unlock state and time. The
+exception covers two causes — no achievements on the app, or a hidden profile — because
+Steam reports them identically.
+
+```php "language: 'english'"
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
+
+$result = $connector->send(new GetPlayerAchievementsRequest(
+    steamId: $steamId,
+    appId: 381210,
+    language: 'english',
+))->dto();
+
+foreach ($result->achievements as $achievement) {
+    echo $achievement->apiName, ' — ', $achievement->achieved ? 'unlocked' : 'locked', PHP_EOL;
+}
+```
+
+<Aside type="caution" title="Without a language you get API names only">
+`name` and `description` on every
+[`PlayerAchievement`](/php-steam-api-sdk/dto-reference#playerachievements) stay `null` until you
+ask for a language. `apiName` and `achieved` are always populated.
+</Aside>
+
+## GetPlayerBansRequest
+
+```text frame="none"
+new GetPlayerBansRequest(list<SteamId> $steamIds)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
+
+VAC, game, community and economy ban status for **1 to 100** players. Unlike the other
+batch endpoint this one needs no public profile — bans come back for private profiles too.
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerBansRequest;
+
+$bans = $connector->send(new GetPlayerBansRequest([$steamId]))->dto();
+
+foreach ($bans as $ban) {
+    echo $ban->steamId, ' — VAC bans: ', $ban->numberOfVacBans, PHP_EOL;
+}
+```
+
+## GetPlayerSummariesRequest
+
+```text frame="none"
+new GetPlayerSummariesRequest(list<SteamId> $steamIds)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
+
+Public profile summaries for **1 to 100** players. Both limits are checked in the
+constructor, so a bad batch costs no quota.
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
+
+$summaries = $connector->send(new GetPlayerSummariesRequest([$steamId]))->dto();
+
+foreach ($summaries as $summary) {
+    echo $summary->personaName, ' — ', $summary->profileUrl, PHP_EOL;
+}
+```
+
+## GetUserGroupListRequest
+
+```text frame="none"
+new GetUserGroupListRequest(SteamId $steamId)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+The Steam groups a player belongs to. Only group IDs come back — Steam exposes no
+group metadata on this endpoint.
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetUserGroupListRequest;
+
+$groups = $connector->send(new GetUserGroupListRequest($steamId))->dto();
+
+foreach ($groups as $group) {
+    echo $group->gid, PHP_EOL;
+}
+```
+
+## GetUserStatsForGameRequest
+
+```text frame="none"
+new GetUserStatsForGameRequest(SteamId $steamId, int $appId, ?string $language = null)
+```
+
+<p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+A player's stats and achievement flags for one game. `language` localises achievement
+metadata (e.g. `'english'`).
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
+
+$stats = $connector
+    ->send(new GetUserStatsForGameRequest(steamId: $steamId, appId: 381210))
+    ->dto();
+
+foreach ($stats->stats as $stat) {
+    echo $stat->name, ' = ', $stat->value, PHP_EOL;
+}
+```
+
+## ResolveVanityUrlRequest
+
+```text frame="none"
+new ResolveVanityUrlRequest(string $vanityName)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws SteamUserNotFoundException" variant="danger" size="small" /></p>
+
+Resolves a vanity slug — the `<name>` in `steamcommunity.com/id/<name>` — to a
+`SteamId`. Working from a full URL? Run it through
+[`SteamId::extractVanityName()`](/php-steam-api-sdk/guide#the-steamid-value-object) first.
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
+
+$steamId = $connector->send(new ResolveVanityUrlRequest('gabelogannewell'))->dto();
+```

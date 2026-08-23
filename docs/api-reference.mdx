@@ -22,6 +22,7 @@ tells you which part of the Web API you are talking to:
 - src/Http/Requests
   - IPlayerService
     - GetOwnedGamesRequest.php
+    - GetRecentlyPlayedGamesRequest.php
   - ISteamUser
     - GetFriendListRequest.php
     - GetPlayerBansRequest.php
@@ -41,6 +42,7 @@ tells you which part of the Web API you are talking to:
 | [`GetPlayerAchievementsRequest`](#getplayerachievementsrequest) | `PlayerAchievements` |
 | [`GetPlayerBansRequest`](#getplayerbansrequest) | `list<PlayerBan>` |
 | [`GetPlayerSummariesRequest`](#getplayersummariesrequest) | `list<PlayerSummary>` |
+| [`GetRecentlyPlayedGamesRequest`](#getrecentlyplayedgamesrequest) | `RecentlyPlayedGames` |
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `list<UserGroup>` |
 | [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `UserStats` |
 | [`ResolveVanityUrlRequest`](#resolvevanityurlrequest) | `SteamId` |
@@ -170,6 +172,37 @@ foreach ($summaries as $summary) {
     echo $summary->personaName, ' — ', $summary->profileUrl, PHP_EOL;
 }
 ```
+
+## GetRecentlyPlayedGamesRequest
+
+```text frame="none"
+new GetRecentlyPlayedGamesRequest(SteamId $steamId, ?int $count = null)
+```
+
+<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+What a player launched in the last two weeks. `count` caps how many games come back,
+while `totalCount` on the result stays the full figure — that is how you tell a truncated
+list from a complete one.
+
+```php "count: 2"
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetRecentlyPlayedGamesRequest;
+
+$recent = $connector->send(new GetRecentlyPlayedGamesRequest(
+    steamId: $steamId,
+    count: 2,
+))->dto();
+
+foreach ($recent->games as $game) {
+    echo $game->name, ' — ', $game->playtimeTwoWeeks, ' min', PHP_EOL;
+}
+```
+
+<Aside type="caution" title="An idle player is not a failure">
+A player who launched nothing comes back as `totalCount: 0` with an empty `games` list.
+The exception is reserved for the payload Steam withholds, which it sends both for a
+hidden profile and for a SteamID64 that belongs to no account.
+</Aside>
 
 ## GetUserGroupListRequest
 

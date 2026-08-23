@@ -170,10 +170,11 @@ Steam overloads `400` across unrelated causes. Key errors are the one case it an
 with HTML rather than JSON — that is what keeps a misconfigured key from surfacing as a
 data problem.
 
-<Aside type="caution" title="One endpoint answers ambiguously">
-`GetPlayerAchievements` returns a byte-identical `Requested app has no stats` body for
-an app without achievements and for a private profile, so `StatsUnavailableException`
-names both causes rather than guessing.
+<Aside type="caution" title="Two endpoints answer ambiguously">
+`GetPlayerAchievements` returns a byte-identical `Requested app has no stats` body for an
+app without achievements and for a private profile. `GetRecentlyPlayedGames` returns an
+empty payload both for a hidden profile and for a SteamID64 that belongs to no account.
+Both messages name every cause rather than guessing.
 </Aside>
 
 ## Testing

@@ -106,6 +106,29 @@ When `communityVisibility` is `Hidden`, Steam sends only the identity and avatar
 back `null`, and a mixed batch returns those summaries alongside the public ones.
 </Aside>
 
+## RecentlyPlayedGames
+
+Returned by [`GetRecentlyPlayedGamesRequest`](/php-steam-api-sdk/api-reference#getrecentlyplayedgamesrequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `totalCount` | `int` | Unique games played in the last two weeks, ignoring `count`. |
+| `games` | `list<RecentlyPlayedGame>` | Per-game playtime, capped by `count`. |
+
+Each `RecentlyPlayedGame` carries:
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `appId` | `int` | Steam app ID. |
+| `name` | `string` | Game title. |
+| `playtimeTwoWeeks` | `int` | Playtime in the last two weeks, in minutes. |
+| `playtimeForever` | `int` | Total playtime, in minutes. |
+| `imgIconUrl` | `string` | Icon hash. |
+| `playtimeWindowsForever` | `int` | Total playtime on Windows, in minutes. |
+| `playtimeMacForever` | `int` | Total playtime on macOS, in minutes. |
+| `playtimeLinuxForever` | `int` | Total playtime on Linux, in minutes. |
+| `playtimeDeckForever` | `int` | Total playtime on Steam Deck, in minutes. |
+
 ## UserGroup
 
 Returned by [`GetUserGroupListRequest`](/php-steam-api-sdk/api-reference#getusergrouplistrequest).

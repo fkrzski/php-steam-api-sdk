@@ -1,0 +1,46 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "total_count": 3,
+            "games": [
+                {
+                    "appid": 220260,
+                    "name": "Farming Simulator 2013: Titanium Edition",
+                    "playtime_2weeks": 1975,
+                    "playtime_forever": 6583,
+                    "img_icon_url": "79a6827ff70f6e6ccfb7878e548011b6805c0143",
+                    "playtime_windows_forever": 6583,
+                    "playtime_mac_forever": 0,
+                    "playtime_linux_forever": 0,
+                    "playtime_deck_forever": 0
+                },
+                {
+                    "appid": 566160,
+                    "name": "Zup! 6",
+                    "playtime_2weeks": 89,
+                    "playtime_forever": 220,
+                    "img_icon_url": "09e6bef7c6511478bda53be512e777dd0be06295",
+                    "playtime_windows_forever": 130,
+                    "playtime_mac_forever": 0,
+                    "playtime_linux_forever": 89,
+                    "playtime_deck_forever": 0
+                },
+                {
+                    "appid": 658560,
+                    "name": "Zup! 7",
+                    "playtime_2weeks": 55,
+                    "playtime_forever": 154,
+                    "img_icon_url": "9e336842c3f7341772fe45694ac907f0df209534",
+                    "playtime_windows_forever": 99,
+                    "playtime_mac_forever": 0,
+                    "playtime_linux_forever": 55,
+                    "playtime_deck_forever": 0
+                }
+            ]
+        }
+    }
+}

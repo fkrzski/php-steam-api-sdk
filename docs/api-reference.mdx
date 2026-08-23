@@ -23,6 +23,7 @@ tells you which part of the Web API you are talking to:
   - IPlayerService
     - GetOwnedGamesRequest.php
     - GetRecentlyPlayedGamesRequest.php
+    - GetSteamLevelRequest.php
   - ISteamUser
     - GetFriendListRequest.php
     - GetPlayerBansRequest.php
@@ -43,6 +44,7 @@ tells you which part of the Web API you are talking to:
 | [`GetPlayerBansRequest`](#getplayerbansrequest) | `list<PlayerBan>` |
 | [`GetPlayerSummariesRequest`](#getplayersummariesrequest) | `list<PlayerSummary>` |
 | [`GetRecentlyPlayedGamesRequest`](#getrecentlyplayedgamesrequest) | `RecentlyPlayedGames` |
+| [`GetSteamLevelRequest`](#getsteamlevelrequest) | `int` |
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `list<UserGroup>` |
 | [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `UserStats` |
 | [`ResolveVanityUrlRequest`](#resolvevanityurlrequest) | `SteamId` |
@@ -202,6 +204,29 @@ foreach ($recent->games as $game) {
 A player who launched nothing comes back as `totalCount: 0` with an empty `games` list.
 The exception is reserved for the payload Steam withholds, which it sends both for a
 hidden profile and for a SteamID64 that belongs to no account.
+</Aside>
+
+## GetSteamLevelRequest
+
+```text frame="none"
+new GetSteamLevelRequest(SteamId $steamId)
+```
+
+<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+The player's Steam community level, as a plain `int` rather than a DTO. Hiding game
+details leaves it readable — only a profile Steam withholds altogether comes back empty,
+and that is what raises the exception.
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetSteamLevelRequest;
+
+$level = $connector->send(new GetSteamLevelRequest($steamId))->dto();
+```
+
+<Aside type="caution" title="Level 0 also answers for an account that does not exist">
+Steam reports level `0` for a SteamID64 belonging to no account, exactly as it does for a
+brand-new one. Nothing in the payload separates the two, so neither does the SDK.
 </Aside>
 
 ## GetUserGroupListRequest

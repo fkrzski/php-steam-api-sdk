@@ -1,0 +1,40 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "badges": [
+                {
+                    "badgeid": 69,
+                    "level": 1,
+                    "completion_time": 1787222588,
+                    "xp": 50,
+                    "scarcity": 30146528
+                },
+                {
+                    "badgeid": 57,
+                    "level": 4,
+                    "completion_time": 1638131598,
+                    "xp": 0,
+                    "scarcity": 1322268
+                },
+                {
+                    "badgeid": 1,
+                    "appid": 730,
+                    "level": 5,
+                    "completion_time": 1497464816,
+                    "xp": 500,
+                    "communityitemid": "4779743956",
+                    "border_color": 0,
+                    "scarcity": 10584777
+                }
+            ],
+            "player_xp": 18668,
+            "player_level": 56,
+            "player_xp_needed_to_level_up": 532,
+            "player_xp_needed_current_level": 18600
+        }
+    }
+}

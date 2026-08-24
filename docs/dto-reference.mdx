@@ -53,6 +53,36 @@ Each `PlayerAchievement` carries:
 | `name` | `?string` | Display name (needs `language`). |
 | `description` | `?string` | Description (needs `language`). |
 
+## PlayerBadges
+
+Returned by [`GetBadgesRequest`](/php-steam-api-sdk/api-reference#getbadgesrequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `badges` | `list<Badge>` | Every badge the account has earned. |
+| `playerXp` | `int` | Total experience on the account. |
+| `playerLevel` | `int` | Steam community level. |
+| `xpNeededToLevelUp` | `int` | Experience still missing for the next level. |
+| `xpNeededForCurrentLevel` | `int` | Experience the current level started at. |
+
+Each `Badge` carries:
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `badgeId` | `int` | Steam's badge ID, unique only together with `appId`. |
+| `appId` | `?int` | App the badge belongs to, `null` outside trading cards. |
+| `level` | `int` | Badge level. |
+| `completedAt` | `DateTimeImmutable` | When the badge was earned. |
+| `xp` | `int` | Experience the badge contributes to `playerXp`. |
+| `communityItemId` | `?string` | Community item ID, `null` outside trading cards. |
+| `borderColor` | `?int` | Steam's border code, `null` outside trading cards. |
+| `scarcity` | `int` | How many accounts hold this badge. |
+
+<Aside type="note" title="communityItemId stays a string">
+Steam sends it as a string and the values run past what a 32-bit `int` holds, so the SDK
+keeps the wire type instead of casting.
+</Aside>
+
 ## PlayerBan
 
 Returned by [`GetPlayerBansRequest`](/php-steam-api-sdk/api-reference#getplayerbansrequest).

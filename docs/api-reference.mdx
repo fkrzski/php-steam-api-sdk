@@ -21,6 +21,7 @@ tells you which part of the Web API you are talking to:
 
 - src/Http/Requests
   - IPlayerService
+    - GetBadgesRequest.php
     - GetOwnedGamesRequest.php
     - GetRecentlyPlayedGamesRequest.php
     - GetSteamLevelRequest.php
@@ -38,6 +39,7 @@ tells you which part of the Web API you are talking to:
 
 | Request | Returns |
 | --- | --- |
+| [`GetBadgesRequest`](#getbadgesrequest) | `PlayerBadges` |
 | [`GetFriendListRequest`](#getfriendlistrequest) | `list<Friend>` |
 | [`GetOwnedGamesRequest`](#getownedgamesrequest) | `list<OwnedGame>` |
 | [`GetPlayerAchievementsRequest`](#getplayerachievementsrequest) | `PlayerAchievements` |
@@ -48,6 +50,40 @@ tells you which part of the Web API you are talking to:
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `list<UserGroup>` |
 | [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `UserStats` |
 | [`ResolveVanityUrlRequest`](#resolvevanityurlrequest) | `SteamId` |
+
+## GetBadgesRequest
+
+```text frame="none"
+new GetBadgesRequest(SteamId $steamId)
+```
+
+<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+Every badge a player has earned, plus the experience behind their community level.
+Badges that come from trading cards name the app they belong to; the rest — event and
+milestone badges — leave `appId` null, which is what separates the two kinds.
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetBadgesRequest;
+
+$badges = $connector->send(new GetBadgesRequest($steamId))->dto();
+
+echo $badges->playerLevel, ' — ', $badges->xpNeededToLevelUp, ' XP to go', PHP_EOL;
+
+foreach ($badges->badges as $badge) {
+    echo $badge->badgeId, ' level ', $badge->level, PHP_EOL;
+}
+```
+
+`badgeId` is not unique on its own: trading card badges repeat the same ID across
+different apps and are told apart by `appId`, so the result stays a list rather than a map.
+
+<Aside type="caution" title="An account with no badges answers like one that does not exist">
+A brand-new account and a SteamID64 belonging to nobody both come back as level `0` with
+no badges at all, byte for byte. Neither is treated as a failure, and the SDK does not
+guess between them. The exception is reserved for the empty payload Steam sends for a
+profile it withholds.
+</Aside>
 
 ## GetFriendListRequest
 

@@ -6,6 +6,9 @@ use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
+use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
+use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
+use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
@@ -28,6 +31,14 @@ test('default query carries api key', function (): void {
     $connector = new SteamConnector(new SteamConfig('secret-key'));
 
     expect($connector->query()->all())->toBe(['key' => 'secret-key']);
+});
+
+test('resource accessors expose one resource per Steam interface', function (): void {
+    $connector = new SteamConnector(new SteamConfig('any'));
+
+    expect($connector->players())->toBeInstanceOf(PlayersResource::class)
+        ->and($connector->users())->toBeInstanceOf(UsersResource::class)
+        ->and($connector->stats())->toBeInstanceOf(StatsResource::class);
 });
 
 test('connector uses AlwaysThrowOnErrors plugin', function (): void {

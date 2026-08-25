@@ -1,0 +1,24 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "quests": [
+                {
+                    "questid": 115,
+                    "completed": true
+                },
+                {
+                    "questid": 128,
+                    "completed": true
+                },
+                {
+                    "questid": 134,
+                    "completed": true
+                }
+            ]
+        }
+    }
+}

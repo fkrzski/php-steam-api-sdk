@@ -159,24 +159,25 @@ Steam signals failure in two different ways, and the SDK reads both:
 | Steam's answer | Exception |
 | --- | --- |
 | `400` + HTML naming the `key` parameter | `InvalidApiKeyException` (missing) |
-| `403` + HTML naming the `key` parameter | `InvalidApiKeyException` (rejected) |
+| `401` or `403` + HTML naming the `key` parameter | `InvalidApiKeyException` (rejected) |
 | `400` + JSON, on `ISteamUserStats` | `StatsUnavailableException` / `ProfileNotPublicException` |
-| `401` or `403` | `ProfileNotPublicException` |
+| `401` or `403` not naming the `key` parameter | `ProfileNotPublicException` |
 | `429` | `SteamRateLimitException` |
 | any other `4xx` / `5xx` | `SteamApiException` |
 | `200` with an empty or `success: 42` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` |
 
 Steam overloads `400` across unrelated causes. Key errors are the one case it answers
 with HTML rather than JSON — that is what keeps a misconfigured key from surfacing as a
-data problem. Which status a key error lands on is Steam's choice, not the SDK's:
-`ISteamUser` reports an absent key as `400`, while `IPlayerService` answers `403` for an
-absent key exactly as it does for a rejected one, so there it surfaces as rejected.
+data problem. Which status a key error lands on is the endpoint's choice, not the SDK's:
+`ISteamUser` reports an absent key as `400`, `GetBadges` and `GetSteamLevel` answer `403`,
+and `GetCommunityBadgeProgress` answers `401`. Only `ISteamUser` separates an absent key
+from a rejected one, so everywhere else it surfaces as rejected.
 
-<Aside type="caution" title="Two endpoints answer ambiguously">
+<Aside type="caution" title="Three endpoints answer ambiguously">
 `GetPlayerAchievements` returns a byte-identical `Requested app has no stats` body for an
-app without achievements and for a private profile. `GetRecentlyPlayedGames` returns an
-empty payload both for a hidden profile and for a SteamID64 that belongs to no account.
-Both messages name every cause rather than guessing.
+app without achievements and for a private profile. `GetRecentlyPlayedGames` and
+`GetCommunityBadgeProgress` return an empty payload both for a hidden profile and for a
+SteamID64 that belongs to no account. Every message names every cause rather than guessing.
 </Aside>
 
 ## Testing

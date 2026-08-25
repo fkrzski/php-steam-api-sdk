@@ -10,6 +10,15 @@ Timestamps are always `DateTimeImmutable`. A nullable property (`?`) means Steam
 the field, never that decoding failed; where an absent field would be ambiguous the SDK
 raises a [domain exception](/php-steam-api-sdk/guide#exceptions) instead.
 
+## CommunityBadgeQuest
+
+Returned by [`GetCommunityBadgeProgressRequest`](/php-steam-api-sdk/api-reference#getcommunitybadgeprogressrequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `questId` | `int` | Steam's quest ID; no public schema maps it to a name. |
+| `completed` | `bool` | Whether the account finished this quest. |
+
 ## Friend
 
 Returned by [`GetFriendListRequest`](/php-steam-api-sdk/api-reference#getfriendlistrequest).

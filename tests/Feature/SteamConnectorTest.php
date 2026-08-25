@@ -96,6 +96,13 @@ test('403 naming the key parameter maps to InvalidApiKeyException', function ():
         ->and($thrown->getMessage())->toBe('Steam rejected the API key. Check that it is valid and active.');
 });
 
+test('401 naming the key parameter maps to InvalidApiKeyException', function (): void {
+    $thrown = sendFailing(MockResponse::fixture('Errors/unauthorized-key'));
+
+    expect($thrown)->toBeInstanceOf(InvalidApiKeyException::class)
+        ->and($thrown->getMessage())->toBe('Steam rejected the API key. Check that it is valid and active.');
+});
+
 test('400 reporting a missing key maps to InvalidApiKeyException', function (): void {
     $thrown = sendFailing(MockResponse::fixture('Errors/missing-key'));
 

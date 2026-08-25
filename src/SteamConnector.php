@@ -47,7 +47,9 @@ class SteamConnector extends Connector
             return InvalidApiKeyException::missing($response);
         }
 
-        if ($status === 403 && str_contains($body, 'key=')) {
+        // Which of the two a key error lands on is the endpoint's choice, and neither
+        // separates an absent key from a rejected one.
+        if (($status === 401 || $status === 403) && str_contains($body, 'key=')) {
             return InvalidApiKeyException::rejected($response);
         }
 

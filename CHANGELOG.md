@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `GetBadgesRequest` (`IPlayerService`) with the `PlayerBadges` and `Badge` DTOs, covering every earned badge alongside the experience behind the community level. An account with no badges answers exactly like a SteamID64 that belongs to nobody, so neither is treated as a failure ([#38](https://github.com/fkrzski/php-steam-api-sdk/issues/38)).
+- `GetCommunityBadgeProgressRequest` (`IPlayerService`) with the `CommunityBadgeQuest` DTO, listing the quests behind the Steam community badge and whether each one is done. Steam's `badgeid` filter is not exposed, because every ID other than `0` answers with the same empty payload a withheld profile gets ([#39](https://github.com/fkrzski/php-steam-api-sdk/issues/39)).
 - `GetRecentlyPlayedGamesRequest` (`IPlayerService`) with the `RecentlyPlayedGames` and `RecentlyPlayedGame` DTOs and an optional `count` limit. `RecentlyPlayedGames::$totalCount` carries Steam's unlimited total, so a list truncated by `count` stays distinguishable from a complete one ([#36](https://github.com/fkrzski/php-steam-api-sdk/issues/36)).
 - `GetSteamLevelRequest` (`IPlayerService`) returning the player's Steam community level as a plain `int`. Level `0` is also what Steam answers for a SteamID64 that belongs to no account, so it is not treated as a failure ([#37](https://github.com/fkrzski/php-steam-api-sdk/issues/37)).
 - Testing guidance in the docs: faking the connector with Saloon's `MockClient`, and clearing the `MemoryStore` daily counter between tests.
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `InvalidApiKeyException` also covers a `401` whose HTML names the `key` parameter, not just a `403`. `GetCommunityBadgeProgress` answers `401` for a broken or absent key, which used to surface as `ProfileNotPublicException`.
 - **BC break.** `PlayerSummary::$timeCreated` is nullable, because Steam omits `timecreated` for a hidden profile and reading it unguarded fataled the whole `GetPlayerSummaries` batch. Callers reading the date need a null check ([#33](https://github.com/fkrzski/php-steam-api-sdk/issues/33)).
 
 ## [0.4.0] - 2026-08-16

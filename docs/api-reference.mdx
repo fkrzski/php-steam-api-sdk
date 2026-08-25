@@ -22,6 +22,7 @@ tells you which part of the Web API you are talking to:
 - src/Http/Requests
   - IPlayerService
     - GetBadgesRequest.php
+    - GetCommunityBadgeProgressRequest.php
     - GetOwnedGamesRequest.php
     - GetRecentlyPlayedGamesRequest.php
     - GetSteamLevelRequest.php
@@ -40,6 +41,7 @@ tells you which part of the Web API you are talking to:
 | Request | Returns |
 | --- | --- |
 | [`GetBadgesRequest`](#getbadgesrequest) | `PlayerBadges` |
+| [`GetCommunityBadgeProgressRequest`](#getcommunitybadgeprogressrequest) | `list<CommunityBadgeQuest>` |
 | [`GetFriendListRequest`](#getfriendlistrequest) | `list<Friend>` |
 | [`GetOwnedGamesRequest`](#getownedgamesrequest) | `list<OwnedGame>` |
 | [`GetPlayerAchievementsRequest`](#getplayerachievementsrequest) | `PlayerAchievements` |
@@ -84,6 +86,33 @@ no badges at all, byte for byte. Neither is treated as a failure, and the SDK do
 guess between them. The exception is reserved for the empty payload Steam sends for a
 profile it withholds.
 </Aside>
+
+## GetCommunityBadgeProgressRequest
+
+```text frame="none"
+new GetCommunityBadgeProgressRequest(SteamId $steamId)
+```
+
+<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+The quests behind the Steam community badge, each with the flag saying whether the
+account finished it. Steam publishes no schema mapping `questId` to a name, so the IDs
+stay opaque.
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetCommunityBadgeProgressRequest;
+
+$quests = $connector->send(new GetCommunityBadgeProgressRequest($steamId))->dto();
+
+foreach ($quests as $quest) {
+    echo $quest->questId, $quest->completed ? ' — done' : ' — pending', PHP_EOL;
+}
+```
+
+Steam's `badgeid` filter is not exposed. `0` behaves as a wildcard, and every other ID
+answers with the same empty payload Steam sends for a hidden profile and for a SteamID64
+that belongs to no account — a valid filter would be indistinguishable from the failure
+that raises the exception.
 
 ## GetFriendListRequest
 

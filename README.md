@@ -9,6 +9,7 @@
 
 Framework-agnostic PHP SDK for the [Steam Web API](https://steamcommunity.com/dev), built on top of [Saloon](https://docs.saloon.dev/) v4.
 
+- Fluent resources on the connector — `$connector->players()->ownedGames($id)`.
 - Strong types (PHP 8.5, PHPStan max, 100% type coverage).
 - Readonly DTOs with `DateTimeImmutable` instead of framework date objects.
 - Domain exception hierarchy rooted at `SteamApiException`.
@@ -29,16 +30,13 @@ composer require fkrzski/php-steam-api-sdk
 ## Quickstart
 
 ```php
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
 $connector = new SteamConnector(new SteamConfig(apiKey: 'YOUR_STEAM_API_KEY'));
 
-$summaries = $connector
-    ->send(new GetPlayerSummariesRequest([SteamId::fromSteamId64('76561198000000000')]))
-    ->dto();
+$summaries = $connector->users()->summaries([SteamId::fromSteamId64('76561198000000000')]);
 
 echo $summaries[0]->personaName;
 ```

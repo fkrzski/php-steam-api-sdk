@@ -15,6 +15,7 @@ fails with a domain exception instead of a silent `null`.
 
 ## Why php-steam-api-sdk
 
+- **Fluent resources** — `$connector->players()->ownedGames($id)`, no request classes to import.
 - **Strongly typed** — PHP 8.5, PHPStan max, 100% type coverage.
 - **Readonly DTOs** — immutable objects with `DateTimeImmutable`, never framework date wrappers.
 - **Domain exceptions** — one hierarchy rooted at `SteamApiException` for every failure.
@@ -65,14 +66,12 @@ through your cache store.
 ## Quickstart
 
 ```php
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
-$summaries = $connector
-    ->send(new GetPlayerSummariesRequest([SteamId::fromSteamId64('76561198000000000')]))
-    ->dto();
+$summaries = $connector->users()->summaries([SteamId::fromSteamId64('76561198000000000')]);
 
 echo $summaries[0]->personaName;
 ```
 
-Call `->dto()` on any Saloon response to get the readonly DTO for that request.
+Every endpoint hangs off a resource named after its Steam interface — `players()`,
+`users()`, `stats()` — and returns the readonly DTO straight away.

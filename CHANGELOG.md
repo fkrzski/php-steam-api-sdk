@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `InvalidApiKeyException` also covers a `401` whose HTML names the `key` parameter, not just a `403`. `GetCommunityBadgeProgress` answers `401` for a broken or absent key, which used to surface as `ProfileNotPublicException`.
 - **BC break.** `PlayerSummary::$timeCreated` is nullable, because Steam omits `timecreated` for a hidden profile and reading it unguarded fataled the whole `GetPlayerSummaries` batch. Callers reading the date need a null check ([#33](https://github.com/fkrzski/php-steam-api-sdk/issues/33)).
 
 ## [0.4.0] - 2026-08-16

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use Saloon\Http\BaseResource;
 use Saloon\Http\Connector;
 use Saloon\Http\Request;
 
@@ -37,6 +38,11 @@ arch('enums are backed enums')
 arch('requests extend the Saloon Request base class')
     ->expect('Fkrzski\SteamApiSdk\Http\Requests')
     ->toExtend(Request::class);
+
+arch('resources extend the Saloon base resource')
+    ->expect('Fkrzski\SteamApiSdk\Http\Resources')
+    ->toExtend(BaseResource::class)
+    ->toBeFinal();
 
 arch('exceptions extend the SDK root exception')
     ->expect('Fkrzski\SteamApiSdk\Exceptions')

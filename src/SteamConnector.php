@@ -8,6 +8,9 @@ use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
+use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
+use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use Override;
 use Saloon\Http\Connector;
 use Saloon\Http\Response;
@@ -30,6 +33,21 @@ class SteamConnector extends Connector
     public function resolveBaseUrl(): string
     {
         return 'https://api.steampowered.com';
+    }
+
+    public function players(): PlayersResource
+    {
+        return new PlayersResource($this);
+    }
+
+    public function users(): UsersResource
+    {
+        return new UsersResource($this);
+    }
+
+    public function stats(): StatsResource
+    {
+        return new StatsResource($this);
     }
 
     /**

@@ -1,13 +1,13 @@
 ---
 title: Guide
-description: The core building blocks — the SteamId value object, how requests turn into readonly DTOs, the exception hierarchy every SDK failure shares, and testing.
+description: The core building blocks — the SteamId value object, the resources that return readonly DTOs, the exception hierarchy every failure shares, and testing.
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 Once you have a [configured connector](/php-steam-api-sdk/configuration), three concepts carry the
-rest: the **`SteamId`** value object every request accepts, the **requests** you
-send, and the readonly **DTOs** you get back.
+rest: the **`SteamId`** value object every request accepts, the **resources** you call on
+the connector, and the readonly **DTOs** you get back.
 
 ## The `SteamId` value object
 
@@ -33,13 +33,12 @@ constructor you reach for depends on where the ID came from:
   </TabItem>
   <TabItem label="Vanity URL">
     ```php
-    use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
     use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
     // A /id/<name> URL carries no Steam ID — pull the slug out and let Steam resolve it.
     $vanity = SteamId::extractVanityName('https://steamcommunity.com/id/gabelogannewell/');
 
-    $id = $connector->send(new ResolveVanityUrlRequest($vanity))->dto();
+    $id = $connector->users()->resolveVanityUrl($vanity);
     ```
   </TabItem>
 </Tabs>
@@ -60,23 +59,30 @@ object. Decoding is not symmetric — rebuild it with `SteamId::fromSteamId64()`
 
 ## Sending requests
 
-Every request is a plain Saloon `Request`. Send it through the connector and call
-`->dto()` to decode the response into typed objects:
+The connector groups every endpoint into a resource per Steam interface — `players()` for
+`IPlayerService`, `users()` for `ISteamUser`, `stats()` for `ISteamUserStats`. Each method
+sends the request and hands back the DTO, so nothing needs importing:
+
+```php
+$summaries = $connector->users()->summaries([$id]);
+```
+
+Behind every resource method sits a plain Saloon `Request`, still public and unchanged.
+Build one yourself when you want the response rather than only the DTO, or a Saloon
+feature that takes a request — `pool()`, `sendAsync()`, `sendAndRetry()`:
 
 ```php
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 
-$summaries = $connector
-    ->send(new GetPlayerSummariesRequest([$id]))
-    ->dto();
+$response = $connector->send(new GetPlayerSummariesRequest([$id]));
+
+$response->status();      // 200
+$summaries = $response->dto();
 ```
 
-The connector uses Saloon's `AlwaysThrowOnErrors`, so a non-2xx response fails before
-`->dto()` runs — always as an SDK exception, never a Saloon one. Which request returns
-which DTO is in the [API reference](/php-steam-api-sdk/api-reference).
-
-`->dto()` is a convenience, not a wall: the same `Saloon\Http\Response` still exposes
-`->status()`, `->json()` and `->body()`.
+The connector uses Saloon's `AlwaysThrowOnErrors`, so a non-2xx response fails before the
+DTO is built — always as an SDK exception, never a Saloon one. Which call returns which
+DTO is in the [API reference](/php-steam-api-sdk/api-reference).
 
 ## Exceptions
 
@@ -101,7 +107,7 @@ Catch the leaf you care about, or the root to handle every SDK failure uniformly
     use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 
     try {
-        $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+        $summaries = $connector->users()->summaries([$id]);
     } catch (SteamApiException $e) {
         // Every SDK failure lands here — auth, privacy, quota, transport.
         $logger->error($e->getMessage(), ['status' => $e->getCode()]);
@@ -114,10 +120,9 @@ Catch the leaf you care about, or the root to handle every SDK failure uniformly
     ```php
     use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
     use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
-    use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
 
     try {
-        $library = $connector->send(new GetOwnedGamesRequest($id))->dto();
+        $library = $connector->players()->ownedGames($id);
     } catch (ProfileNotPublicException) {
         $library = [];  // expected — a hidden library is not an error worth logging
     } catch (SteamRateLimitException $e) {
@@ -140,7 +145,7 @@ their code is the HTTP status:
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 
 try {
-    $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+    $summaries = $connector->users()->summaries([$id]);
 } catch (SteamApiException $e) {
     $e->getCode();          // 403
     $e->response?->body();  // raw Steam payload, or null for client-side failures
@@ -183,7 +188,8 @@ SteamID64 that belongs to no account. Every message names every cause rather tha
 ## Testing
 
 The connector is stock Saloon, so `MockClient` fakes it with no SDK-specific helper.
-`->dto()` still runs against the fake, so assertions are against real DTOs:
+Mocks stay keyed by request class even when the call goes through a resource, and DTOs are
+built from the fake, so assertions run against real DTOs:
 
 <Tabs syncKey="php-test-runner">
   <TabItem label="Pest">
@@ -202,7 +208,7 @@ The connector is stock Saloon, so `MockClient` fakes it with no SDK-specific hel
         $connector = new SteamConnector(new SteamConfig('test-key'));
         $connector->withMockClient($mock);
 
-        $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+        $summaries = $connector->users()->summaries([$id]);
 
         expect($summaries[0]->personaName)->toBe('gabelogannewell');
     });
@@ -227,7 +233,7 @@ The connector is stock Saloon, so `MockClient` fakes it with no SDK-specific hel
             $connector = new SteamConnector(new SteamConfig('test-key'));
             $connector->withMockClient($mock);
 
-            $summaries = $connector->send(new GetPlayerSummariesRequest([$id]))->dto();
+            $summaries = $connector->users()->summaries([$id]);
 
             $this->assertSame('gabelogannewell', $summaries[0]->personaName);
         }

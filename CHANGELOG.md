@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Fluent resources on the connector: `PlayersResource`, `UsersResource` and `StatsResource`, reached through `$connector->players()`, `->users()` and `->stats()`. Each method sends its request and returns the DTO; the request classes are unchanged and stay the way to reach the `Response` itself or Saloon's `pool()` ([#40](https://github.com/fkrzski/php-steam-api-sdk/issues/40)).
 - `GetBadgesRequest` (`IPlayerService`) with the `PlayerBadges` and `Badge` DTOs, covering every earned badge alongside the experience behind the community level. An account with no badges answers exactly like a SteamID64 that belongs to nobody, so neither is treated as a failure ([#38](https://github.com/fkrzski/php-steam-api-sdk/issues/38)).
 - `GetCommunityBadgeProgressRequest` (`IPlayerService`) with the `CommunityBadgeQuest` DTO, listing the quests behind the Steam community badge and whether each one is done. Steam's `badgeid` filter is not exposed, because every ID other than `0` answers with the same empty payload a withheld profile gets ([#39](https://github.com/fkrzski/php-steam-api-sdk/issues/39)).
 - `GetRecentlyPlayedGamesRequest` (`IPlayerService`) with the `RecentlyPlayedGames` and `RecentlyPlayedGame` DTOs and an optional `count` limit. `RecentlyPlayedGames::$totalCount` carries Steam's unlimited total, so a list truncated by `count` stays distinguishable from a complete one ([#36](https://github.com/fkrzski/php-steam-api-sdk/issues/36)).

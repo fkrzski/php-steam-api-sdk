@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-26
+
 ### Added
 
 - Fluent resources on the connector: `PlayersResource`, `UsersResource` and `StatsResource`, reached through `$connector->players()`, `->users()` and `->stats()`. Each method sends its request and returns the DTO; the request classes are unchanged and stay the way to reach the `Response` itself or Saloon's `pool()` ([#40](https://github.com/fkrzski/php-steam-api-sdk/issues/40)).
@@ -22,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `InvalidApiKeyException` also covers a `401` whose HTML names the `key` parameter, not just a `403`. `GetCommunityBadgeProgress` answers `401` for a broken or absent key, which used to surface as `ProfileNotPublicException`.
-- **BC break.** `PlayerSummary::$timeCreated` is nullable, because Steam omits `timecreated` for a hidden profile and reading it unguarded fataled the whole `GetPlayerSummaries` batch. Callers reading the date need a null check ([#33](https://github.com/fkrzski/php-steam-api-sdk/issues/33)).
+- `InvalidApiKeyException` also covers a `401` whose HTML names the `key` parameter, not just a `403`. `GetCommunityBadgeProgressRequest` answers `401` for a broken or absent key, which used to surface as `ProfileNotPublicException`.
+- **BC break.** `PlayerSummary::$timeCreated` is nullable, because Steam omits `timecreated` for a hidden profile and reading it unguarded fataled the whole `GetPlayerSummariesRequest` batch. Callers reading the date need a null check ([#33](https://github.com/fkrzski/php-steam-api-sdk/issues/33)).
 
 ## [0.4.0] - 2026-08-16
 
@@ -95,7 +97,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
-[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.4.0...HEAD
+[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.5.0...HEAD
+[0.5.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.5.0
 [0.4.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.4.0
 [0.3.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.3.0
 [0.2.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.2.0

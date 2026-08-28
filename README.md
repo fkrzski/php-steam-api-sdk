@@ -9,6 +9,8 @@
 
 Framework-agnostic PHP SDK for the [Steam Web API](https://steamcommunity.com/dev), built on top of [Saloon](https://docs.saloon.dev/) v4.
 
+It powers the player profiles on [Dead by Stats](https://deadbystats.eu).
+
 - Fluent resources on the connector — `$connector->players()->ownedGames($id)`.
 - Strong types (PHP 8.5, PHPStan max, 100% type coverage).
 - Readonly DTOs with `DateTimeImmutable` instead of framework date objects.

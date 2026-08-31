@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Language` enum backing Steam's `l` query parameter, and a `language` on `SteamConfig` that applies it to every request whose endpoint localises its payload. Steam's codes are Valve's own rather than ISO, so the enum transcribes their table instead of mapping to one ([#46](https://github.com/fkrzski/php-steam-api-sdk/issues/46)).
+
+### Changed
+
+- **BC break.** `$language` is a `?Language` instead of a `?string` on `GetPlayerAchievementsRequest`, `GetUserStatsForGameRequest` and both `StatsResource` methods. Callers passing a raw code swap `'english'` for `Language::English` ([#46](https://github.com/fkrzski/php-steam-api-sdk/issues/46)).
+
 ## [0.5.0] - 2026-08-26
 
 ### Added

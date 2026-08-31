@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Enums\Language;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
@@ -64,6 +65,18 @@ test('achievements forwards the language', function (): void {
         'appid' => 381210,
         'l' => 'polish',
     ]);
+});
+
+test('currentPlayers sends GetNumberOfCurrentPlayers and returns the count', function (): void {
+    $mockClient = statsResourceMock(
+        GetNumberOfCurrentPlayersRequest::class,
+        'ISteamUserStats/GetNumberOfCurrentPlayers/default',
+    );
+
+    $count = statsResource($mockClient)->currentPlayers(381210);
+
+    expect($count)->toBe(40008)
+        ->and($mockClient->getLastRequest()?->query()->all())->toBe(['appid' => 381210]);
 });
 
 test('userStats sends GetUserStatsForGame and returns the DTO', function (): void {

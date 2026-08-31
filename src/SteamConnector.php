@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk;
 
 use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
+use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
@@ -54,12 +55,17 @@ class SteamConnector extends Connector
     }
 
     /**
-     * Saloon merges the request query before booting, so the configured default only
-     * fills the gap a request left open — an explicit language always wins.
+     * Saloon merges the request query before booting, so both defaults act on a query
+     * that is already complete: the key can be taken back out, and the configured
+     * language only fills the gap a request left open — an explicit one always wins.
      */
     public function boot(PendingRequest $pendingRequest): void
     {
         $request = $pendingRequest->getRequest();
+
+        if ($request instanceof SendsNoApiKey) {
+            $pendingRequest->query()->remove('key');
+        }
 
         if (! $request instanceof HasLanguage || $request->language instanceof Language) {
             return;

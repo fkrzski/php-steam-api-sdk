@@ -1,0 +1,11 @@
+{
+    "statusCode": 404,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "result": 42
+        }
+    }
+}

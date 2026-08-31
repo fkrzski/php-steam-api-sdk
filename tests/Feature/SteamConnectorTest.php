@@ -7,6 +7,7 @@ use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
@@ -106,6 +107,17 @@ test('endpoints that do not take a language never receive one', function (): voi
 
 test('without a configured language the parameter stays off', function (): void {
     expect(bootedQuery(null, achievementsRequest()))->not->toHaveKey('l');
+});
+
+test('a request Steam serves anonymously goes out without the key', function (): void {
+    $query = bootedQuery(null, new GetNumberOfCurrentPlayersRequest(381210));
+
+    expect($query)->not->toHaveKey('key')
+        ->and($query)->toHaveKey('appid', 381210);
+});
+
+test('every other request keeps the configured key', function (): void {
+    expect(bootedQuery(null, achievementsRequest()))->toHaveKey('key', 'any');
 });
 
 /**

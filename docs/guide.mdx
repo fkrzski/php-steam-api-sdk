@@ -90,6 +90,7 @@ Every SDK failure extends `SteamApiException`, so one catch handles them all:
 
 ```text frame="none"
 SteamApiException                (root, extends RuntimeException)
+├── AppNotFoundException         No Steam app carries the given app ID.
 ├── InvalidApiKeyException       API key missing, wrong, or revoked.
 ├── InvalidSteamIdException      Malformed SteamID64.
 ├── ProfileNotPublicException    Profile, games list, groups, or stats are private.
@@ -167,6 +168,7 @@ Steam signals failure in two different ways, and the SDK reads both:
 | `401` or `403` + HTML naming the `key` parameter | `InvalidApiKeyException` (rejected) |
 | `400` + JSON, on `ISteamUserStats` | `StatsUnavailableException` / `ProfileNotPublicException` |
 | `401` or `403` not naming the `key` parameter | `ProfileNotPublicException` |
+| `404` + JSON, on `ISteamUserStats` | `AppNotFoundException` |
 | `429` | `SteamRateLimitException` |
 | any other `4xx` / `5xx` | `SteamApiException` |
 | `200` with an empty or `success: 42` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` |

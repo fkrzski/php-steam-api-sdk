@@ -15,4 +15,12 @@ final class StatsUnavailableException extends SteamApiException
             $response,
         );
     }
+
+    public static function forGlobalAchievements(int $gameId, Response $response): self
+    {
+        return new self(
+            sprintf('Steam returned no global achievements for game %d: it carries none, or no game has that ID.', $gameId),
+            $response,
+        );
+    }
 }

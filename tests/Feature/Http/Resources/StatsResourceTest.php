@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Dto\GlobalAchievement;
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Enums\Language;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetGlobalAchievementPercentagesForAppRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
@@ -77,6 +79,21 @@ test('currentPlayers sends GetNumberOfCurrentPlayers and returns the count', fun
 
     expect($count)->toBe(40008)
         ->and($mockClient->getLastRequest()?->query()->all())->toBe(['appid' => 381210]);
+});
+
+test('globalAchievements sends GetGlobalAchievementPercentagesForApp and returns the DTOs', function (): void {
+    $mockClient = statsResourceMock(
+        GetGlobalAchievementPercentagesForAppRequest::class,
+        'ISteamUserStats/GetGlobalAchievementPercentagesForApp/default',
+    );
+
+    $achievements = statsResource($mockClient)->globalAchievements(gameId: 381210);
+
+    expect($achievements)->toHaveCount(4)
+        ->and($achievements[0])->toBeInstanceOf(GlobalAchievement::class)
+        ->and($achievements[0]->apiName)->toBe('ACH_BLOODWEB_LVL10')
+        ->and($achievements[0]->percent)->toBe(63.0)
+        ->and($mockClient->getLastRequest()?->query()->all())->toBe(['gameid' => 381210]);
 });
 
 test('userStats sends GetUserStatsForGame and returns the DTO', function (): void {

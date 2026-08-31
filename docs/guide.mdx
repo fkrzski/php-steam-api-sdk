@@ -94,7 +94,7 @@ SteamApiException                (root, extends RuntimeException)
 ├── InvalidApiKeyException       API key missing, wrong, or revoked.
 ├── InvalidSteamIdException      Malformed SteamID64.
 ├── ProfileNotPublicException    Profile, games list, groups, or stats are private.
-├── StatsUnavailableException    Stats withheld: no such stats, or private profile.
+├── StatsUnavailableException    Stats withheld: none exist, unknown app, or private profile.
 ├── SteamRateLimitException      Daily 100k quota reached; exposes the offending Limit.
 ├── SteamUserNotFoundException   Vanity URL unresolved or profile missing.
 └── TooManySteamIdsException     More than 100 IDs in a batch request.
@@ -166,7 +166,7 @@ Steam signals failure in two different ways, and the SDK reads both:
 | --- | --- |
 | `400` + HTML naming the `key` parameter | `InvalidApiKeyException` (missing) |
 | `401` or `403` + HTML naming the `key` parameter | `InvalidApiKeyException` (rejected) |
-| `400` + JSON, on `ISteamUserStats` | `StatsUnavailableException` / `ProfileNotPublicException` |
+| `400` or `403` + JSON, on `ISteamUserStats` | `StatsUnavailableException` / `ProfileNotPublicException` |
 | `401` or `403` not naming the `key` parameter | `ProfileNotPublicException` |
 | `404` + JSON, on `ISteamUserStats` | `AppNotFoundException` |
 | `429` | `SteamRateLimitException` |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
+use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
@@ -56,7 +57,7 @@ test('achievements forwards the language', function (): void {
         'ISteamUserStats/GetPlayerAchievements/localized',
     );
 
-    statsResource($mockClient)->achievements(statsResourceSteamId(), 381210, 'polish');
+    statsResource($mockClient)->achievements(statsResourceSteamId(), 381210, Language::Polish);
 
     expect($mockClient->getLastRequest()?->query()->all())->toBe([
         'steamid' => '76561198148125221',
@@ -88,7 +89,7 @@ test('userStats forwards the language', function (): void {
         'ISteamUserStats/GetUserStatsForGame/default',
     );
 
-    statsResource($mockClient)->userStats(statsResourceSteamId(), 381210, 'polish');
+    statsResource($mockClient)->userStats(statsResourceSteamId(), 381210, Language::Polish);
 
     expect($mockClient->getLastRequest()?->query()->all())->toBe([
         'steamid' => '76561198148125221',

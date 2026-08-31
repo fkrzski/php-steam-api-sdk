@@ -174,7 +174,7 @@ Without `includeAppInfo: true` both properties on every
 ## GetPlayerAchievementsRequest
 
 ```text frame="none"
-$connector->stats()->achievements(SteamId $steamId, int $appId, ?string $language = null)
+$connector->stats()->achievements(SteamId $steamId, int $appId, ?Language $language = null)
 
 new GetPlayerAchievementsRequest($steamId, $appId, $language)
 ```
@@ -185,11 +185,13 @@ A player's achievements for one game, each with its unlock state and time. The
 exception covers two causes — no achievements on the app, or a hidden profile — because
 Steam reports them identically.
 
-```php "language: 'english'"
+```php "language: Language::English"
+use Fkrzski\SteamApiSdk\Enums\Language;
+
 $result = $connector->stats()->achievements(
     steamId: $steamId,
     appId: 381210,
-    language: 'english',
+    language: Language::English,
 );
 
 foreach ($result->achievements as $achievement) {
@@ -200,7 +202,8 @@ foreach ($result->achievements as $achievement) {
 <Aside type="caution" title="Without a language you get API names only">
 `name` and `description` on every
 [`PlayerAchievement`](/php-steam-api-sdk/dto-reference#playerachievements) stay `null` until you
-ask for a language. `apiName` and `achieved` are always populated.
+ask for a language. `apiName` and `achieved` are always populated. A
+[default on `SteamConfig`](/php-steam-api-sdk/configuration#default-language) counts as asking.
 </Aside>
 
 ## GetPlayerBansRequest
@@ -320,7 +323,7 @@ foreach ($groups as $group) {
 ## GetUserStatsForGameRequest
 
 ```text frame="none"
-$connector->stats()->userStats(SteamId $steamId, int $appId, ?string $language = null)
+$connector->stats()->userStats(SteamId $steamId, int $appId, ?Language $language = null)
 
 new GetUserStatsForGameRequest($steamId, $appId, $language)
 ```
@@ -328,7 +331,7 @@ new GetUserStatsForGameRequest($steamId, $appId, $language)
 <p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
 
 A player's stats and achievement flags for one game. `language` localises achievement
-metadata (e.g. `'english'`).
+metadata; see the [`Language`](/php-steam-api-sdk/dto-reference#language) enum.
 
 ```php
 $stats = $connector->stats()->userStats(steamId: $steamId, appId: 381210);

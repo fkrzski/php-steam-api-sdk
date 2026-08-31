@@ -45,11 +45,37 @@ per call.
 | --- | --- | --- | --- |
 | `apiKey` | `string` | — (required) | Your Steam Web API key. |
 | `rateLimitStore` | `?RateLimitStore` | `MemoryStore` | Where the daily request budget is tracked. |
+| `language` | `?Language` | `null` | Language for endpoints that localise their payload. |
 
 <Aside type="note" title="Readonly, so replace rather than mutate">
 `SteamConfig` is `final readonly` — to change a setting, construct a new config and a
 new connector.
 </Aside>
+
+## Default language
+
+Steam localises achievement names and descriptions through the `l` query parameter. Set it
+once on the config rather than on every call:
+
+```php title="steam.php" "language: Language::Polish"
+use Fkrzski\SteamApiSdk\Enums\Language;
+
+$connector = new SteamConnector(new SteamConfig(
+    apiKey: $_ENV['STEAM_API_KEY'],
+    language: Language::Polish,
+));
+```
+
+A language passed to a call wins over the config, and endpoints that do not localise
+anything never receive one:
+
+```php
+$connector->stats()->achievements($steamId, 381210);                    // polish
+$connector->stats()->achievements($steamId, 381210, Language::English); // english
+```
+
+Steam's codes are Valve's own rather than ISO, so the
+[`Language`](/php-steam-api-sdk/dto-reference#language) enum transcribes their table.
 
 ## Rate limiting
 

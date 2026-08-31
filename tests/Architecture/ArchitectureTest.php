@@ -31,6 +31,10 @@ arch('value objects are final readonly classes')
     ->toBeFinal()
     ->toBeReadonly();
 
+arch('contracts are interfaces')
+    ->expect('Fkrzski\SteamApiSdk\Contracts')
+    ->toBeInterfaces();
+
 arch('enums are backed enums')
     ->expect('Fkrzski\SteamApiSdk\Enums')
     ->toBeEnums();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievement;
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
+use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
@@ -41,9 +42,9 @@ test('query includes steamid and appid', function (): void {
 });
 
 test('query includes language when provided', function (): void {
-    $request = new GetPlayerAchievementsRequest(playerAchievementsSteamId(), 381210, 'pl');
+    $request = new GetPlayerAchievementsRequest(playerAchievementsSteamId(), 381210, Language::Polish);
 
-    expect($request->query()->all())->toMatchArray(['l' => 'pl']);
+    expect($request->query()->all())->toMatchArray(['l' => 'polish']);
 });
 
 test('query omits language when null', function (): void {
@@ -98,7 +99,7 @@ test('localized fixture populates name and description', function (): void {
     $connector->withMockClient($mock);
 
     /** @var PlayerAchievements $dto */
-    $dto = $connector->send(new GetPlayerAchievementsRequest(playerAchievementsSteamId(), 381210, 'english'))->dto();
+    $dto = $connector->send(new GetPlayerAchievementsRequest(playerAchievementsSteamId(), 381210, Language::English))->dto();
 
     expect($dto->achievements[0]->name)->toBe('I Am Inevitable')
         ->and($dto->achievements[0]->description)->toBe('Sacrifice 4 Survivors in a single match.');

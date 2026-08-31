@@ -192,7 +192,7 @@ has `name` (`string`) and `achieved` (`bool`).
 
 ## Enums
 
-Three of these mirror Steam's wire values; `CommentPermission` and `EconomyBan` do not,
+Four of these mirror Steam's wire values; `CommentPermission` and `EconomyBan` do not,
 and those are the two worth reading before you `match` on them.
 
 ### CommentPermission
@@ -218,6 +218,26 @@ undocumented, so the value set is provably open.
 
 Backed by `string` — `All` (`'all'`), `Friend` (`'friend'`). The values Steam accepts on
 the `relationship` query parameter.
+
+### Language
+
+Backed by `string`, using Steam's codes for the `l` query parameter. They are not ISO
+codes, so five cases are named for the language and backed by Valve's spelling of it:
+
+| Case | Value |
+| --- | --- |
+| `ChineseSimplified` | `'schinese'` |
+| `ChineseTraditional` | `'tchinese'` |
+| `Korean` | `'koreana'` |
+| `PortugueseBrazil` | `'brazilian'` |
+| `SpanishLatinAmerican` | `'latam'` |
+
+The other twenty-five back onto their own name lowercased: `Arabic`, `Bulgarian`, `Czech`,
+`Danish`, `Dutch`, `English`, `Finnish`, `French`, `German`, `Greek`, `Hungarian`,
+`Indonesian`, `Italian`, `Japanese`, `Norwegian`, `Polish`, `Portuguese`, `Romanian`,
+`Russian`, `Spanish`, `Swedish`, `Thai`, `Turkish`, `Ukrainian`, `Vietnamese`.
+
+Set one per call, or [once on `SteamConfig`](/php-steam-api-sdk/configuration#default-language).
 
 ### PersonaState
 

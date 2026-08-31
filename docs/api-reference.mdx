@@ -35,6 +35,7 @@ interface, and one request class per endpoint:
       - GetUserGroupListRequest.php
       - ResolveVanityUrlRequest.php
     - ISteamUserStats
+      - GetGlobalAchievementPercentagesForAppRequest.php
       - GetNumberOfCurrentPlayersRequest.php
       - GetPlayerAchievementsRequest.php
       - GetUserStatsForGameRequest.php
@@ -50,6 +51,7 @@ interface, and one request class per endpoint:
 | [`GetBadgesRequest`](#getbadgesrequest) | `players()->badges()` | `PlayerBadges` |
 | [`GetCommunityBadgeProgressRequest`](#getcommunitybadgeprogressrequest) | `players()->communityBadgeProgress()` | `list<CommunityBadgeQuest>` |
 | [`GetFriendListRequest`](#getfriendlistrequest) | `users()->friends()` | `list<Friend>` |
+| [`GetGlobalAchievementPercentagesForAppRequest`](#getglobalachievementpercentagesforapprequest) | `stats()->globalAchievements()` | `list<GlobalAchievement>` |
 | [`GetNumberOfCurrentPlayersRequest`](#getnumberofcurrentplayersrequest) | `stats()->currentPlayers()` | `int` |
 | [`GetOwnedGamesRequest`](#getownedgamesrequest) | `players()->ownedGames()` | `list<OwnedGame>` |
 | [`GetPlayerAchievementsRequest`](#getplayerachievementsrequest) | `stats()->achievements()` | `PlayerAchievements` |
@@ -140,6 +142,35 @@ use Fkrzski\SteamApiSdk\Enums\FriendRelationship;
 
 $friends = $connector->users()->friends($steamId, FriendRelationship::Friend);
 ```
+
+## GetGlobalAchievementPercentagesForAppRequest
+
+```text frame="none"
+$connector->stats()->globalAchievements(int $gameId)
+
+new GetGlobalAchievementPercentagesForAppRequest($gameId)
+```
+
+<p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws StatsUnavailableException" variant="danger" size="small" /></p>
+
+How much of the playerbase has unlocked each achievement in a game, ordered from the most
+common down. Steam serves it anonymously, so the SDK keeps the configured key out of this
+one query. The exception covers two causes — a game carrying no achievements, or a game ID
+Steam does not know — because both answer identically.
+
+```php
+$achievements = $connector->stats()->globalAchievements(381210);
+
+foreach ($achievements as $achievement) {
+    echo $achievement->apiName, ' — ', $achievement->percent, '%', PHP_EOL;
+}
+```
+
+<Aside type="caution" title="The parameter is gameid, not appid">
+Steam spells this one `gameid`, the only endpoint in the SDK that does, and the SDK follows
+it: the argument is `$gameId` where every other app-scoped method takes `$appId`. The value
+is an ordinary app ID.
+</Aside>
 
 ## GetNumberOfCurrentPlayersRequest
 

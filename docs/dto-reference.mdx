@@ -29,6 +29,15 @@ Returned by [`GetFriendListRequest`](/php-steam-api-sdk/api-reference#getfriendl
 | `relationship` | `FriendRelationship` | Relationship to the queried user. |
 | `friendSince` | `DateTimeImmutable` | When the friendship was formed. |
 
+## GlobalAchievement
+
+Returned by [`GetGlobalAchievementPercentagesForAppRequest`](/php-steam-api-sdk/api-reference#getglobalachievementpercentagesforapprequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `apiName` | `string` | Stable API identifier, same one `PlayerAchievement` carries. |
+| `percent` | `float` | Share of owners who unlocked it. Steam sends it as a string. |
+
 ## OwnedGame
 
 Returned by [`GetOwnedGamesRequest`](/php-steam-api-sdk/api-reference#getownedgamesrequest).

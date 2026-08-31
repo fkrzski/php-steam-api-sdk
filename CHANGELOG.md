@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `AppNotFoundException` for an app ID Steam does not know, thrown only where the response separates it from an app that merely exposes no stats. The `400` on `GetPlayerAchievementsRequest` does not, so it keeps `StatsUnavailableException` ([#47](https://github.com/fkrzski/php-steam-api-sdk/issues/47)).
+- `GetGlobalAchievementPercentagesForAppRequest` (`ISteamUserStats`) with the `GlobalAchievement` DTO, listing how much of the playerbase has unlocked each achievement in a game. Steam spells the parameter `gameid` rather than `appid` and the SDK follows, so this one method takes `$gameId`; `403` comes back identically for a game carrying no achievements and for a game ID Steam does not know, so both raise `StatsUnavailableException` ([#50](https://github.com/fkrzski/php-steam-api-sdk/issues/50)).
 - `GetNumberOfCurrentPlayersRequest` (`ISteamUserStats`) returning a game's concurrent player count as a plain `int`. Steam serves the endpoint anonymously, so requests implementing the new `SendsNoApiKey` contract go out with the configured key stripped from the query ([#49](https://github.com/fkrzski/php-steam-api-sdk/issues/49)).
 - `Language` enum backing Steam's `l` query parameter, and a `language` on `SteamConfig` that applies it to every request whose endpoint localises its payload. Steam's codes are Valve's own rather than ISO, so the enum transcribes their table instead of mapping to one ([#46](https://github.com/fkrzski/php-steam-api-sdk/issues/46)).
 

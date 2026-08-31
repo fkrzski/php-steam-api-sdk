@@ -38,6 +38,7 @@ interface, and one request class per endpoint:
       - GetGlobalAchievementPercentagesForAppRequest.php
       - GetNumberOfCurrentPlayersRequest.php
       - GetPlayerAchievementsRequest.php
+      - GetSchemaForGameRequest.php
       - GetUserStatsForGameRequest.php
   - Resources
     - PlayersResource.php
@@ -58,6 +59,7 @@ interface, and one request class per endpoint:
 | [`GetPlayerBansRequest`](#getplayerbansrequest) | `users()->bans()` | `list<PlayerBan>` |
 | [`GetPlayerSummariesRequest`](#getplayersummariesrequest) | `users()->summaries()` | `list<PlayerSummary>` |
 | [`GetRecentlyPlayedGamesRequest`](#getrecentlyplayedgamesrequest) | `players()->recentlyPlayedGames()` | `RecentlyPlayedGames` |
+| [`GetSchemaForGameRequest`](#getschemaforgamerequest) | `stats()->schema()` | `GameSchema` |
 | [`GetSteamLevelRequest`](#getsteamlevelrequest) | `players()->steamLevel()` | `int` |
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `users()->groups()` | `list<UserGroup>` |
 | [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `stats()->userStats()` | `UserStats` |
@@ -329,6 +331,36 @@ foreach ($recent->games as $game) {
 A player who launched nothing comes back as `totalCount: 0` with an empty `games` list.
 The exception is reserved for the payload Steam withholds, which it sends both for a
 hidden profile and for a SteamID64 that belongs to no account.
+</Aside>
+
+## GetSchemaForGameRequest
+
+```text frame="none"
+$connector->stats()->schema(int $appId, ?Language $language = null)
+
+new GetSchemaForGameRequest($appId, $language)
+```
+
+<p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws AppNotFoundException" variant="danger" size="small" /></p>
+
+Every stat and achievement a game publishes, with the display names and descriptions a
+player's own [achievements](#getplayerachievementsrequest) are read against. `language`
+localises them; see the [`Language`](/php-steam-api-sdk/dto-reference#language) enum.
+
+```php "language: Language::Polish"
+use Fkrzski\SteamApiSdk\Enums\Language;
+
+$schema = $connector->stats()->schema(appId: 381210, language: Language::Polish);
+
+foreach ($schema->achievements as $achievement) {
+    echo $achievement->apiName, ' — ', $achievement->name, PHP_EOL;
+}
+```
+
+<Aside type="caution" title="An app publishing no schema is not a failure">
+An app that exposes no stats and no achievements — a DLC, a tool, a runtime — answers
+`200` with an empty game, which becomes a `GameSchema` with null names and empty lists.
+Only an app ID Steam does not know raises the exception.
 </Aside>
 
 ## GetSteamLevelRequest

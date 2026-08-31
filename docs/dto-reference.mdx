@@ -29,6 +29,31 @@ Returned by [`GetFriendListRequest`](/php-steam-api-sdk/api-reference#getfriendl
 | `relationship` | `FriendRelationship` | Relationship to the queried user. |
 | `friendSince` | `DateTimeImmutable` | When the friendship was formed. |
 
+## GameSchema
+
+Returned by [`GetSchemaForGameRequest`](/php-steam-api-sdk/api-reference#getschemaforgamerequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `gameName` | `?string` | Game title. Null when Steam sends it blank or leaves it out. |
+| `gameVersion` | `?string` | Steam's own version counter for the schema. |
+| `stats` | `list<SchemaStat>` | Every stat the game publishes. |
+| `achievements` | `list<SchemaAchievement>` | Every achievement the game publishes. |
+
+Each `SchemaAchievement` carries:
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `apiName` | `string` | Stable API identifier, same one `PlayerAchievement` carries. |
+| `name` | `string` | Display name, localised by `language`. |
+| `description` | `?string` | Localised description. Steam omits it on some achievements, hidden ones especially. |
+| `hidden` | `bool` | Steam keeps the achievement secret until it is unlocked. |
+| `icon` | `string` | Icon shown once unlocked. |
+| `iconGray` | `string` | Icon shown while locked. |
+
+`SchemaStat` has `apiName` (`string`), `name` (`?string`, null for the many stats Steam
+ships unlabelled) and `defaultValue` (`int|float`).
+
 ## GlobalAchievement
 
 Returned by [`GetGlobalAchievementPercentagesForAppRequest`](/php-steam-api-sdk/api-reference#getglobalachievementpercentagesforapprequest).

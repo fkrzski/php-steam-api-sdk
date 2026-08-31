@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Dto\UserStat;
 use Fkrzski\SteamApiSdk\Dto\UserStatAchievement;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
+use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
@@ -42,9 +43,9 @@ test('query includes steamid and appid', function (): void {
 });
 
 test('query includes language when provided', function (): void {
-    $request = new GetUserStatsForGameRequest(userStatsSteamId(), 381210, 'pl');
+    $request = new GetUserStatsForGameRequest(userStatsSteamId(), 381210, Language::Polish);
 
-    expect($request->query()->all())->toMatchArray(['l' => 'pl']);
+    expect($request->query()->all())->toMatchArray(['l' => 'polish']);
 });
 
 test('query omits language when null', function (): void {

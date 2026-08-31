@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
+use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
@@ -21,7 +22,7 @@ final class GetPlayerAchievementsRequest extends Request
     public function __construct(
         public readonly SteamId $steamId,
         public readonly int $appId,
-        public readonly ?string $language = null,
+        public readonly ?Language $language = null,
     ) {}
 
     public function resolveEndpoint(): string
@@ -69,8 +70,8 @@ final class GetPlayerAchievementsRequest extends Request
             'appid' => $this->appId,
         ];
 
-        if ($this->language !== null) {
-            $query['l'] = $this->language;
+        if ($this->language instanceof Language) {
+            $query['l'] = $this->language->value;
         }
 
         return $query;

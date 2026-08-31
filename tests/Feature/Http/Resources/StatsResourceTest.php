@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Dto\GameSchema;
 use Fkrzski\SteamApiSdk\Dto\GlobalAchievement;
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
@@ -9,6 +10,7 @@ use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetGlobalAchievementPercentagesForAppRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetSchemaForGameRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\SteamConfig;
@@ -94,6 +96,35 @@ test('globalAchievements sends GetGlobalAchievementPercentagesForApp and returns
         ->and($achievements[0]->apiName)->toBe('ACH_BLOODWEB_LVL10')
         ->and($achievements[0]->percent)->toBe(63.0)
         ->and($mockClient->getLastRequest()?->query()->all())->toBe(['gameid' => 381210]);
+});
+
+test('schema sends GetSchemaForGame and returns the DTO', function (): void {
+    $mockClient = statsResourceMock(
+        GetSchemaForGameRequest::class,
+        'ISteamUserStats/GetSchemaForGame/default',
+    );
+
+    $schema = statsResource($mockClient)->schema(381210);
+
+    expect($schema)->toBeInstanceOf(GameSchema::class)
+        ->and($schema->gameName)->toBe('Dead by Daylight')
+        ->and($schema->achievements)->toHaveCount(3)
+        ->and($schema->stats)->toHaveCount(3)
+        ->and($mockClient->getLastRequest()?->query()->all())->toBe(['appid' => 381210]);
+});
+
+test('schema forwards the language', function (): void {
+    $mockClient = statsResourceMock(
+        GetSchemaForGameRequest::class,
+        'ISteamUserStats/GetSchemaForGame/localized',
+    );
+
+    statsResource($mockClient)->schema(381210, Language::Polish);
+
+    expect($mockClient->getLastRequest()?->query()->all())->toBe([
+        'appid' => 381210,
+        'l' => 'polish',
+    ]);
 });
 
 test('userStats sends GetUserStatsForGame and returns the DTO', function (): void {

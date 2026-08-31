@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
@@ -15,6 +17,7 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\Fixture;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
+use Saloon\Http\Request;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
@@ -70,6 +73,39 @@ test('resolveRateLimitStore falls back to a fresh in-memory store', function ():
     $rateLimitStore = $connector->rateLimitStore();
 
     expect($rateLimitStore)->toBeInstanceOf(MemoryStore::class);
+});
+
+/**
+ * @return array<string, mixed>
+ */
+function bootedQuery(?Language $configured, Request $request): array
+{
+    $connector = new SteamConnector(new SteamConfig('any', language: $configured));
+
+    return $connector->createPendingRequest($request)->query()->all();
+}
+
+function achievementsRequest(?Language $language = null): GetPlayerAchievementsRequest
+{
+    return new GetPlayerAchievementsRequest(SteamId::fromSteamId64('76561198148125221'), 381210, $language);
+}
+
+test('the configured language fills in the l parameter a request left open', function (): void {
+    expect(bootedQuery(Language::Polish, achievementsRequest()))->toHaveKey('l', 'polish');
+});
+
+test('a language passed to the request wins over the configured one', function (): void {
+    expect(bootedQuery(Language::Polish, achievementsRequest(Language::English)))->toHaveKey('l', 'english');
+});
+
+test('endpoints that do not take a language never receive one', function (): void {
+    $query = bootedQuery(Language::Polish, new GetFriendListRequest(SteamId::fromSteamId64('76561198148125221')));
+
+    expect($query)->not->toHaveKey('l');
+});
+
+test('without a configured language the parameter stays off', function (): void {
+    expect(bootedQuery(null, achievementsRequest()))->not->toHaveKey('l');
 });
 
 /**

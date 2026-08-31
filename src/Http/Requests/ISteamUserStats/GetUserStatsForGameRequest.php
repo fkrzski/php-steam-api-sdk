@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
+use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
@@ -14,7 +15,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetUserStatsForGameRequest extends Request
+final class GetUserStatsForGameRequest extends Request implements HasLanguage
 {
     #[Override]
     protected Method $method = Method::GET;

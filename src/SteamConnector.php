@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk;
 
+use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
+use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
@@ -13,6 +15,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use Override;
 use Saloon\Http\Connector;
+use Saloon\Http\PendingRequest;
 use Saloon\Http\Response;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 use Saloon\RateLimitPlugin\Limit;
@@ -48,6 +51,23 @@ class SteamConnector extends Connector
     public function stats(): StatsResource
     {
         return new StatsResource($this);
+    }
+
+    /**
+     * Saloon merges the request query before booting, so the configured default only
+     * fills the gap a request left open — an explicit language always wins.
+     */
+    public function boot(PendingRequest $pendingRequest): void
+    {
+        $request = $pendingRequest->getRequest();
+
+        if (! $request instanceof HasLanguage || $request->language instanceof Language) {
+            return;
+        }
+
+        if ($this->steamConfig->language instanceof Language) {
+            $pendingRequest->query()->add('l', $this->steamConfig->language->value);
+        }
     }
 
     /**

@@ -1,0 +1,32 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "game": {
+            "gameName": "Half-Life 2",
+            "gameVersion": "17",
+            "availableGameStats": {
+                "achievements": [
+                    {
+                        "name": "HL2_HIT_CANCOP_WITHCAN",
+                        "defaultvalue": 0,
+                        "displayName": "Defiant",
+                        "hidden": 1,
+                        "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/220/hl2_hit_cancop_withcan.jpg",
+                        "icongray": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/220/hl2_hit_cancop_withcan_bw.jpg"
+                    },
+                    {
+                        "name": "HL2_PUT_CANINTRASH",
+                        "defaultvalue": 0,
+                        "displayName": "Submissive",
+                        "hidden": 1,
+                        "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/220/hl2_put_canintrash.jpg",
+                        "icongray": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/220/hl2_put_canintrash_bw.jpg"
+                    }
+                ]
+            }
+        }
+    }
+}

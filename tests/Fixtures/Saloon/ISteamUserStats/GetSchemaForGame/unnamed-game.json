@@ -1,0 +1,45 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "game": {
+            "gameName": "",
+            "gameVersion": "100",
+            "availableGameStats": {
+                "stats": [
+                    {
+                        "name": "deaths",
+                        "defaultvalue": 0,
+                        "displayName": "Deaths"
+                    },
+                    {
+                        "name": "kill_bear",
+                        "defaultvalue": 0,
+                        "displayName": ""
+                    }
+                ],
+                "achievements": [
+                    {
+                        "name": "PLACE_CAMPFIRE",
+                        "defaultvalue": 0,
+                        "displayName": "Place Camp Fire",
+                        "hidden": 0,
+                        "description": "Place a camp fire",
+                        "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/252490/8dde5848abac85e61a376bcadc2a6f267c909324.jpg",
+                        "icongray": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/252490/dabac537e5d033aef775c31dc402f5cd3e598dbb.jpg"
+                    },
+                    {
+                        "name": "GLUTTON",
+                        "defaultvalue": 0,
+                        "displayName": "Glutton",
+                        "hidden": 1,
+                        "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/252490/3b9d9664a85847891233384f230e0b2ecfc92e01.jpg",
+                        "icongray": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/252490/07db7c83c3514799bd57ed7781ffeceb2dc90fe9.jpg"
+                    }
+                ]
+            }
+        }
+    }
+}

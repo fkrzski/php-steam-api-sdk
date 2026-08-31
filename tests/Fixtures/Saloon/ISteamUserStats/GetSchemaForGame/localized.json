@@ -1,0 +1,59 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "game": {
+            "gameName": "Dead by Daylight",
+            "gameVersion": "234",
+            "availableGameStats": {
+                "stats": [
+                    {
+                        "name": "DBD_KillerSkulls",
+                        "defaultvalue": 0,
+                        "displayName": ""
+                    },
+                    {
+                        "name": "DBD_BloodwebMaxLevel",
+                        "defaultvalue": 1,
+                        "displayName": ""
+                    },
+                    {
+                        "name": "DBD_GeneratorPct_float",
+                        "defaultvalue": 0,
+                        "displayName": ""
+                    }
+                ],
+                "achievements": [
+                    {
+                        "name": "ACH_SACRIFICE_4_SURVIVORS_IAM",
+                        "defaultvalue": 0,
+                        "displayName": "Wielka Ofiara",
+                        "hidden": 0,
+                        "description": "Złóż w ofierze wszystkich czterech ocalałych; dokonaj tego podczas jednego meczu.",
+                        "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/381210/ecec7bc28a5d39088f1296c5f5a305ab53896754.jpg",
+                        "icongray": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/381210/a652a10c283a58e926799e545ac47168b13cb053.jpg"
+                    },
+                    {
+                        "name": "ACH_SACRIFICE_100_CAMPERS",
+                        "defaultvalue": 0,
+                        "displayName": "Kęs dla Bytu",
+                        "hidden": 0,
+                        "description": "Złóż w ofierze 100 ocalałych.",
+                        "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/381210/d239f310ec9768883a1f3e6ee02a8d497e961c6e.jpg",
+                        "icongray": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/381210/1f3725111a094bf312b178d9c8234fe52364e2a0.jpg"
+                    },
+                    {
+                        "name": "ACH_KILL_1_CAMPER",
+                        "defaultvalue": 0,
+                        "displayName": "Krew na rękach",
+                        "hidden": 1,
+                        "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/381210/4db5d81e45ec6395447a3678533a803ac11bad66.jpg",
+                        "icongray": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/381210/8149b07e5fc2f150494fdf777b2da08ca8aca48e.jpg"
+                    }
+                ]
+            }
+        }
+    }
+}

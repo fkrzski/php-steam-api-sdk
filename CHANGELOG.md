@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-01
+
 ### Added
 
 - `AppNotFoundException` for an app ID Steam does not know, thrown only where the response separates it from an app that merely exposes no stats. The `400` on `GetPlayerAchievementsRequest` does not, so it keeps `StatsUnavailableException` ([#47](https://github.com/fkrzski/php-steam-api-sdk/issues/47)).
@@ -109,7 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
-[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.5.0...HEAD
+[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.6.0...HEAD
+[0.6.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.6.0
 [0.5.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.5.0
 [0.4.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.4.0
 [0.3.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.3.0

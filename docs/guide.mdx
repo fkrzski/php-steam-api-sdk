@@ -183,11 +183,13 @@ from a rejected one, so everywhere else it surfaces as rejected. A JSON `400` on
 `400` means nothing but an app ID Steam does not know, so it is the one that raises
 `AppNotFoundException` from that status.
 
-<Aside type="caution" title="Three endpoints answer ambiguously">
-`GetPlayerAchievements` returns a byte-identical `Requested app has no stats` body for an
-app without achievements and for a private profile. `GetRecentlyPlayedGames` and
-`GetCommunityBadgeProgress` return an empty payload both for a hidden profile and for a
-SteamID64 that belongs to no account. Every message names every cause rather than guessing.
+<Aside type="caution" title="Four endpoints answer ambiguously">
+`GetPlayerAchievements` returns a byte-identical `Requested app has no stats` body for an app
+without achievements and for a private profile, and `GetGlobalAchievementPercentagesForApp`
+answers the same `403` for a game carrying no achievements and for a game ID Steam does not
+know. `GetRecentlyPlayedGames` and `GetCommunityBadgeProgress` return an empty payload both
+for a hidden profile and for a SteamID64 that belongs to no account. Every message names
+every cause rather than guessing.
 </Aside>
 
 ## Testing

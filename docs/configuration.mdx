@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Configure the SteamConnector through the readonly SteamConfig — the API key, the rate-limit store, and how the daily quota is enforced across processes.
+description: Configure the SteamConnector through the readonly SteamConfig — the API key, the default language, the rate-limit store, and the daily quota across processes.
 ---
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -37,7 +37,8 @@ needs at runtime lives on that object.
 </Steps>
 
 The key is appended to every request as the `key` query parameter, so you never pass it
-per call.
+per call. Two endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers` and
+`GetGlobalAchievementPercentagesForApp` — go out with it stripped back off.
 
 ## SteamConfig options
 
@@ -54,8 +55,8 @@ new connector.
 
 ## Default language
 
-Steam localises achievement names and descriptions through the `l` query parameter. Set it
-once on the config rather than on every call:
+Steam localises the achievement and stat names it sends back through the `l` query
+parameter. Set it once on the config rather than on every call:
 
 ```php title="steam.php" "language: Language::Polish"
 use Fkrzski\SteamApiSdk\Enums\Language;

@@ -12,8 +12,9 @@ same arguments. Every argument that identifies a user is a
 documented in [Data objects](/php-steam-api-sdk/dto-reference).
 
 Badges list what a request throws on its own. On top of that, any request can raise
-`InvalidApiKeyException`, `SteamRateLimitException` or `SteamApiException` from the
-connector — see [Exceptions](/php-steam-api-sdk/guide#exceptions).
+`SteamRateLimitException` or `SteamApiException` from the connector, and every request
+that carries a key can raise `InvalidApiKeyException` — see
+[Exceptions](/php-steam-api-sdk/guide#exceptions).
 
 Both layers are namespaced by the Steam interface they belong to — one resource per
 interface, and one request class per endpoint:
@@ -156,9 +157,10 @@ new GetGlobalAchievementPercentagesForAppRequest($gameId)
 <p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws StatsUnavailableException" variant="danger" size="small" /></p>
 
 How much of the playerbase has unlocked each achievement in a game, ordered from the most
-common down. Steam serves it anonymously, so the SDK keeps the configured key out of this
-one query. The exception covers two causes — a game carrying no achievements, or a game ID
-Steam does not know — because both answer identically.
+common down. Steam serves it anonymously, so the SDK strips the configured key from the
+query, and no key error can land here. Every `403` is about the game, and covers two
+causes — a game carrying no achievements, or a game ID Steam does not know — because both
+answer identically.
 
 ```php
 $achievements = $connector->stats()->globalAchievements(381210);
@@ -185,7 +187,7 @@ new GetNumberOfCurrentPlayersRequest($appId)
 <p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws AppNotFoundException" variant="danger" size="small" /></p>
 
 How many people are playing a game right now, as a plain `int` rather than a DTO. Steam
-serves it anonymously, so the SDK keeps the configured key out of this one query.
+serves it anonymously, so the SDK strips the configured key from the query.
 
 ```php
 $players = $connector->stats()->currentPlayers(381210);

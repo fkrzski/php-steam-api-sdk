@@ -7,6 +7,7 @@ namespace Fkrzski\SteamApiSdk;
 use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Enums\Language;
+use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
@@ -65,6 +66,8 @@ class SteamConnector extends Connector
 
         if ($request instanceof SendsNoApiKey) {
             $pendingRequest->query()->remove('key');
+        } elseif ($this->steamConfig->apiKey === null) {
+            throw ApiKeyNotConfiguredException::forRequest($request);
         }
 
         if (! $request instanceof HasLanguage || $request->language instanceof Language) {
@@ -111,16 +114,27 @@ class SteamConnector extends Connector
      */
     protected function defaultQuery(): array
     {
+        if ($this->steamConfig->apiKey === null) {
+            return [];
+        }
+
         return [
             'key' => $this->steamConfig->apiKey,
         ];
     }
 
     /**
+     * Steam bills the daily budget to the API key, so a keyless connector meters
+     * nothing locally and leans on the 429 limiter the plugin adds on its own.
+     *
      * @return array<Limit>
      */
     protected function resolveLimits(): array
     {
+        if ($this->steamConfig->apiKey === null) {
+            return [];
+        }
+
         return [
             Limit::allow(100_000)->everyDay(),
         ];
@@ -141,6 +155,10 @@ class SteamConnector extends Connector
      */
     protected function getLimiterPrefix(): ?string
     {
+        if ($this->steamConfig->apiKey === null) {
+            return 'SteamConnector:anonymous';
+        }
+
         return sprintf('SteamConnector:%s', hash('sha256', $this->steamConfig->apiKey));
     }
 

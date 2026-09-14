@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Saloon\Http\Faking\MockClient;
@@ -11,7 +13,7 @@ use Saloon\Http\Faking\MockResponse;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
-covers([SteamRateLimitException::class, SteamConnector::class]);
+covers([SteamRateLimitException::class, SteamConnector::class, ApiKeyNotConfiguredException::class]);
 
 beforeEach(function (): void {
     MemoryStore::clear();
@@ -73,6 +75,47 @@ test('connectors sharing an API key share one counter', function (): void {
         ->and(dailyHits($second))->toBe(2);
 });
 
+test('without an API key the daily budget is not metered at all', function (): void {
+    $connector = new SteamConnector(new SteamConfig);
+
+    $names = array_map(
+        static fn (Limit $limit): string => $limit->getName(),
+        $connector->getLimits(),
+    );
+
+    expect($names)->toBe(['SteamConnector:anonymous:too_many_attempts_limit']);
+});
+
+test('anonymous requests leave no daily counter behind', function (): void {
+    sendCurrentPlayersRequest();
+    sendCurrentPlayersRequest();
+
+    expect(dailyLimitKeys())->toBeEmpty();
+});
+
+test('Steam throttling anonymous traffic still raises SteamRateLimitException', function (): void {
+    $connector = new SteamConnector(new SteamConfig);
+
+    $connector->withMockClient(new MockClient([
+        GetNumberOfCurrentPlayersRequest::class => MockResponse::make([], 429, ['Retry-After' => '120']),
+    ]));
+
+    expect(fn (): mixed => $connector->send(new GetNumberOfCurrentPlayersRequest(381210)))
+        ->toThrow(SteamRateLimitException::class);
+});
+
+test('a request refused for a missing API key never reaches the wire', function (): void {
+    $connector = new SteamConnector(new SteamConfig);
+
+    $connector->withMockClient($mockClient = new MockClient([
+        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),
+    ]));
+
+    expect(fn (): mixed => $connector->send(new ResolveVanityUrlRequest('nick')))
+        ->toThrow(ApiKeyNotConfiguredException::class)
+        ->and($mockClient->getRecordedResponses())->toBeEmpty();
+});
+
 test('hitting the limit throws SteamRateLimitException with the offending limit', function (): void {
     $connector = new class(new SteamConfig('test-key')) extends SteamConnector
     {
@@ -111,6 +154,19 @@ function sendVanityUrlRequest(string $apiKey): SteamConnector
     ]));
 
     $connector->send(new ResolveVanityUrlRequest('nick'));
+
+    return $connector;
+}
+
+function sendCurrentPlayersRequest(): SteamConnector
+{
+    $connector = new SteamConnector(new SteamConfig);
+
+    $connector->withMockClient(new MockClient([
+        GetNumberOfCurrentPlayersRequest::class => MockResponse::fixture('ISteamUserStats/GetNumberOfCurrentPlayers/default'),
+    ]));
+
+    $connector->send(new GetNumberOfCurrentPlayersRequest(381210));
 
     return $connector;
 }

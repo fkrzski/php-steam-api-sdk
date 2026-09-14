@@ -10,7 +10,7 @@ final class InvalidApiKeyException extends SteamApiException
 {
     public static function missing(Response $response): self
     {
-        return new self('Steam API key is missing. Check the key passed to SteamConfig.', $response);
+        return new self('Steam received no API key. Check the key passed to SteamConfig.', $response);
     }
 
     public static function rejected(Response $response): self

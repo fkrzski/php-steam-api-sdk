@@ -158,7 +158,7 @@ test('a 400 caused by a missing key is left to the connector', function (): void
     ]));
 
     $connector->send(new GetSchemaForGameRequest(381210));
-})->throws(InvalidApiKeyException::class, 'Steam API key is missing. Check the key passed to SteamConfig.');
+})->throws(InvalidApiKeyException::class, 'Steam received no API key. Check the key passed to SteamConfig.');
 
 test('a failure other than 400 is left to the connector', function (): void {
     $connector = new SteamConnector(new SteamConfig('test-key'));

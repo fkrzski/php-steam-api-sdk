@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Enums\Language;
+use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
@@ -18,12 +19,13 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\Fixture;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
+use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 
-covers([SteamConnector::class, InvalidApiKeyException::class, ProfileNotPublicException::class]);
+covers([SteamConnector::class, ApiKeyNotConfiguredException::class, InvalidApiKeyException::class, ProfileNotPublicException::class]);
 
 test('base URL resolves to Steam Web API host', function (): void {
     $connector = new SteamConnector(new SteamConfig('any'));
@@ -120,6 +122,30 @@ test('every other request keeps the configured key', function (): void {
     expect(bootedQuery(null, achievementsRequest()))->toHaveKey('key', 'any');
 });
 
+test('default query carries nothing when no key is configured', function (): void {
+    $connector = new SteamConnector(new SteamConfig);
+
+    expect($connector->query()->all())->toBe([]);
+});
+
+test('a request Steam serves anonymously needs no configured key', function (): void {
+    $connector = new SteamConnector(new SteamConfig);
+
+    $query = $connector->createPendingRequest(new GetNumberOfCurrentPlayersRequest(381210))->query()->all();
+
+    expect($query)->toBe(['appid' => 381210]);
+});
+
+test('a request that carries a key fails locally when none is configured', function (): void {
+    $connector = new SteamConnector(new SteamConfig);
+
+    expect(fn (): PendingRequest => $connector->createPendingRequest(achievementsRequest()))
+        ->toThrow(
+            ApiKeyNotConfiguredException::class,
+            sprintf('No Steam API key is configured, and %s needs one. Pass a key to SteamConfig.', GetPlayerAchievementsRequest::class),
+        );
+});
+
 /**
  * Send through the connector so the failure travels the real middleware path.
  */
@@ -166,7 +192,7 @@ test('400 reporting a missing key maps to InvalidApiKeyException', function (): 
     $thrown = sendFailing(MockResponse::fixture('Errors/missing-key'));
 
     expect($thrown)->toBeInstanceOf(InvalidApiKeyException::class)
-        ->and($thrown->getMessage())->toBe('Steam API key is missing. Check the key passed to SteamConfig.');
+        ->and($thrown->getMessage())->toBe('Steam received no API key. Check the key passed to SteamConfig.');
 });
 
 test('400 unrelated to the key falls back to SteamApiException', function (): void {

@@ -129,7 +129,7 @@ test('a 400 caused by a missing key is left to the connector, not read as a bad 
     $connector->withMockClient($mock);
 
     $connector->send(new GetPlayerAchievementsRequest(playerAchievementsSteamId(), 381210))->dto();
-})->throws(InvalidApiKeyException::class, 'Steam API key is missing. Check the key passed to SteamConfig.');
+})->throws(InvalidApiKeyException::class, 'Steam received no API key. Check the key passed to SteamConfig.');
 
 test('a private profile and an app without stats are reported identically', function (): void {
     $mock = new MockClient([

@@ -44,13 +44,31 @@ per call. Two endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `apiKey` | `string` | — (required) | Your Steam Web API key. |
+| `apiKey` | `?string` | `null` | Your Steam Web API key. Leave it out to reach only the anonymous endpoints. |
 | `rateLimitStore` | `?RateLimitStore` | `MemoryStore` | Where the daily request budget is tracked. |
 | `language` | `?Language` | `null` | Language for endpoints that localise their payload. |
 
 <Aside type="note" title="Readonly, so replace rather than mutate">
 `SteamConfig` is `final readonly` — to change a setting, construct a new config and a
 new connector.
+</Aside>
+
+## Without an API key
+
+A config built without one reaches the two anonymous endpoints and nothing else. Every
+other request raises `ApiKeyNotConfiguredException` before it leaves your process, naming
+the request class that needed the key:
+
+```php title="steam.php"
+$connector = new SteamConnector(new SteamConfig);
+
+$connector->stats()->currentPlayers(381210);  // sent
+$connector->users()->summaries([$steamId]);   // ApiKeyNotConfiguredException
+```
+
+<Aside type="caution" title="A blank key is not the same as no key">
+`new SteamConfig(apiKey: '')` throws where `null` is accepted. A blank string would
+otherwise travel to Steam as `key=` and come back refused a round trip later.
 </Aside>
 
 ## Default language
@@ -94,6 +112,9 @@ try {
     $seconds = $e->limit->getRemainingSeconds();
 }
 ```
+
+Steam bills that budget to the key, so a connector without one counts nothing locally. It
+still raises the same exception when Steam itself answers `429`.
 
 ## Multiple API keys
 

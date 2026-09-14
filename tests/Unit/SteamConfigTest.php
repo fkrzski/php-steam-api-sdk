@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Enums\Language;
+use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\SteamConfig;
 
-covers(SteamConfig::class);
+covers([SteamConfig::class, ApiKeyNotConfiguredException::class]);
 
 test('SteamConfig stores api key', function (): void {
     $config = new SteamConfig(apiKey: 'test-key');
@@ -31,3 +32,18 @@ test('SteamConfig stores the default language', function (): void {
 
     expect($config->language)->toBe(Language::Polish);
 });
+
+test('SteamConfig carries no api key until one is passed', function (): void {
+    expect((new SteamConfig)->apiKey)->toBeNull();
+});
+
+test('SteamConfig rejects an api key that holds no characters', function (string $apiKey): void {
+    expect(fn (): SteamConfig => new SteamConfig(apiKey: $apiKey))
+        ->toThrow(
+            ApiKeyNotConfiguredException::class,
+            'Steam API key is blank. Pass a real key to SteamConfig, or null to reach only the endpoints Steam serves anonymously.',
+        );
+})->with([
+    'empty' => '',
+    'whitespace' => "  \t ",
+]);

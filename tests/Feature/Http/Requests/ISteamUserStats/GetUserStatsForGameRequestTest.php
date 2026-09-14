@@ -125,4 +125,4 @@ test('a 400 caused by a missing key is left to the connector', function (): void
     $connector->withMockClient($mock);
 
     $connector->send(new GetUserStatsForGameRequest(userStatsSteamId(), 381210))->dto();
-})->throws(InvalidApiKeyException::class, 'Steam API key is missing. Check the key passed to SteamConfig.');
+})->throws(InvalidApiKeyException::class, 'Steam received no API key. Check the key passed to SteamConfig.');

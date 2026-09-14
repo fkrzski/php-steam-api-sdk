@@ -81,8 +81,9 @@ $summaries = $response->dto();
 ```
 
 The connector uses Saloon's `AlwaysThrowOnErrors`, so a non-2xx response fails before the
-DTO is built — always as an SDK exception, never a Saloon one. Which call returns which
-DTO is in the [API reference](/php-steam-api-sdk/api-reference).
+DTO is built — always as an SDK exception, never a Saloon one. The same holds when no
+response comes back at all, through `send()`, `sendAsync()` and `pool()` alike. Which call
+returns which DTO is in the [API reference](/php-steam-api-sdk/api-reference).
 
 ## Exceptions
 
@@ -96,6 +97,7 @@ SteamApiException                  (root, extends RuntimeException)
 ├── InvalidSteamIdException        Malformed SteamID64.
 ├── ProfileNotPublicException      Profile, games list, groups, or stats are private.
 ├── StatsUnavailableException      Stats withheld: none exist, unknown app, or private profile.
+├── SteamConnectionException       Steam never answered: timeout, DNS, TLS, refused connection.
 ├── SteamRateLimitException        Daily 100k quota reached; exposes the offending Limit.
 ├── SteamUserNotFoundException     Vanity URL unresolved or profile missing.
 └── TooManySteamIdsException       More than 100 IDs in a batch request.
@@ -150,13 +152,14 @@ try {
     $summaries = $connector->users()->summaries([$id]);
 } catch (SteamApiException $e) {
     $e->getCode();          // 403
-    $e->response?->body();  // raw Steam payload, or null for client-side failures
+    $e->response?->body();  // raw Steam payload, or null when no response came back
 }
 ```
 
 <Aside type="note" title="A null response is routine, not an edge case">
-`response` is `null` for every failure raised before a request went out: a malformed
-SteamID64, an oversized batch, or the quota exhausted locally.
+`response` is `null` for every failure raised before a request went out — a malformed
+SteamID64, an oversized batch, the quota exhausted locally — and for one that went out and
+got no answer, where the Saloon exception sits on `getPrevious()` instead.
 </Aside>
 
 ### How statuses are mapped
@@ -175,7 +178,9 @@ Steam signals failure in two different ways, and the SDK reads both:
 | `200` with an empty or `success: 42` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` |
 
 `ApiKeyNotConfiguredException` has no row here: it is raised locally, so a request that
-needs a key the config does not carry never reaches Steam at all.
+needs a key the config does not carry never reaches Steam at all. `SteamConnectionException`
+has none either — it stands for the request Steam never answered, so there is no status to
+map and `getCode()` stays `0`.
 
 Steam overloads `400` across unrelated causes. Key errors are the one case it answers
 with HTML rather than JSON — that is what keeps a misconfigured key from surfacing as a

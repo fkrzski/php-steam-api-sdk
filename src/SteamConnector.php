@@ -11,13 +11,19 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
+use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Promise\PromiseInterface;
 use Override;
+use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Http\Connector;
+use Saloon\Http\Faking\MockClient;
 use Saloon\Http\PendingRequest;
+use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 use Saloon\RateLimitPlugin\Limit;
@@ -77,6 +83,32 @@ class SteamConnector extends Connector
         if ($this->steamConfig->language instanceof Language) {
             $pendingRequest->query()->add('l', $this->steamConfig->language->value);
         }
+    }
+
+    /**
+     * Not Saloon's fatal pipeline: that one runs before the retry decision.
+     */
+    #[Override]
+    public function send(Request $request, ?MockClient $mockClient = null, ?callable $handleRetry = null): Response
+    {
+        try {
+            return parent::send($request, $mockClient, $handleRetry);
+        } catch (FatalRequestException $fatalRequestException) {
+            throw SteamConnectionException::fromFatalRequest($fatalRequestException);
+        }
+    }
+
+    /**
+     * Covers pool(), which sends every request through here.
+     */
+    #[Override]
+    public function sendAsync(Request $request, ?MockClient $mockClient = null): PromiseInterface
+    {
+        return parent::sendAsync($request, $mockClient)->otherwise(
+            static fn (mixed $reason): PromiseInterface => $reason instanceof FatalRequestException
+                ? throw SteamConnectionException::fromFatalRequest($reason)
+                : Create::rejectionFor($reason),
+        );
     }
 
     /**

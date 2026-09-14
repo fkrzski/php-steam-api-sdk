@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `ApiKeyNotConfiguredException` for a request that needs an API key sent from a config carrying none, and for a blank key handed to `SteamConfig`. Both are raised locally, so neither costs a round trip or a slot of the daily budget ([#59](https://github.com/fkrzski/php-steam-api-sdk/issues/59)).
+- `SteamConnectionException` for a request that never reached Steam — a timeout, a DNS failure, a TLS error, a refused connection. It carries no response and a `0` code, with Saloon's `FatalRequestException` on `getPrevious()` ([#60](https://github.com/fkrzski/php-steam-api-sdk/issues/60)).
 
 ### Changed
 
 - **BC break.** `SteamConfig::$apiKey` is a `?string` defaulting to `null`, which makes `GetNumberOfCurrentPlayersRequest` and `GetGlobalAchievementPercentagesForAppRequest` reachable with no key configured. Callers reading the property as a `string` have to handle `null` ([#59](https://github.com/fkrzski/php-steam-api-sdk/issues/59)).
+- **BC break.** Transport failures out of `send()`, `sendAsync()` and `pool()` surface as `SteamConnectionException` rather than Saloon's `FatalRequestException`. Callers catching the Saloon exception have to catch the SDK one instead ([#60](https://github.com/fkrzski/php-steam-api-sdk/issues/60)).
 - A connector without an API key meters no daily budget, because Steam bills the 100 000 requests to the key; a `429` from Steam still raises `SteamRateLimitException` ([#59](https://github.com/fkrzski/php-steam-api-sdk/issues/59)).
 - `InvalidApiKeyException::missing()` reads "Steam received no API key" rather than "Steam API key is missing", so Steam's verdict no longer reads like the local configuration error ([#59](https://github.com/fkrzski/php-steam-api-sdk/issues/59)).
 

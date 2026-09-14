@@ -13,7 +13,8 @@ documented in [Data objects](/php-steam-api-sdk/dto-reference).
 
 Badges list what a request throws on its own. On top of that, any request can raise
 `SteamRateLimitException` or `SteamApiException` from the connector, and every request
-that carries a key can raise `InvalidApiKeyException` — see
+that carries a key can raise `InvalidApiKeyException`, or `ApiKeyNotConfiguredException`
+when the config carries no key at all — see
 [Exceptions](/php-steam-api-sdk/guide#exceptions).
 
 Both layers are namespaced by the Steam interface they belong to — one resource per
@@ -158,7 +159,7 @@ new GetGlobalAchievementPercentagesForAppRequest($gameId)
 
 How much of the playerbase has unlocked each achievement in a game, ordered from the most
 common down. Steam serves it anonymously, so the SDK strips the configured key from the
-query, and no key error can land here. Every `403` is about the game, and covers two
+query, a connector built without one can send it, and no key error can land here. Every `403` is about the game, and covers two
 causes — a game carrying no achievements, or a game ID Steam does not know — because both
 answer identically.
 
@@ -187,7 +188,8 @@ new GetNumberOfCurrentPlayersRequest($appId)
 <p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws AppNotFoundException" variant="danger" size="small" /></p>
 
 How many people are playing a game right now, as a plain `int` rather than a DTO. Steam
-serves it anonymously, so the SDK strips the configured key from the query.
+serves it anonymously, so the SDK strips the configured key from the query, and a
+connector built without one can send it.
 
 ```php
 $players = $connector->stats()->currentPlayers(381210);

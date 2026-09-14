@@ -89,15 +89,16 @@ DTO is in the [API reference](/php-steam-api-sdk/api-reference).
 Every SDK failure extends `SteamApiException`, so one catch handles them all:
 
 ```text frame="none"
-SteamApiException                (root, extends RuntimeException)
-├── AppNotFoundException         No Steam app carries the given app ID.
-├── InvalidApiKeyException       API key missing, wrong, or revoked.
-├── InvalidSteamIdException      Malformed SteamID64.
-├── ProfileNotPublicException    Profile, games list, groups, or stats are private.
-├── StatsUnavailableException    Stats withheld: none exist, unknown app, or private profile.
-├── SteamRateLimitException      Daily 100k quota reached; exposes the offending Limit.
-├── SteamUserNotFoundException   Vanity URL unresolved or profile missing.
-└── TooManySteamIdsException     More than 100 IDs in a batch request.
+SteamApiException                  (root, extends RuntimeException)
+├── ApiKeyNotConfiguredException   No key on the config, and the request needs one.
+├── AppNotFoundException           No Steam app carries the given app ID.
+├── InvalidApiKeyException         Steam refused the key: wrong, revoked, or absent.
+├── InvalidSteamIdException        Malformed SteamID64.
+├── ProfileNotPublicException      Profile, games list, groups, or stats are private.
+├── StatsUnavailableException      Stats withheld: none exist, unknown app, or private profile.
+├── SteamRateLimitException        Daily 100k quota reached; exposes the offending Limit.
+├── SteamUserNotFoundException     Vanity URL unresolved or profile missing.
+└── TooManySteamIdsException       More than 100 IDs in a batch request.
 ```
 
 Catch the leaf you care about, or the root to handle every SDK failure uniformly:
@@ -172,6 +173,9 @@ Steam signals failure in two different ways, and the SDK reads both:
 | `429` | `SteamRateLimitException` |
 | any other `4xx` / `5xx` | `SteamApiException` |
 | `200` with an empty or `success: 42` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` |
+
+`ApiKeyNotConfiguredException` has no row here: it is raised locally, so a request that
+needs a key the config does not carry never reaches Steam at all.
 
 Steam overloads `400` across unrelated causes. Key errors are the one case it answers
 with HTML rather than JSON — that is what keeps a misconfigured key from surfacing as a

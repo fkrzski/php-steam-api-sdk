@@ -27,4 +27,12 @@ class SteamApiException extends RuntimeException
             $exception,
         );
     }
+
+    public static function fromUnsuccessfulResponse(Response $response, string $reason): self
+    {
+        return new self(
+            sprintf('Steam API request failed: %s', $reason),
+            $response,
+        );
+    }
 }

@@ -13,6 +13,7 @@ use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Http\Resources\AppsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
@@ -75,6 +76,11 @@ class SteamConnector extends Connector
     public function stats(): StatsResource
     {
         return new StatsResource($this);
+    }
+
+    public function apps(): AppsResource
+    {
+        return new AppsResource($this);
     }
 
     /**

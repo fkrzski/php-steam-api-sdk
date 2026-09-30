@@ -10,6 +10,17 @@ Timestamps are always `DateTimeImmutable`. A nullable property (`?`) means Steam
 the field, never that decoding failed; where an absent field would be ambiguous the SDK
 raises a [domain exception](/php-steam-api-sdk/guide#exceptions) instead.
 
+## AppVersionCheck
+
+Returned by [`UpToDateCheckRequest`](/php-steam-api-sdk/api-reference#uptodatecheckrequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `isUpToDate` | `bool` | Whether the version is at least the one Steam requires. |
+| `isListable` | `bool` | Steam's `version_is_listable`, reported separately but so far always equal to `isUpToDate`. |
+| `requiredVersion` | `?int` | The version Steam requires; `null` when up to date. |
+| `message` | `?string` | The game's own notice for an outdated server, free text; `null` when up to date. |
+
 ## CommunityBadgeQuest
 
 Returned by [`GetCommunityBadgeProgressRequest`](/php-steam-api-sdk/api-reference#getcommunitybadgeprogressrequest).

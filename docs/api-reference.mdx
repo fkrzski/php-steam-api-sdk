@@ -30,6 +30,8 @@ interface, and one request class per endpoint:
       - GetOwnedGamesRequest.php
       - GetRecentlyPlayedGamesRequest.php
       - GetSteamLevelRequest.php
+    - ISteamApps
+      - UpToDateCheckRequest.php
     - ISteamUser
       - GetFriendListRequest.php
       - GetPlayerBansRequest.php
@@ -43,6 +45,7 @@ interface, and one request class per endpoint:
       - GetSchemaForGameRequest.php
       - GetUserStatsForGameRequest.php
   - Resources
+    - AppsResource.php
     - PlayersResource.php
     - StatsResource.php
     - UsersResource.php
@@ -66,6 +69,7 @@ interface, and one request class per endpoint:
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `users()->groups()` | `list<UserGroup>` |
 | [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `stats()->userStats()` | `UserStats` |
 | [`ResolveVanityUrlRequest`](#resolvevanityurlrequest) | `users()->resolveVanityUrl()` | `SteamId` |
+| [`UpToDateCheckRequest`](#uptodatecheckrequest) | `apps()->upToDateCheck()` | `AppVersionCheck` |
 
 ## GetBadgesRequest
 
@@ -449,3 +453,31 @@ Resolves a vanity slug — the `<name>` in `steamcommunity.com/id/<name>` — to
 ```php
 $steamId = $connector->users()->resolveVanityUrl('gabelogannewell');
 ```
+
+## UpToDateCheckRequest
+
+```text frame="none"
+$connector->apps()->upToDateCheck(int $appId, int $version)
+
+new UpToDateCheckRequest($appId, $version)
+```
+
+<p><Badge text="ISteamApps" variant="note" size="small" />{' '}<Badge text="throws AppVersionUnavailableException" variant="danger" size="small" /></p>
+
+Whether a game server's build is still the one Steam accepts, and which version to update
+to if not. Steam serves it anonymously, so the SDK strips the configured key from the query,
+and a connector built without one can send it.
+
+```php
+$check = $connector->apps()->upToDateCheck(440, $installedVersion);
+
+if (! $check->isUpToDate) {
+    echo 'Update to ', $check->requiredVersion, ': ', $check->message, PHP_EOL;
+}
+```
+
+<Aside type="caution" title="Only games with versioned servers answer">
+Steam cannot check a game that publishes no server version, such as Portal 2, and answers it
+exactly like an app ID it does not know, so both raise the exception. App ID `0` is not a
+Steam-wide query here: Steam answers `400`, which surfaces as `SteamApiException`.
+</Aside>

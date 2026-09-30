@@ -37,8 +37,8 @@ needs at runtime lives on that object.
 </Steps>
 
 The key is appended to every request as the `key` query parameter, so you never pass it
-per call. Two endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers` and
-`GetGlobalAchievementPercentagesForApp` — go out with it stripped back off.
+per call. The endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`,
+`GetGlobalAchievementPercentagesForApp` and `UpToDateCheck` — go out with it stripped back off.
 
 ## SteamConfig options
 
@@ -60,7 +60,7 @@ new connector.
 
 ## Without an API key
 
-A config built without one reaches the two anonymous endpoints and nothing else. Every
+A config built without one reaches the anonymous endpoints and nothing else. Every
 other request raises `ApiKeyNotConfiguredException` before it leaves your process, naming
 the request class that needed the key:
 

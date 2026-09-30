@@ -1,0 +1,15 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "success": true,
+            "up_to_date": false,
+            "version_is_listable": false,
+            "required_version": 10828683,
+            "message": "Your server is out of date, please upgrade"
+        }
+    }
+}

@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Configure the SteamConnector through the readonly SteamConfig — the API key, default language, timeouts, rate-limit store, and quota across processes.
+description: Configure the SteamConnector through the readonly SteamConfig — API key, default language, timeouts, retries, rate-limit store, and quota across processes.
 ---
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -49,6 +49,9 @@ per call. Two endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`
 | `language` | `?Language` | `null` | Language for endpoints that localise their payload. |
 | `connectTimeout` | `?float` | `10.0` | Seconds to wait for a connection to Steam. |
 | `requestTimeout` | `?float` | `30.0` | Seconds the whole request may take. |
+| `tries` | `int` | `1` | Attempts per request, the first one included. |
+| `retryInterval` | `int` | `0` | Milliseconds to pause before a retry. |
+| `exponentialBackoff` | `bool` | `false` | Double the pause after every retry. |
 
 <Aside type="note" title="Readonly, so replace rather than mutate">
 `SteamConfig` is `final readonly` — to change a setting, construct a new config and a
@@ -113,6 +116,33 @@ $connector = new SteamConnector(new SteamConfig(
 `0` waits indefinitely, and a negative value throws `InvalidTimeoutException` as the config
 is built. A request that runs out of either raises `SteamConnectionException`, like any
 other request Steam never answered.
+
+## Retries
+
+Every request is sent once until `tries` says otherwise:
+
+```php title="steam.php" "tries: 3" "retryInterval: 500" "exponentialBackoff: true"
+$connector = new SteamConnector(new SteamConfig(
+    apiKey: $_ENV['STEAM_API_KEY'],
+    tries: 3,
+    retryInterval: 500,
+    exponentialBackoff: true,
+));
+```
+
+`retryInterval` is in milliseconds and `exponentialBackoff` doubles it after each retry, so
+the config above pauses 500 ms, then 1 s. Fewer than one try or a negative interval throws
+`InvalidRetryException` as the config is built.
+
+Only what can change by the next attempt is retried: Steam unreachable, a timeout, a `5xx`.
+A `4xx` is thrown at once, and so is `SteamRateLimitException`, whether the budget ran out
+locally or Steam answered `429`. Once the tries are spent, the last attempt's exception is
+thrown. `sendAsync()` and `pool()` send every request once.
+
+<Aside type="caution" title="Every attempt is a request">
+Each retry spends one of the day's 100 000 requests: the budget counts a `5xx` like any
+other answer.
+</Aside>
 
 ## Rate limiting
 

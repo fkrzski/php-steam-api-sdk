@@ -69,7 +69,7 @@ $summaries = $connector->users()->summaries([$id]);
 
 Behind every resource method sits a plain Saloon `Request`, still public and unchanged.
 Build one yourself when you want the response rather than only the DTO, or a Saloon
-feature that takes a request — `pool()`, `sendAsync()`, `sendAndRetry()`:
+feature that takes a request — `pool()` or `sendAsync()`:
 
 ```php
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
@@ -94,6 +94,7 @@ SteamApiException                  (root, extends RuntimeException)
 ├── ApiKeyNotConfiguredException   No key on the config, and the request needs one.
 ├── AppNotFoundException           No Steam app carries the given app ID.
 ├── InvalidApiKeyException         Steam refused the key: wrong, revoked, or absent.
+├── InvalidRetryException          Fewer than one try, or a negative retry interval.
 ├── InvalidSteamIdException        Malformed SteamID64.
 ├── InvalidTimeoutException        Negative timeout handed to SteamConfig.
 ├── ProfileNotPublicException      Profile, games list, groups, or stats are private.
@@ -157,6 +158,9 @@ try {
 }
 ```
 
+A status the SDK gives no meaning of its own surfaces as the root `SteamApiException`, with
+Saloon's `RequestException` on `getPrevious()`.
+
 <Aside type="note" title="A null response is routine, not an edge case">
 `response` is `null` for every failure raised before a request went out — a malformed
 SteamID64, an oversized batch, the quota exhausted locally — and for one that went out and
@@ -175,7 +179,7 @@ Steam signals failure in two different ways, and the SDK reads both:
 | `401` or `403` not naming the `key` parameter | `ProfileNotPublicException` |
 | `404` + JSON, on `ISteamUserStats` | `AppNotFoundException` |
 | `429` | `SteamRateLimitException` |
-| any other `4xx` / `5xx` | `SteamApiException` |
+| any other `4xx` / `5xx` | `SteamApiException`, a `5xx` once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
 | `200` with an empty or `success: 42` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` |
 
 `ApiKeyNotConfiguredException` has no row here: it is raised locally, so a request that

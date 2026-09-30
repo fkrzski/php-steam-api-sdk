@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk;
 
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
+use Fkrzski\SteamApiSdk\Exceptions\InvalidRetryException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidTimeoutException;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 
@@ -17,6 +18,9 @@ final readonly class SteamConfig
         public ?Language $language = null,
         public ?float $connectTimeout = null,
         public ?float $requestTimeout = null,
+        public int $tries = 1,
+        public int $retryInterval = 0,
+        public bool $exponentialBackoff = false,
     ) {
         if ($apiKey !== null && trim($apiKey) === '') {
             throw ApiKeyNotConfiguredException::blank();
@@ -28,6 +32,14 @@ final readonly class SteamConfig
 
         if ($requestTimeout !== null && $requestTimeout < 0) {
             throw InvalidTimeoutException::negative('requestTimeout', $requestTimeout);
+        }
+
+        if ($tries < 1) {
+            throw InvalidRetryException::tooFewTries($tries);
+        }
+
+        if ($retryInterval < 0) {
+            throw InvalidRetryException::negativeInterval($retryInterval);
         }
     }
 }

@@ -16,12 +16,13 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
+use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use Override;
-use Psr\Http\Client\NetworkExceptionInterface;
 use Saloon\Config;
 use Saloon\Exceptions\Request\FatalRequestException;
+use Saloon\Exceptions\Request\RequestException;
 use Saloon\Http\Connector;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\PendingRequest;
@@ -41,9 +42,20 @@ class SteamConnector extends Connector
     use HasRateLimits;
     use HasTimeout;
 
+    #[Override]
+    protected string $defaultSender = SteamSender::class;
+
+    /**
+     * Saloon's send() reads the retry settings straight off these properties, so the
+     * config is copied rather than resolved.
+     */
     public function __construct(
         public readonly SteamConfig $steamConfig,
-    ) {}
+    ) {
+        $this->tries = $steamConfig->tries;
+        $this->retryInterval = $steamConfig->retryInterval;
+        $this->useExponentialBackoff = $steamConfig->exponentialBackoff;
+    }
 
     public function resolveBaseUrl(): string
     {
@@ -103,6 +115,16 @@ class SteamConnector extends Connector
     }
 
     /**
+     * Every attempt spends a request from the daily budget, so only what can change
+     * by the next one is worth it: Steam unreachable, or a 5xx.
+     */
+    #[Override]
+    public function handleRetry(FatalRequestException|RequestException $exception, Request $request): bool
+    {
+        return $exception instanceof FatalRequestException || $exception->getResponse()->serverError();
+    }
+
+    /**
      * Not Saloon's fatal pipeline: that one runs before the retry decision.
      */
     #[Override]
@@ -112,9 +134,8 @@ class SteamConnector extends Connector
             return parent::send($request, $mockClient, $handleRetry);
         } catch (FatalRequestException $fatalRequestException) {
             throw SteamConnectionException::fromFatalRequest($fatalRequestException);
-        } catch (NetworkExceptionInterface $networkException) {
-            // Guzzle 8 read timeouts slip past both catches in Saloon's sync sender.
-            throw SteamConnectionException::fromNetworkFailure($networkException);
+        } catch (RequestException $requestException) {
+            throw SteamApiException::fromRequestException($requestException);
         }
     }
 
@@ -125,13 +146,17 @@ class SteamConnector extends Connector
     public function sendAsync(Request $request, ?MockClient $mockClient = null): PromiseInterface
     {
         return parent::sendAsync($request, $mockClient)->otherwise(
-            static fn (mixed $reason): PromiseInterface => $reason instanceof FatalRequestException
-                ? throw SteamConnectionException::fromFatalRequest($reason)
-                : Create::rejectionFor($reason),
+            static fn (mixed $reason): PromiseInterface => match (true) {
+                $reason instanceof FatalRequestException => throw SteamConnectionException::fromFatalRequest($reason),
+                $reason instanceof RequestException => throw SteamApiException::fromRequestException($reason),
+                default => Create::rejectionFor($reason),
+            },
         );
     }
 
     /**
+     * A status with no meaning of its own returns null: Saloon then throws its
+     * RequestException, the one type the retry loop catches, and send() maps it back.
      * 429 is absent on purpose: the rate limit plugin runs as PipeOrder::FIRST
      * and throws before AlwaysThrowOnErrors (PipeOrder::LAST) reaches this.
      */
@@ -154,10 +179,7 @@ class SteamConnector extends Connector
 
         return match ($status) {
             401, 403 => ProfileNotPublicException::fromResponse($response),
-            default => new SteamApiException(
-                sprintf('Steam API request failed with HTTP %d.', $status),
-                $response,
-            ),
+            default => null,
         };
     }
 

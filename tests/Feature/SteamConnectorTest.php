@@ -10,6 +10,7 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
+use Fkrzski\SteamApiSdk\Http\Resources\AppsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
@@ -45,7 +46,8 @@ test('resource accessors expose one resource per Steam interface', function (): 
 
     expect($connector->players())->toBeInstanceOf(PlayersResource::class)
         ->and($connector->users())->toBeInstanceOf(UsersResource::class)
-        ->and($connector->stats())->toBeInstanceOf(StatsResource::class);
+        ->and($connector->stats())->toBeInstanceOf(StatsResource::class)
+        ->and($connector->apps())->toBeInstanceOf(AppsResource::class);
 });
 
 test('connector uses AlwaysThrowOnErrors plugin', function (): void {

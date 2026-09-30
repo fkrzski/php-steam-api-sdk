@@ -60,7 +60,8 @@ object. Decoding is not symmetric — rebuild it with `SteamId::fromSteamId64()`
 ## Sending requests
 
 The connector groups every endpoint into a resource per Steam interface — `players()` for
-`IPlayerService`, `users()` for `ISteamUser`, `stats()` for `ISteamUserStats`. Each method
+`IPlayerService`, `users()` for `ISteamUser`, `stats()` for `ISteamUserStats`, `apps()` for
+`ISteamApps`. Each method
 sends the request and hands back the DTO, so nothing needs importing:
 
 ```php
@@ -93,6 +94,7 @@ Every SDK failure extends `SteamApiException`, so one catch handles them all:
 SteamApiException                  (root, extends RuntimeException)
 ├── ApiKeyNotConfiguredException   No key on the config, and the request needs one.
 ├── AppNotFoundException           No Steam app carries the given app ID.
+├── AppVersionUnavailableException No server version to check against, or unknown app.
 ├── InvalidApiKeyException         Steam refused the key: wrong, revoked, or absent.
 ├── InvalidRetryException          Fewer than one try, or a negative retry interval.
 ├── InvalidSteamIdException        Malformed SteamID64.
@@ -180,7 +182,7 @@ Steam signals failure in two different ways, and the SDK reads both:
 | `404` + JSON, on `ISteamUserStats` | `AppNotFoundException` |
 | `429` | `SteamRateLimitException` |
 | any other `4xx` / `5xx` | `SteamApiException`, a `5xx` once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
-| `200` with an empty or `success: 42` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` |
+| `200` with an empty, `success: 42` or `success: false` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` / `AppVersionUnavailableException` |
 
 `ApiKeyNotConfiguredException` has no row here: it is raised locally, so a request that
 needs a key the config does not carry never reaches Steam at all. `SteamConnectionException`
@@ -197,13 +199,14 @@ from a rejected one, so everywhere else it surfaces as rejected. A JSON `400` on
 `400` means nothing but an app ID Steam does not know, so it is the one that raises
 `AppNotFoundException` from that status.
 
-<Aside type="caution" title="Four endpoints answer ambiguously">
+<Aside type="caution" title="Five endpoints answer ambiguously">
 `GetPlayerAchievements` returns a byte-identical `Requested app has no stats` body for an app
-without achievements and for a private profile, and `GetGlobalAchievementPercentagesForApp`
-answers the same `403` for a game carrying no achievements and for a game ID Steam does not
-know. `GetRecentlyPlayedGames` and `GetCommunityBadgeProgress` return an empty payload both
-for a hidden profile and for a SteamID64 that belongs to no account. Every message names
-every cause rather than guessing.
+without achievements and for a private profile, and `GetRecentlyPlayedGames` and
+`GetCommunityBadgeProgress` return an empty payload both for a hidden profile and for a
+SteamID64 that belongs to no account. `GetGlobalAchievementPercentagesForApp` and
+`UpToDateCheck` answer an app ID Steam does not know exactly like a game with nothing to
+report: a `403` for one without achievements, `success: false` for one without versioned
+servers. Every message names every cause rather than guessing.
 </Aside>
 
 ## Testing

@@ -95,6 +95,7 @@ SteamApiException                  (root, extends RuntimeException)
 ├── AppNotFoundException           No Steam app carries the given app ID.
 ├── InvalidApiKeyException         Steam refused the key: wrong, revoked, or absent.
 ├── InvalidSteamIdException        Malformed SteamID64.
+├── InvalidTimeoutException        Negative timeout handed to SteamConfig.
 ├── ProfileNotPublicException      Profile, games list, groups, or stats are private.
 ├── StatsUnavailableException      Stats withheld: none exist, unknown app, or private profile.
 ├── SteamConnectionException       Steam never answered: timeout, DNS, TLS, refused connection.
@@ -159,7 +160,7 @@ try {
 <Aside type="note" title="A null response is routine, not an edge case">
 `response` is `null` for every failure raised before a request went out — a malformed
 SteamID64, an oversized batch, the quota exhausted locally — and for one that went out and
-got no answer, where the Saloon exception sits on `getPrevious()` instead.
+got no answer, where the transport exception sits on `getPrevious()` instead.
 </Aside>
 
 ### How statuses are mapped

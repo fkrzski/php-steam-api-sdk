@@ -19,6 +19,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use Override;
+use Saloon\Config;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Http\Connector;
 use Saloon\Http\Faking\MockClient;
@@ -30,12 +31,14 @@ use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 use Saloon\RateLimitPlugin\Traits\HasRateLimits;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
+use Saloon\Traits\Plugins\HasTimeout;
 use Throwable;
 
 class SteamConnector extends Connector
 {
     use AlwaysThrowOnErrors;
     use HasRateLimits;
+    use HasTimeout;
 
     public function __construct(
         public readonly SteamConfig $steamConfig,
@@ -83,6 +86,19 @@ class SteamConnector extends Connector
         if ($this->steamConfig->language instanceof Language) {
             $pendingRequest->query()->add('l', $this->steamConfig->language->value);
         }
+    }
+
+    /**
+     * The trait reads timeouts off connector properties; the readonly config would only be copied there.
+     */
+    public function getConnectTimeout(): float
+    {
+        return $this->steamConfig->connectTimeout ?? Config::$defaultConnectionTimeout;
+    }
+
+    public function getRequestTimeout(): float
+    {
+        return $this->steamConfig->requestTimeout ?? Config::$defaultRequestTimeout;
     }
 
     /**

@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Configure the SteamConnector through the readonly SteamConfig — the API key, the default language, the rate-limit store, and the daily quota across processes.
+description: Configure the SteamConnector through the readonly SteamConfig — the API key, default language, timeouts, rate-limit store, and quota across processes.
 ---
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -47,6 +47,8 @@ per call. Two endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`
 | `apiKey` | `?string` | `null` | Your Steam Web API key. Leave it out to reach only the anonymous endpoints. |
 | `rateLimitStore` | `?RateLimitStore` | `MemoryStore` | Where the daily request budget is tracked. |
 | `language` | `?Language` | `null` | Language for endpoints that localise their payload. |
+| `connectTimeout` | `?float` | `10.0` | Seconds to wait for a connection to Steam. |
+| `requestTimeout` | `?float` | `30.0` | Seconds the whole request may take. |
 
 <Aside type="note" title="Readonly, so replace rather than mutate">
 `SteamConfig` is `final readonly` — to change a setting, construct a new config and a
@@ -95,6 +97,22 @@ $connector->stats()->achievements($steamId, 381210, Language::English); // engli
 
 Steam's codes are Valve's own rather than ISO, so the
 [`Language`](/php-steam-api-sdk/dto-reference#language) enum transcribes their table.
+
+## Timeouts
+
+Both are in seconds, and both fall back to Saloon's own defaults when left out:
+
+```php title="steam.php" "connectTimeout: 3" "requestTimeout: 120"
+$connector = new SteamConnector(new SteamConfig(
+    apiKey: $_ENV['STEAM_API_KEY'],
+    connectTimeout: 3,
+    requestTimeout: 120,
+));
+```
+
+`0` waits indefinitely, and a negative value throws `InvalidTimeoutException` as the config
+is built. A request that runs out of either raises `SteamConnectionException`, like any
+other request Steam never answered.
 
 ## Rate limiting
 

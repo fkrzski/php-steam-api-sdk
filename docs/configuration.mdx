@@ -38,8 +38,8 @@ needs at runtime lives on that object.
 
 The key is appended to every request as the `key` query parameter, so you never pass it
 per call. The endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`,
-`GetGlobalAchievementPercentagesForApp`, `GetServersAtAddress` and `UpToDateCheck` — go out
-with it stripped back off.
+`GetGlobalAchievementPercentagesForApp`, `GetSDRConfig`, `GetServersAtAddress` and
+`UpToDateCheck` — go out with it stripped back off.
 
 ## SteamConfig options
 
@@ -137,8 +137,9 @@ the config above pauses 500 ms, then 1 s. Fewer than one try or a negative inter
 
 Only what can change by the next attempt is retried: Steam unreachable, a timeout, a `5xx`.
 A `4xx` is thrown at once, and so is `SteamRateLimitException`, whether the budget ran out
-locally or Steam answered `429`. Once the tries are spent, the last attempt's exception is
-thrown. `sendAsync()` and `pool()` send every request once.
+locally or Steam answered `429`. So is the `500` `GetSDRConfig` answers for an app ID Steam
+does not know, as `AppNotFoundException`. Once the tries are spent, the last attempt's
+exception is thrown. `sendAsync()` and `pool()` send every request once.
 
 <Aside type="caution" title="Every attempt is a request">
 Each retry spends one of the day's 100 000 requests: the budget counts a `5xx` like any

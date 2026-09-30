@@ -229,6 +229,34 @@ Each `RecentlyPlayedGame` carries:
 | `playtimeLinuxForever` | `int` | Total playtime on Linux, in minutes. |
 | `playtimeDeckForever` | `int` | Total playtime on Steam Deck, in minutes. |
 
+## SdrConfig
+
+Returned by [`GetSdrConfigRequest`](/php-steam-api-sdk/api-reference#getsdrconfigrequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `revision` | `int` | Valve's revision of the network map, the same for every app ID. |
+| `pointsOfPresence` | `array<string, SdrPointOfPresence>` | Keyed by each point of presence's code. |
+
+Each `SdrPointOfPresence` carries:
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `code` | `string` | Valve's short code, such as `waw` or `bom2`. |
+| `description` | `string` | Location, and the hosting provider where it is not Valve. |
+| `latitude` | `float` | As Valve sends it. |
+| `longitude` | `float` | As Valve sends it. |
+| `aliases` | `list<string>` | Other codes that name the same point of presence. |
+| `relays` | `list<SdrRelay>` | Empty for a point of presence that only routes. |
+
+`SdrRelay` has `ipv4` (`string`), and `minPort` and `maxPort` (`int`), the ends of the port
+range it answers on.
+
+<Aside type="caution" title="Coordinates arrive unchecked">
+A few do not match their description: `dsto`, labelled Stockholm, sits in Moscow, and `dlhr`
+has latitude and longitude swapped. The SDK passes them through as Valve sends them.
+</Aside>
+
 ## UserGroup
 
 Returned by [`GetUserGroupListRequest`](/php-steam-api-sdk/api-reference#getusergrouplistrequest).

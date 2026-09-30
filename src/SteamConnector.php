@@ -19,6 +19,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use Override;
+use Psr\Http\Client\NetworkExceptionInterface;
 use Saloon\Config;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Http\Connector;
@@ -111,6 +112,9 @@ class SteamConnector extends Connector
             return parent::send($request, $mockClient, $handleRetry);
         } catch (FatalRequestException $fatalRequestException) {
             throw SteamConnectionException::fromFatalRequest($fatalRequestException);
+        } catch (NetworkExceptionInterface $networkException) {
+            // Guzzle 8 read timeouts slip past both catches in Saloon's sync sender.
+            throw SteamConnectionException::fromNetworkFailure($networkException);
         }
     }
 

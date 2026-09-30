@@ -12,6 +12,8 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\Request as PsrRequest;
 use GuzzleHttp\Psr7\Response as PsrResponse;
+use Psr\Http\Client\NetworkExceptionInterface;
+use Psr\Http\Message\RequestInterface;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Http\Senders\GuzzleSender;
 
@@ -66,6 +68,32 @@ test('a connection failure carries no response, no status and the Saloon excepti
             ->and($steamConnectionException->getCode())->toBe(0)
             ->and($steamConnectionException->getPrevious())->toBeInstanceOf(FatalRequestException::class)
             ->and($steamConnectionException->getPrevious()?->getPrevious())->toBeInstanceOf(ConnectException::class);
+
+        return;
+    }
+
+    throw new RuntimeException('Expected the request to fail.');
+});
+
+test('a network failure Saloon lets through on send raises SteamConnectionException', function (): void {
+    // Stands in for Guzzle 8's NetworkTimeoutException, which Guzzle 7 does not ship.
+    $networkFailure = new class('cURL error 28: Operation timed out after 30000 milliseconds') extends RuntimeException implements NetworkExceptionInterface
+    {
+        public function getRequest(): RequestInterface
+        {
+            return new PsrRequest('GET', 'https://api.steampowered.com');
+        }
+    };
+
+    $connector = connectorAnswering([$networkFailure]);
+
+    try {
+        $connector->send(friendListRequest());
+    } catch (SteamConnectionException $steamConnectionException) {
+        expect($steamConnectionException->getMessage())
+            ->toBe('Could not reach the Steam Web API: cURL error 28: Operation timed out after 30000 milliseconds')
+            ->and($steamConnectionException->response)->toBeNull()
+            ->and($steamConnectionException->getPrevious())->toBe($networkFailure);
 
         return;
     }

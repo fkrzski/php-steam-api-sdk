@@ -1,0 +1,57 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "success": true,
+            "servers": [
+                {
+                    "addr": "108.181.62.21:27015",
+                    "steamid": "85568392924469984",
+                    "appid": 440,
+                    "gamedir": "tf",
+                    "region": 0,
+                    "secure": true,
+                    "lan": false,
+                    "gameport": 27015,
+                    "specport": 27016
+                },
+                {
+                    "addr": "108.181.62.21:27025",
+                    "steamid": "85568392924469985",
+                    "appid": 440,
+                    "gamedir": "tf",
+                    "region": 0,
+                    "secure": true,
+                    "lan": false,
+                    "gameport": 27025,
+                    "specport": 27026
+                },
+                {
+                    "addr": "108.181.62.21:27035",
+                    "steamid": "85568392924515191",
+                    "appid": 440,
+                    "gamedir": "tf",
+                    "region": 0,
+                    "secure": true,
+                    "lan": false,
+                    "gameport": 27035,
+                    "specport": 27036
+                },
+                {
+                    "addr": "108.181.62.21:27045",
+                    "steamid": "85568392924515193",
+                    "appid": 440,
+                    "gamedir": "tf",
+                    "region": 0,
+                    "secure": true,
+                    "lan": false,
+                    "gameport": 27045,
+                    "specport": 27046
+                }
+            ]
+        }
+    }
+}

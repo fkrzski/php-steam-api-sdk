@@ -65,6 +65,22 @@ Each `SchemaAchievement` carries:
 `SchemaStat` has `apiName` (`string`), `name` (`?string`, null for the many stats Steam
 ships unlabelled) and `defaultValue` (`int|float`).
 
+## GameServer
+
+Returned by [`GetServersAtAddressRequest`](/php-steam-api-sdk/api-reference#getserversataddressrequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `address` | `string` | IP and query port, as `ip:queryport`. |
+| `steamId` | `SteamId` | The game server's own 64-bit ID, not a player's. |
+| `appId` | `int` | The game the server runs. |
+| `gameDir` | `string` | The game's mod directory, such as `tf` or `rust`. |
+| `region` | `ServerRegion` | Where the server lists itself. |
+| `isSecure` | `bool` | Whether the server is VAC-secured. |
+| `isLan` | `bool` | Whether the server is LAN-only. |
+| `gamePort` | `int` | Port players connect to, which can differ from the query port. |
+| `spectatorPort` | `?int` | SourceTV port; `null` when Steam reports `0`, as it does with SourceTV off. |
+
 ## GlobalAchievement
 
 Returned by [`GetGlobalAchievementPercentagesForAppRequest`](/php-steam-api-sdk/api-reference#getglobalachievementpercentagesforapprequest).
@@ -237,7 +253,7 @@ has `name` (`string`) and `achieved` (`bool`).
 
 ## Enums
 
-Four of these mirror Steam's wire values; `CommentPermission` and `EconomyBan` do not,
+Five of these mirror Steam's wire values; `CommentPermission` and `EconomyBan` do not,
 and those are the two worth reading before you `match` on them.
 
 ### CommentPermission
@@ -298,8 +314,25 @@ Backed by `int`, using Steam's own `personastate` codes.
 | `LookingToTrade` | `5` |
 | `LookingToPlay` | `6` |
 
-<Aside type="caution" title="Only EconomyBan has an escape hatch">
-`EconomyBan::fromApiValue()` maps anything unrecognised to `Unknown`, so a new ban state
-from Valve cannot break callers. The other two helpers — on `CommentPermission` and
-`CommunityVisibility` — treat their set as closed and throw `UnexpectedValueException`.
+### ServerRegion
+
+Backed by `int`, using Steam's `region` codes, which a game server sets with `sv_region`.
+
+| Case | Value |
+| --- | --- |
+| `World` | `-1` |
+| `UsEast` | `0` |
+| `UsWest` | `1` |
+| `SouthAmerica` | `2` |
+| `Europe` | `3` |
+| `Asia` | `4` |
+| `Australia` | `5` |
+| `MiddleEast` | `6` |
+| `Africa` | `7` |
+
+<Aside type="caution" title="Two helpers never throw">
+`EconomyBan::fromApiValue()` maps anything unrecognised to `Unknown` and
+`ServerRegion::fromApiValue()` to `World`, so a new value from Valve cannot break callers. The
+other two, on `CommentPermission` and `CommunityVisibility`, treat their set as closed and throw
+`UnexpectedValueException`.
 </Aside>

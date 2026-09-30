@@ -1,0 +1,12 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "success": false,
+            "message": "'addr' param should specify a valid IPv4 or IPv4:queryport"
+        }
+    }
+}

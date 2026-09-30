@@ -1,0 +1,12 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "success": false,
+            "message": "Please don't call this API more often than once per minute for a given IP."
+        }
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "response": {
+            "success": true,
+            "servers": [
+                {
+                    "addr": "216.39.241.176:28015",
+                    "steamid": "90293757517545488",
+                    "appid": 252490,
+                    "gamedir": "rust",
+                    "region": -1,
+                    "secure": true,
+                    "lan": false,
+                    "gameport": 28010,
+                    "specport": 0
+                }
+            ]
+        }
+    }
+}

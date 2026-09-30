@@ -31,6 +31,7 @@ interface, and one request class per endpoint:
       - GetRecentlyPlayedGamesRequest.php
       - GetSteamLevelRequest.php
     - ISteamApps
+      - GetServersAtAddressRequest.php
       - UpToDateCheckRequest.php
     - ISteamUser
       - GetFriendListRequest.php
@@ -65,6 +66,7 @@ interface, and one request class per endpoint:
 | [`GetPlayerSummariesRequest`](#getplayersummariesrequest) | `users()->summaries()` | `list<PlayerSummary>` |
 | [`GetRecentlyPlayedGamesRequest`](#getrecentlyplayedgamesrequest) | `players()->recentlyPlayedGames()` | `RecentlyPlayedGames` |
 | [`GetSchemaForGameRequest`](#getschemaforgamerequest) | `stats()->schema()` | `GameSchema` |
+| [`GetServersAtAddressRequest`](#getserversataddressrequest) | `apps()->serversAtAddress()` | `list<GameServer>` |
 | [`GetSteamLevelRequest`](#getsteamlevelrequest) | `players()->steamLevel()` | `int` |
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `users()->groups()` | `list<UserGroup>` |
 | [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `stats()->userStats()` | `UserStats` |
@@ -369,6 +371,32 @@ foreach ($schema->achievements as $achievement) {
 An app that exposes no stats and no achievements — a DLC, a tool, a runtime — answers
 `200` with an empty game, which becomes a `GameSchema` with null names and empty lists.
 Only an app ID Steam does not know raises the exception.
+</Aside>
+
+## GetServersAtAddressRequest
+
+```text frame="none"
+$connector->apps()->serversAtAddress(string $address)
+
+new GetServersAtAddressRequest($address)
+```
+
+<p><Badge text="ISteamApps" variant="note" size="small" />{' '}<Badge text="throws InvalidServerAddressException" variant="danger" size="small" /></p>
+
+Every game server Steam knows at an IPv4 address, or only the one behind `ip:queryport`. An
+address with no servers returns an empty list. Steam serves it anonymously, so the SDK strips
+the configured key from the query, and a connector built without one can send it.
+
+```php
+foreach ($connector->apps()->serversAtAddress('108.181.62.21') as $server) {
+    echo $server->address, ' runs app ', $server->appId, PHP_EOL;
+}
+```
+
+<Aside type="caution" title="The port is the query port">
+The game port or the SourceTV port finds nothing, and an IPv6 address or a hostname raises the
+exception. Steam refuses to look up some addresses, `127.0.0.1` and `10.0.0.1` among them, with
+a "once per minute" message that surfaces as `SteamApiException`.
 </Aside>
 
 ## GetSteamLevelRequest

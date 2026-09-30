@@ -97,6 +97,7 @@ SteamApiException                  (root, extends RuntimeException)
 ├── AppVersionUnavailableException No server version to check against, or unknown app.
 ├── InvalidApiKeyException         Steam refused the key: wrong, revoked, or absent.
 ├── InvalidRetryException          Fewer than one try, or a negative retry interval.
+├── InvalidServerAddressException  Address is neither IPv4 nor IPv4:queryport.
 ├── InvalidSteamIdException        Malformed SteamID64.
 ├── InvalidTimeoutException        Negative timeout handed to SteamConfig.
 ├── ProfileNotPublicException      Profile, games list, groups, or stats are private.
@@ -182,7 +183,8 @@ Steam signals failure in two different ways, and the SDK reads both:
 | `404` + JSON, on `ISteamUserStats` | `AppNotFoundException` |
 | `429` | `SteamRateLimitException` |
 | any other `4xx` / `5xx` | `SteamApiException`, a `5xx` once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
-| `200` with an empty, `success: 42` or `success: false` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` / `AppVersionUnavailableException` |
+| `200` with an empty, `success: 42` or `success: false` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` / `AppVersionUnavailableException` / `InvalidServerAddressException` |
+| `200` with `success: false` and a message the SDK does not recognise | `SteamApiException`, quoting Steam's message |
 
 `ApiKeyNotConfiguredException` has no row here: it is raised locally, so a request that
 needs a key the config does not carry never reaches Steam at all. `SteamConnectionException`

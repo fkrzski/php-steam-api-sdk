@@ -42,9 +42,17 @@ class SteamConnector extends Connector
     use HasRateLimits;
     use HasTimeout;
 
+    /**
+     * Saloon's send() reads the retry settings straight off these properties, so the
+     * config is copied rather than resolved.
+     */
     public function __construct(
         public readonly SteamConfig $steamConfig,
-    ) {}
+    ) {
+        $this->tries = $steamConfig->tries;
+        $this->retryInterval = $steamConfig->retryInterval;
+        $this->useExponentialBackoff = $steamConfig->exponentialBackoff;
+    }
 
     public function resolveBaseUrl(): string
     {
@@ -101,6 +109,16 @@ class SteamConnector extends Connector
     public function getRequestTimeout(): float
     {
         return $this->steamConfig->requestTimeout ?? Config::$defaultRequestTimeout;
+    }
+
+    /**
+     * Every attempt spends a request from the daily budget, so only what can change
+     * by the next one is worth it: Steam unreachable, or a 5xx.
+     */
+    #[Override]
+    public function handleRetry(FatalRequestException|RequestException $exception, Request $request): bool
+    {
+        return $exception instanceof FatalRequestException || $exception->getResponse()->serverError();
     }
 
     /**

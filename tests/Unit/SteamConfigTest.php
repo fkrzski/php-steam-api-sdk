@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
+use Fkrzski\SteamApiSdk\Exceptions\InvalidRetryException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidTimeoutException;
 use Fkrzski\SteamApiSdk\SteamConfig;
 
-covers([SteamConfig::class, ApiKeyNotConfiguredException::class, InvalidTimeoutException::class]);
+covers([SteamConfig::class, ApiKeyNotConfiguredException::class, InvalidRetryException::class, InvalidTimeoutException::class]);
 
 test('SteamConfig stores api key', function (): void {
     $config = new SteamConfig(apiKey: 'test-key');
@@ -77,3 +78,42 @@ test('SteamConfig rejects a negative timeout', function (string $option): void {
             sprintf('SteamConfig::$%s cannot be negative, got -0.5. Pass seconds, 0 for no limit, or null for the default.', $option),
         );
 })->with(['connectTimeout', 'requestTimeout']);
+
+test('SteamConfig sends every request once until retries are configured', function (): void {
+    $config = new SteamConfig;
+
+    expect($config->tries)->toBe(1)
+        ->and($config->retryInterval)->toBe(0)
+        ->and($config->exponentialBackoff)->toBeFalse();
+});
+
+test('SteamConfig stores the retry settings', function (): void {
+    $config = new SteamConfig(tries: 3, retryInterval: 500, exponentialBackoff: true);
+
+    expect($config->tries)->toBe(3)
+        ->and($config->retryInterval)->toBe(500)
+        ->and($config->exponentialBackoff)->toBeTrue();
+});
+
+test('SteamConfig accepts a single try with no pause', function (): void {
+    $config = new SteamConfig(tries: 1, retryInterval: 0);
+
+    expect($config->tries)->toBe(1)
+        ->and($config->retryInterval)->toBe(0);
+});
+
+test('SteamConfig rejects fewer than one try', function (int $tries): void {
+    expect(fn (): SteamConfig => new SteamConfig(tries: $tries))
+        ->toThrow(
+            InvalidRetryException::class,
+            sprintf('SteamConfig::$tries must be at least 1, got %d. Pass the total number of attempts, 1 to never retry.', $tries),
+        );
+})->with(['zero' => 0, 'negative' => -1]);
+
+test('SteamConfig rejects a negative retry interval', function (): void {
+    expect(fn (): SteamConfig => new SteamConfig(retryInterval: -1))
+        ->toThrow(
+            InvalidRetryException::class,
+            'SteamConfig::$retryInterval cannot be negative, got -1. Pass milliseconds, 0 for no pause between attempts.',
+        );
+});

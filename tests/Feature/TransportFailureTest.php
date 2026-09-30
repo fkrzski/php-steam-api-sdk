@@ -5,48 +5,16 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\Request as PsrRequest;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Saloon\Exceptions\Request\FatalRequestException;
-use Saloon\Http\Senders\GuzzleSender;
 
 covers([SteamConnectionException::class, SteamConnector::class]);
-
-/**
- * Saloon's MockResponse cannot raise a transport failure, so the queue is handed to
- * Guzzle's own handler underneath the sender instead.
- *
- * @param  list<PsrResponse|Throwable>  $queue
- */
-function connectorAnswering(array $queue): SteamConnector
-{
-    $connector = new SteamConnector(new SteamConfig('any'));
-    $sender = $connector->sender();
-
-    assert($sender instanceof GuzzleSender);
-
-    $sender->getHandlerStack()->setHandler(new MockHandler($queue));
-
-    return $connector;
-}
-
-function connectionFailure(string $message = 'cURL error 28: Operation timed out after 5000 milliseconds'): ConnectException
-{
-    return new ConnectException($message, new PsrRequest('GET', 'https://api.steampowered.com'));
-}
-
-function friendListRequest(): GetFriendListRequest
-{
-    return new GetFriendListRequest(SteamId::fromSteamId64('76561198148125221'));
-}
 
 test('a request that never reaches Steam raises SteamConnectionException', function (): void {
     $connector = connectorAnswering([connectionFailure()]);

@@ -22,6 +22,7 @@ use Override;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Saloon\Config;
 use Saloon\Exceptions\Request\FatalRequestException;
+use Saloon\Exceptions\Request\RequestException;
 use Saloon\Http\Connector;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\PendingRequest;
@@ -112,6 +113,8 @@ class SteamConnector extends Connector
             return parent::send($request, $mockClient, $handleRetry);
         } catch (FatalRequestException $fatalRequestException) {
             throw SteamConnectionException::fromFatalRequest($fatalRequestException);
+        } catch (RequestException $requestException) {
+            throw SteamApiException::fromRequestException($requestException);
         } catch (NetworkExceptionInterface $networkException) {
             // Guzzle 8 read timeouts slip past both catches in Saloon's sync sender.
             throw SteamConnectionException::fromNetworkFailure($networkException);
@@ -125,13 +128,17 @@ class SteamConnector extends Connector
     public function sendAsync(Request $request, ?MockClient $mockClient = null): PromiseInterface
     {
         return parent::sendAsync($request, $mockClient)->otherwise(
-            static fn (mixed $reason): PromiseInterface => $reason instanceof FatalRequestException
-                ? throw SteamConnectionException::fromFatalRequest($reason)
-                : Create::rejectionFor($reason),
+            static fn (mixed $reason): PromiseInterface => match (true) {
+                $reason instanceof FatalRequestException => throw SteamConnectionException::fromFatalRequest($reason),
+                $reason instanceof RequestException => throw SteamApiException::fromRequestException($reason),
+                default => Create::rejectionFor($reason),
+            },
         );
     }
 
     /**
+     * A status with no meaning of its own returns null: Saloon then throws its
+     * RequestException, the one type the retry loop catches, and send() maps it back.
      * 429 is absent on purpose: the rate limit plugin runs as PipeOrder::FIRST
      * and throws before AlwaysThrowOnErrors (PipeOrder::LAST) reaches this.
      */
@@ -154,10 +161,7 @@ class SteamConnector extends Connector
 
         return match ($status) {
             401, 403 => ProfileNotPublicException::fromResponse($response),
-            default => new SteamApiException(
-                sprintf('Steam API request failed with HTTP %d.', $status),
-                $response,
-            ),
+            default => null,
         };
     }
 

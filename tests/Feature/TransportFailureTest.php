@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
@@ -125,6 +126,28 @@ test('sendAsync leaves a failure Steam did answer mapped as it was', function ()
     }
 
     throw new RuntimeException('Expected the request to fail.');
+});
+
+test('sendAsync leaves a failure raised before the request went out untouched', function (): void {
+    $connector = new SteamConnector(new SteamConfig);
+
+    expect(fn (): mixed => $connector->sendAsync(friendListRequest())->wait())
+        ->toThrow(ApiKeyNotConfiguredException::class);
+});
+
+test('pool reports a failure Steam did answer as SteamApiException', function (): void {
+    $connector = connectorAnswering([new PsrResponse(502, [], 'Bad Gateway')]);
+
+    $thrown = null;
+
+    $pool = $connector->pool([friendListRequest()]);
+    $pool->withExceptionHandler(function (mixed $reason) use (&$thrown): void {
+        $thrown = $reason;
+    });
+    $pool->send()->wait();
+
+    expect($thrown)->toBeInstanceOf(SteamApiException::class)
+        ->and($thrown?->getMessage())->toBe('Steam API request failed with HTTP 502.');
 });
 
 test('pool reports a connection failure as SteamConnectionException', function (): void {

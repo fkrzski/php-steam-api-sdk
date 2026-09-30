@@ -16,6 +16,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+use Saloon\Exceptions\Request\RequestException;
 use Saloon\Http\Faking\Fixture;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
@@ -206,7 +207,11 @@ test('server errors fall back to SteamApiException', function (): void {
     $thrown = sendFailing(MockResponse::make('<html>Server Error</html>', 500));
 
     expect($thrown)->toBeInstanceOf(SteamApiException::class)
-        ->and($thrown->getMessage())->toBe('Steam API request failed with HTTP 500.');
+        ->and($thrown::class)->toBe(SteamApiException::class)
+        ->and($thrown->getMessage())->toBe('Steam API request failed with HTTP 500.')
+        ->and($thrown->getCode())->toBe(500)
+        ->and($thrown->response?->body())->toBe('<html>Server Error</html>')
+        ->and($thrown->getPrevious())->toBeInstanceOf(RequestException::class);
 });
 
 test('mapped exceptions carry the status code and the originating response', function (): void {

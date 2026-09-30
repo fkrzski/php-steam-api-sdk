@@ -16,10 +16,10 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
+use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use Override;
-use Psr\Http\Client\NetworkExceptionInterface;
 use Saloon\Config;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Exceptions\Request\RequestException;
@@ -41,6 +41,9 @@ class SteamConnector extends Connector
     use AlwaysThrowOnErrors;
     use HasRateLimits;
     use HasTimeout;
+
+    #[Override]
+    protected string $defaultSender = SteamSender::class;
 
     /**
      * Saloon's send() reads the retry settings straight off these properties, so the
@@ -133,9 +136,6 @@ class SteamConnector extends Connector
             throw SteamConnectionException::fromFatalRequest($fatalRequestException);
         } catch (RequestException $requestException) {
             throw SteamApiException::fromRequestException($requestException);
-        } catch (NetworkExceptionInterface $networkException) {
-            // Guzzle 8 read timeouts slip past both catches in Saloon's sync sender.
-            throw SteamConnectionException::fromNetworkFailure($networkException);
         }
     }
 

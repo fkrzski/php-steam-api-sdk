@@ -6,6 +6,7 @@ use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
+use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use GuzzleHttp\Psr7\Response as PsrResponse;
@@ -14,7 +15,7 @@ use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
-covers([SteamConnector::class, SteamApiException::class]);
+covers([SteamConnector::class, SteamApiException::class, SteamSender::class]);
 
 beforeEach(function (): void {
     MemoryStore::clear();
@@ -58,6 +59,12 @@ test('a 5xx on the last try raises the failure it answered with', function (): v
 
 test('a connection failure is retried until Steam answers', function (): void {
     $connector = connectorAnswering([connectionFailure(), connectionFailure(), friendList()], retrying());
+
+    expect($connector->send(friendListRequest())->status())->toBe(200);
+});
+
+test('a network failure Saloon lets through is retried until Steam answers', function (): void {
+    $connector = connectorAnswering([networkFailure(), friendList()], retrying(2));
 
     expect($connector->send(friendListRequest())->status())->toBe(200);
 });

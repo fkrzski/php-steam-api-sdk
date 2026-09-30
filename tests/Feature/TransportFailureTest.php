@@ -5,16 +5,14 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
+use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Psr7\Request as PsrRequest;
 use GuzzleHttp\Psr7\Response as PsrResponse;
-use Psr\Http\Client\NetworkExceptionInterface;
-use Psr\Http\Message\RequestInterface;
 use Saloon\Exceptions\Request\FatalRequestException;
 
-covers([SteamConnectionException::class, SteamConnector::class]);
+covers([SteamConnectionException::class, SteamConnector::class, SteamSender::class]);
 
 test('a request that never reaches Steam raises SteamConnectionException', function (): void {
     $connector = connectorAnswering([connectionFailure()]);
@@ -44,15 +42,8 @@ test('a connection failure carries no response, no status and the Saloon excepti
     throw new RuntimeException('Expected the request to fail.');
 });
 
-test('a network failure Saloon lets through on send raises SteamConnectionException', function (): void {
-    // Stands in for Guzzle 8's NetworkTimeoutException, which Guzzle 7 does not ship.
-    $networkFailure = new class('cURL error 28: Operation timed out after 30000 milliseconds') extends RuntimeException implements NetworkExceptionInterface
-    {
-        public function getRequest(): RequestInterface
-        {
-            return new PsrRequest('GET', 'https://api.steampowered.com');
-        }
-    };
+test('a network failure Saloon lets through is wrapped like a connection failure', function (): void {
+    $networkFailure = networkFailure();
 
     $connector = connectorAnswering([$networkFailure]);
 
@@ -62,12 +53,19 @@ test('a network failure Saloon lets through on send raises SteamConnectionExcept
         expect($steamConnectionException->getMessage())
             ->toBe('Could not reach the Steam Web API: cURL error 28: Operation timed out after 30000 milliseconds')
             ->and($steamConnectionException->response)->toBeNull()
-            ->and($steamConnectionException->getPrevious())->toBe($networkFailure);
+            ->and($steamConnectionException->getPrevious())->toBeInstanceOf(FatalRequestException::class)
+            ->and($steamConnectionException->getPrevious()?->getPrevious())->toBe($networkFailure);
 
         return;
     }
 
     throw new RuntimeException('Expected the request to fail.');
+});
+
+test('the connector sends through SteamSender', function (): void {
+    $connector = new SteamConnector(new SteamConfig('any'));
+
+    expect($connector->sender())->toBeInstanceOf(SteamSender::class);
 });
 
 test('sendAsync rejects a connection failure with SteamConnectionException', function (): void {

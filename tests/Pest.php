@@ -10,6 +10,8 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\Request as PsrRequest;
 use GuzzleHttp\Psr7\Response as PsrResponse;
+use Psr\Http\Client\NetworkExceptionInterface;
+use Psr\Http\Message\RequestInterface;
 use Saloon\Http\Senders\GuzzleSender;
 use Saloon\MockConfig;
 
@@ -54,4 +56,18 @@ function connectionFailure(string $message = 'cURL error 28: Operation timed out
 function friendListRequest(): GetFriendListRequest
 {
     return new GetFriendListRequest(SteamId::fromSteamId64('76561198148125221'));
+}
+
+/**
+ * Stands in for Guzzle 8's NetworkTimeoutException, which Guzzle 7 does not ship.
+ */
+function networkFailure(string $message = 'cURL error 28: Operation timed out after 30000 milliseconds'): NetworkExceptionInterface&Throwable
+{
+    return new class($message) extends RuntimeException implements NetworkExceptionInterface
+    {
+        public function getRequest(): RequestInterface
+        {
+            return new PsrRequest('GET', 'https://api.steampowered.com');
+        }
+    };
 }

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Dto\SdrConfig;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetSdrConfigRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetServersAtAddressRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\UpToDateCheckRequest;
 use Fkrzski\SteamApiSdk\Http\Resources\AppsResource;
@@ -11,6 +13,21 @@ use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
 covers(AppsResource::class);
+
+test('sdrConfig sends GetSDRConfig and returns the DTO', function (): void {
+    $mockClient = new MockClient([
+        GetSdrConfigRequest::class => MockResponse::fixture('ISteamApps/GetSDRConfig/default'),
+    ]);
+
+    $connector = new SteamConnector(new SteamConfig('test-key'));
+    $connector->withMockClient($mockClient);
+
+    $config = $connector->apps()->sdrConfig(730);
+
+    expect($config)->toBeInstanceOf(SdrConfig::class)
+        ->and($config->pointsOfPresence)->toHaveCount(3)
+        ->and($mockClient->getLastRequest()?->query()->all())->toBe(['appid' => 730]);
+});
 
 test('serversAtAddress sends GetServersAtAddress and returns the DTOs', function (): void {
     $mockClient = new MockClient([

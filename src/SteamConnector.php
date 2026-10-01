@@ -108,7 +108,7 @@ class SteamConnector extends Connector
     }
 
     /**
-     * The trait reads timeouts off connector properties; the readonly config would only be copied there.
+     * HasTimeout reads timeouts off connector properties; the readonly config would only be copied there.
      */
     public function getConnectTimeout(): float
     {

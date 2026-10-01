@@ -58,4 +58,12 @@ jobs:
       run: composer test:types
 
     - name: Type Coverage Checks
-      run: composer test:type-coverage
+      run: |
+        composer test:type-coverage -- --type-coverage-json=type-coverage.json
+        # The plugin averages only the results that reach it, so a file it never analysed still passes.
+        missing=$(comm -23 <(find src -name '*.php' | sort) <(jq -r '.result[].file' type-coverage.json | sort))
+        if [ -n "$missing" ]; then
+          echo "$missing"
+          echo "::error::Type coverage never analysed $(wc -l <<< "$missing") file(s) in src/"
+          exit 1
+        fi

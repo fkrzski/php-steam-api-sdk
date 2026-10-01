@@ -34,6 +34,8 @@ interface, and one request class per endpoint:
       - GetSdrConfigRequest.php
       - GetServersAtAddressRequest.php
       - UpToDateCheckRequest.php
+    - ISteamNews
+      - GetNewsForAppRequest.php
     - ISteamUser
       - GetFriendListRequest.php
       - GetPlayerBansRequest.php
@@ -48,6 +50,7 @@ interface, and one request class per endpoint:
       - GetUserStatsForGameRequest.php
   - Resources
     - AppsResource.php
+    - NewsResource.php
     - PlayersResource.php
     - StatsResource.php
     - UsersResource.php
@@ -60,6 +63,7 @@ interface, and one request class per endpoint:
 | [`GetCommunityBadgeProgressRequest`](#getcommunitybadgeprogressrequest) | `players()->communityBadgeProgress()` | `list<CommunityBadgeQuest>` |
 | [`GetFriendListRequest`](#getfriendlistrequest) | `users()->friends()` | `list<Friend>` |
 | [`GetGlobalAchievementPercentagesForAppRequest`](#getglobalachievementpercentagesforapprequest) | `stats()->globalAchievements()` | `list<GlobalAchievement>` |
+| [`GetNewsForAppRequest`](#getnewsforapprequest) | `news()->appNews()` | `AppNews` |
 | [`GetNumberOfCurrentPlayersRequest`](#getnumberofcurrentplayersrequest) | `stats()->currentPlayers()` | `int` |
 | [`GetOwnedGamesRequest`](#getownedgamesrequest) | `players()->ownedGames()` | `list<OwnedGame>` |
 | [`GetPlayerAchievementsRequest`](#getplayerachievementsrequest) | `stats()->achievements()` | `PlayerAchievements` |
@@ -183,6 +187,61 @@ foreach ($achievements as $achievement) {
 Steam spells this one `gameid`, the only endpoint in the SDK that does, and the SDK follows
 it: the argument is `$gameId` where every other app-scoped method takes `$appId`. The value
 is an ordinary app ID.
+</Aside>
+
+## GetNewsForAppRequest
+
+```text frame="none"
+$connector->news()->appNews(
+    int $appId,
+    ?int $count = null,
+    ?int $maxLength = null,
+    ?DateTimeInterface $endDate = null,
+    list<string> $feeds = [],
+    list<string> $tags = [],
+)
+
+new GetNewsForAppRequest($appId, $count, $maxLength, $endDate, $feeds, $tags)
+```
+
+<p><Badge text="ISteamNews" variant="note" size="small" />{' '}<Badge text="throws AppNewsUnavailableException" variant="danger" size="small" /></p>
+
+A game's news, newest first: Steam's own announcements next to blog and press feeds. `count`
+sets the page size, 20 by default, and `0` returns nothing; `feeds` and `tags` filter by feed
+name and tag. Without `maxLength`, or with `0`, each body comes in its feed's own markup, BBCode
+or HTML; any positive value flattens it, even when it fits, and cuts a longer one to an excerpt
+ending in `...`, keeping HTML links and bold. Steam serves it anonymously, so the SDK strips the
+configured key from the query, and a connector built without one can send it. Every `403`
+covers two causes — an app ID Steam does not know, or an app whose news it does not publish,
+such as Spacewar — because both answer identically.
+
+The SDK ships no pager. Pass the last item's `publishedAt` back as `endDate`:
+
+```php
+use Fkrzski\SteamApiSdk\Dto\NewsItem;
+
+$seen = [];
+$endDate = null;
+
+do {
+    $page = $connector->news()->appNews(440, count: 50, endDate: $endDate);
+    $fresh = array_filter($page->items, fn (NewsItem $item): bool => ! isset($seen[$item->id]));
+
+    foreach ($fresh as $item) {
+        $seen[$item->id] = true;
+        $endDate = $item->publishedAt;
+
+        echo $item->publishedAt->format('Y-m-d'), ' ', $item->title, PHP_EOL;
+    }
+} while ($fresh !== []);
+```
+
+`endDate` is inclusive, so every page opens with the last item of the one before, and the loop
+drops it by ID. Stepping a second back instead would lose posts published in that same second.
+
+<Aside type="caution" title="Feeds and tags filter differently">
+An unknown feed name is ignored, so a misspelt one returns every feed, while an unknown tag
+returns nothing. Several feeds match any of them; several tags must all match.
 </Aside>
 
 ## GetNumberOfCurrentPlayersRequest

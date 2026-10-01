@@ -47,7 +47,10 @@
             "pint --parallel",
             "rector"
         ],
-        "test:type-coverage": "pest --type-coverage --min=100",
+        "test:type-coverage": [
+            "@putenv __PEST_PLUGIN_ENV=1",
+            "@php -d variables_order=EGPCS vendor/bin/pest --type-coverage --min=100"
+        ],
         "test:lint": [
             "pint --parallel --test",
             "rector --dry-run"

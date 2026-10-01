@@ -31,6 +31,7 @@ interface, and one request class per endpoint:
       - GetRecentlyPlayedGamesRequest.php
       - GetSteamLevelRequest.php
     - ISteamApps
+      - GetSdrConfigRequest.php
       - GetServersAtAddressRequest.php
       - UpToDateCheckRequest.php
     - ISteamUser
@@ -66,6 +67,7 @@ interface, and one request class per endpoint:
 | [`GetPlayerSummariesRequest`](#getplayersummariesrequest) | `users()->summaries()` | `list<PlayerSummary>` |
 | [`GetRecentlyPlayedGamesRequest`](#getrecentlyplayedgamesrequest) | `players()->recentlyPlayedGames()` | `RecentlyPlayedGames` |
 | [`GetSchemaForGameRequest`](#getschemaforgamerequest) | `stats()->schema()` | `GameSchema` |
+| [`GetSdrConfigRequest`](#getsdrconfigrequest) | `apps()->sdrConfig()` | `SdrConfig` |
 | [`GetServersAtAddressRequest`](#getserversataddressrequest) | `apps()->serversAtAddress()` | `list<GameServer>` |
 | [`GetSteamLevelRequest`](#getsteamlevelrequest) | `players()->steamLevel()` | `int` |
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `users()->groups()` | `list<UserGroup>` |
@@ -371,6 +373,35 @@ foreach ($schema->achievements as $achievement) {
 An app that exposes no stats and no achievements — a DLC, a tool, a runtime — answers
 `200` with an empty game, which becomes a `GameSchema` with null names and empty lists.
 Only an app ID Steam does not know raises the exception.
+</Aside>
+
+## GetSdrConfigRequest
+
+```text frame="none"
+$connector->apps()->sdrConfig(int $appId)
+
+new GetSdrConfigRequest($appId)
+```
+
+<p><Badge text="ISteamApps" variant="note" size="small" />{' '}<Badge text="throws AppNotFoundException" variant="danger" size="small" /></p>
+
+The Steam Datagram Relay map a game connects through: every point of presence, where it
+stands, and the IPv4 addresses and ports its relays answer on. A game without a map of its
+own gets Valve's default one, and app ID `0` returns the whole network. Steam serves it
+anonymously, so the SDK strips the configured key from the query, and a connector built
+without one can send it.
+
+```php
+$config = $connector->apps()->sdrConfig(730);
+
+foreach ($config->pointsOfPresence['waw']->relays as $relay) {
+    echo $relay->ipv4, ':', $relay->minPort, '-', $relay->maxPort, PHP_EOL;
+}
+```
+
+<Aside type="caution" title="The shape is Valve's to change">
+`GetSupportedAPIList` lists the method and its `appid` parameter, but Valve documents nothing
+of the answer. The DTOs are written against payloads captured from the live API.
 </Aside>
 
 ## GetServersAtAddressRequest

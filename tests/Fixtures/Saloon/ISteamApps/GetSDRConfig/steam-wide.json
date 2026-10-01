@@ -1,0 +1,86 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "revision": 1790374330,
+        "pops": {
+            "ams": {
+                "desc": "Amsterdam (Netherlands)",
+                "geo": [
+                    4.9,
+                    52.37
+                ],
+                "has_gameservers": false,
+                "partner": "valve",
+                "partners": 1,
+                "tier": 1,
+                "groups": [
+                    "steam-global",
+                    "valve",
+                    "trusted"
+                ],
+                "relays": [
+                    {
+                        "visible": true,
+                        "hostname": "sdr1-ams1.valve.net",
+                        "ipv4": "155.133.248.36",
+                        "port_range": [
+                            27015,
+                            27060
+                        ]
+                    },
+                    {
+                        "visible": true,
+                        "hostname": "sdr3-ams1.valve.net",
+                        "ipv4": "155.133.248.37",
+                        "port_range": [
+                            27015,
+                            27060
+                        ]
+                    }
+                ]
+            },
+            "aae1": {
+                "desc": "Amazon ap-east-1 (Hong Kong)",
+                "geo": [
+                    113.92,
+                    22.31
+                ],
+                "num_gameservers": 4,
+                "partner": "amazon",
+                "partners": 0,
+                "tier": 2,
+                "groups": [
+                    "amazon"
+                ]
+            }
+        },
+        "certs": [
+            "Ii4IARIgSJbwDpn/07/GHiGMKio0Vh18VN3D/hKzQGh6n0Yx9qpF60arak3rSXd9KT6tfJIvitz8MkDoj98iQWltg5b7dHVaGpS/onwKLVqYuwD3qLcCRpdgOUMpmXy5wOxdfqJZANogEKf3KwvCxflCf+fVBj1aR4cH"
+        ],
+        "p2p_share_ip": {
+            "cn": 20,
+            "default": 40,
+            "ru": 20
+        },
+        "relay_public_key": "5AC884C1045BA0FF44142AC8DCA51B8A98C8F1CB4FEE36284AFBE92FCF594932",
+        "revoked_keys": [
+            "11146342570456886677"
+        ],
+        "typical_pings": [
+            [
+                "aae1",
+                "aan1",
+                0
+            ],
+            [
+                "aae1",
+                "ghkg",
+                0
+            ]
+        ],
+        "success": true
+    }
+}

@@ -16,6 +16,7 @@ It powers the player profiles on [Dead by Stats](https://deadbystats.eu).
 - Readonly DTOs with `DateTimeImmutable` instead of framework date objects.
 - Domain exception hierarchy rooted at `SteamApiException`.
 - Daily 100 000-request rate limit baked in via [`saloonphp/rate-limit-plugin`](https://github.com/saloonphp/rate-limit-plugin).
+- Timeouts and opt-in retries on `SteamConfig` — only a `5xx` or no answer at all is retried, since every attempt spends quota.
 - Zero framework coupling — a [Laravel bridge package](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
 
 ## Requirements

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-01
+
 ### Added
 
 - `ApiKeyNotConfiguredException` for a request that needs an API key sent from a config carrying none, and for a blank key handed to `SteamConfig`. Both are raised locally, so neither costs a round trip or a slot of the daily budget ([#59](https://github.com/fkrzski/php-steam-api-sdk/issues/59)).
@@ -129,7 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
-[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.6.0...HEAD
+[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.7.0...HEAD
+[0.7.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.7.0
 [0.6.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.6.0
 [0.5.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.5.0
 [0.4.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.4.0

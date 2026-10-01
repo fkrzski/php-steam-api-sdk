@@ -172,7 +172,8 @@ got no answer, where the transport exception sits on `getPrevious()` instead.
 
 ### How statuses are mapped
 
-Steam signals failure in two different ways, and the SDK reads both:
+Steam signals failure in two different ways, and the SDK reads both, along with the request
+Steam never answers at all:
 
 | Steam's answer | Exception |
 | --- | --- |
@@ -186,11 +187,10 @@ Steam signals failure in two different ways, and the SDK reads both:
 | any other `4xx` / `5xx` | `SteamApiException`, a `5xx` once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
 | `200` with an empty, `success: 42` or `success: false` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` / `AppVersionUnavailableException` / `InvalidServerAddressException` |
 | `200` with `success: false` and a message the SDK does not recognise | `SteamApiException`, quoting Steam's message |
+| no answer: a timeout, a DNS or TLS failure, a refused connection | `SteamConnectionException` with code `0`, once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
 
 `ApiKeyNotConfiguredException` has no row here: it is raised locally, so a request that
-needs a key the config does not carry never reaches Steam at all. `SteamConnectionException`
-has none either — it stands for the request Steam never answered, so there is no status to
-map and `getCode()` stays `0`.
+needs a key the config does not carry never reaches Steam at all.
 
 Steam overloads `400` across unrelated causes. Key errors are the one case it answers
 with HTML rather than JSON — that is what keeps a misconfigured key from surfacing as a

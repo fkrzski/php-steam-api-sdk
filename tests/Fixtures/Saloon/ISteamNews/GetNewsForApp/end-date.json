@@ -1,0 +1,53 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "appnews": {
+            "appid": 440,
+            "newsitems": [
+                {
+                    "gid": "1844115010495700",
+                    "title": "Operation Lithium Lunacy",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1844115010495700",
+                    "is_external_url": true,
+                    "author": "erics",
+                    "contents": "[img]{STEAM_CLAN_LOC_IMAGE}/554111/60593e9552db8d5f6f4117eec71d415daf607913.png[/img]\n(Image credit: Phlogster)\n\nMercenaries, the hot wind blows... the snow is melting... the air becomes polluted... and we detect the very presence of Gray Mann's Armageddon, but his robots aren't playing around anymore. They've taken on a gruesome approach that only the most talented warriors can handle. How rude of them to disrupt the aftermath of America's Independence Day... only now have they decided to really get serious. Did Gray Mann even plan any of those attacks? Has he been failing miserably until now? No matter the answer, reload your weapons, prepare your explosives, fill up your canteens, and stock up on upgrades because this war is where Gray Mann is the most red-blooded he's ever been, it will be the final war if you don't plan accordingly...\n\nOperation Lithium Lunacy is a brand new Mann vs. Machine charity event brought to you by Abyss MvM featuring 9 intermediate, 9 advanced, 2 nightmare, and 10 bone-breakingly hard expert missions across 28 maps. Complete at least 6 missions to earn in-game medals! Event servers are available worldwide in North America, Europe, Asia, and Australia. [url=https://abyss.tf/]Click here to get started[/url]!\n\nIs that all of the missions? Have you thought Gray Mann's limit test in the fall of 2023 was too easy and short lived? Think again, because now you can play a total of 3 master difficulty missions. This is crazy, right?! After 3 years, Abyss MvM has secretly worked with Gray Mann to create 3 new super hard missions designed for the fearless, challenge-seeking warriors among you. Alongside them is a returning master mission from the fall of 2023, redesigned to fit what we'll call the \"new skill level\" of our willing  contestants.\n\nWhether you have witnessed the 3 impossible challenges or not, you can also donate to [url=https://tiltify.com/ocean-connections]Ocean Connections[/url] and help the lives of seals. Three in-game medals are available for donating! Have the link to your Steam profile ready and [url=https://tiltify.com/@abyssmvm/operation-lithium-lunacy]click here for more information[/url].\n\nGood luck to you brave mercenaries on battling Gray Mann's toughest war, and best of all this event has no deadline!\n\nImportant Links:\n[list]\n[*][url=https://abyss.tf/]Event website[/url]\n[*][url=https://steamcommunity.com/groups/abyssmvm]Steam group[/url]\n[*][url=https://discord.gg/DjZBbW62MP]Discord server[/url]\n[/list]\n\n",
+                    "feedlabel": "Community Announcements",
+                    "date": 1789754591,
+                    "feedname": "steam_community_announcements",
+                    "feed_type": 1,
+                    "appid": 440
+                },
+                {
+                    "gid": "1844115010495698",
+                    "title": "Operation Lithium Lunacy",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/tf2_blog/1844115010495698",
+                    "is_external_url": true,
+                    "author": "",
+                    "contents": "<a href=\"https://abyss.tf/\" target=\"_blank\"><img src=\"https://steamcdn-a.akamaihd.net/steam/news/283588/lithium26_small.png?t=1506190994\"></a>\n(Image credit: <a href=\"https://steamcommunity.com/profiles/76561199697369210/\" target=\"_blank\">Phlogster</a>)<br><br>\n\n<p>Mercenaries, the hot wind blows... the snow is melting... the air becomes polluted... and we detect the very presence of Gray Mann's Armageddon, but his robots aren't playing around anymore. They've taken on a gruesome approach that only the most talented warriors can handle. How rude of them to disrupt the aftermath of America's Independence Day... only now have they decided to really get serious. Did Gray Mann even plan any of those attacks? Has he been failing miserably until now? No matter the answer, reload your weapons, prepare your explosives, fill up your canteens, and stock up on upgrades because this war is where Gray Mann is the most red-blooded he's ever been, it will be the final war if you don't plan accordingly...</p><br>\n\n<p>Operation Lithium Lunacy is a brand new Mann vs. Machine charity event brought to you by Abyss MvM featuring 9 intermediate, 9 advanced, 2 nightmare, and 10 bone-breakingly hard expert missions across 28 maps. Complete at least 6 missions to earn in-game medals! Event servers are available worldwide in North America, Europe, Asia, and Australia. <a href=\"https://abyss.tf/\" target=\"_blank\">Click here to get started</a>!</p><br>\n\n<p>Is that all of the missions? Have you thought Gray Mann's limit test in the fall of 2023 was too easy and short lived? Think again, because now you can play a total of 3 master difficulty missions. This is crazy, right?! After 3 years, Abyss MvM has secretly worked with Gray Mann to create 3 new super hard missions designed for the fearless, challenge-seeking warriors among you. Alongside them is a returning master mission from the fall of 2023, redesigned to fit what we'll call the \"new skill level\" of our willing  contestants.</p><br>\n\n<p>Whether you have witnessed the 3 impossible challenges or not, you can also donate to <a href=\"https://tiltify.com/ocean-connections\" target=\"_blank\">Ocean Connections</a> and help the lives of seals. Three in-game medals are available for donating! Have the link to your Steam profile ready and <a href=\"https://tiltify.com/@abyssmvm/operation-lithium-lunacy\" target=\"_blank\">click here for more information</a>.</p><br>\n\n<p>Good luck to you brave mercenaries on battling Gray Mann's toughest war, and best of all this event has no deadline!</p><br>\n\n<p>Important Links:<ul>\n<li><a href=\"https://abyss.tf/\" target=\"_blank\">Event website</a>\n<li><a href=\"https://steamcommunity.com/groups/abyssmvm\" target=\"_blank\">Steam group</a>\n<li><a href=\"https://discord.gg/DjZBbW62MP\" target=\"_blank\">Discord server</a>\n</ul>\n</p><br>",
+                    "feedlabel": "TF2 Blog",
+                    "date": 1789754460,
+                    "feedname": "tf2_blog",
+                    "feed_type": 0,
+                    "appid": 440
+                },
+                {
+                    "gid": "1843481262689906",
+                    "title": "MGE.tf is back!",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1843481262689906",
+                    "is_external_url": true,
+                    "author": "erics",
+                    "contents": "[img]{STEAM_CLAN_LOC_IMAGE}/554111/ebd3bf2a20133ead6c61b19ba0b9b762b09fa07a.png[/img]\n(Image credit: Poster Design - Sennie, SFM - Athena)\n\n[b][url=https://mge.tf/]MGE.tf[/url] is back for another season[/b]! This time, they're returning bigger than ever with [b]2 new game modes and 2 new regions[/b]! Whether you're here to prove yourself or have fun with your friends, there are now more ways than ever to get involved. And there's more than bragging rights on the line. [b]Medals and keys[/b] will be up for grabs for the best players and teams!\n\n[list]\n[*][b]MGE 1v1, MGE 2v2, Ultiduo, and BBALL[/b] will all be available this season!\n[*]Competition will take place across [b]North America, Europe, Asia, Australia, and South America[/b]!\n[*][b]BBALL and Ultiduo will be FREE to enter[/b]!\n[*]Players will compete for [b]Keys, medals, and glory[/b]!\n[*]Players will compete in a [b]6-week regular season[/b] followed by playoffs!\n[*]Sign-ups will be open until [b]October 3rd[/b]!\n[/list]\n\n[b][u]MGE 1v1 & 2v2[/u][/b]\nReady to find out how good you actually are? MGE 1v1 and 2v2 are back for another season! Whether you're fighting solo or with a teammate, every round is a chance to outplay your opponent. Sharpen your mechanics, earn glory, and climb to the top! Grab a teammate you won't end up blaming and sign up now!\n\n[b][u]Ultiduo[/u][/b]\nThink you and your duo make the perfect pair? Ultiduo is back! Grab a Medic (or a Soldier) and work together to outplay the other duo. Keep your partner alive, land your shots, and come out on top. This season, Ultiduo will be completely free to enter! Grab your favorite teammate and sign up now!\n\n[b][u]BBALL[/u][/b]\nBBALL is back! Grab a teammate and hit the court! It's time to put your teamwork to the test and show off your moves and aim. Whether you're a seasoned BBALL player or just looking to give it a shot, there's no better time to step onto the court and compete. And just like Ultiduo, BBALL is completely free to enter this season! So lace up your boots, get ready to ball, and try not to get dunked on!\n\nWith more ways to compete, more regions to climb, new prizes to chase, and more players to fight, the next season of [url=https://mge.tf/]MGE.tf[/url] is shaping up to be their biggest yet! There are more opportunities than ever to compete and prove yourself.\n\nThink you have what it takes? [url=https://mge.tf/signup]Register now[/url]! Sign-ups close on [b]October 3rd[/b]! Don't miss your chance!\n\nImportant Links:\n[list]\n[*][url=https://mge.tf/signup]Sign-ups[/url]\n[*][url=https://mge.tf/discord]Discord[/url]\n[*][url=https://www.youtube.com/@mge.tf.1v1]YouTube[/url]\n[/list]",
+                    "feedlabel": "Community Announcements",
+                    "date": 1788973428,
+                    "feedname": "steam_community_announcements",
+                    "feed_type": 1,
+                    "appid": 440
+                }
+            ],
+            "count": 3937
+        }
+    }
+}

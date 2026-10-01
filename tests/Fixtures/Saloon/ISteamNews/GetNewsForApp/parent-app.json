@@ -1,0 +1,40 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "appnews": {
+            "appid": 2778580,
+            "newsitems": [
+                {
+                    "gid": "1837955055363607",
+                    "title": "\"Один из главных разработчиков современности\": Отец Tekken Кацухиро Харада похвалил создателя Dark Souls Хидэтаку Миядзаки",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/Gamemag.ru/1837955055363607",
+                    "is_external_url": true,
+                    "author": "Семен Страндов",
+                    "contents": "<img src=\"https://gamemag.ru/images/cache/News/News200177/a2bf045302-2_1390x600.jpg\" alt=\"\"><p>Отец <strong>Tekken Кацухиро Харада</strong> назвал главу <strong>FromSoftware Хидэтаку Миядзаки</strong> одним из самых уникальных авторов японской игровой индустрии.</p>",
+                    "feedlabel": "Gamemag.ru",
+                    "date": 1783905960,
+                    "feedname": "Gamemag.ru",
+                    "feed_type": 0,
+                    "appid": 1245620
+                },
+                {
+                    "gid": "1835871199300351",
+                    "title": "Акционеры требуют от FromSoftware больше безопасных проектов и сиквелов — Хидэтака Миядзаки дал ответ",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/Gamemag.ru/1835871199300351",
+                    "is_external_url": true,
+                    "author": "Семен Страндов",
+                    "contents": "<img src=\"https://gamemag.ru/images/cache/News/News199821/1e237d780c-2_1390x600.jpg\" alt=\"\"><p>Акционеры компании<strong> Kadokawa Corporation</strong> стараются оказать давление на студию<strong> FromSoftware </strong>в надежде, что разработчики под руководством<strong> Хидэтаки Миядзаки </strong>станут чаще выпускать игры в уже известных сериях вместо того, чтобы экспериментировать и инвестировать в новую интеллектуальную собственность. Об этом сообщают японские СМИ.</p>",
+                    "feedlabel": "Gamemag.ru",
+                    "date": 1781664840,
+                    "feedname": "Gamemag.ru",
+                    "feed_type": 0,
+                    "appid": 1245620
+                }
+            ],
+            "count": 129
+        }
+    }
+}

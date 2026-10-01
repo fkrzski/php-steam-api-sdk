@@ -21,6 +21,7 @@ on [Dead by Stats](https://deadbystats.eu).
 - **Readonly DTOs** — immutable objects with `DateTimeImmutable`, never framework date wrappers.
 - **Domain exceptions** — one hierarchy rooted at `SteamApiException` for every failure.
 - **Rate limit baked in** — the 100 000 requests/day quota is enforced by the connector, per API key.
+- **Timeouts and retries** — set once on `SteamConfig`; only a `5xx` or no answer at all is retried, since every attempt spends quota.
 - **Zero framework coupling** — plain Saloon; a [Laravel bridge](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
 
 ## Requirements
@@ -38,7 +39,9 @@ on [Dead by Stats](https://deadbystats.eu).
    composer require fkrzski/php-steam-api-sdk
    ```
 
-2. Keep your [Steam Web API key](https://steamcommunity.com/dev) out of the source tree:
+2. Keep your [Steam Web API key](https://steamcommunity.com/dev) out of the source tree, or
+   skip it if the [anonymous endpoints](/php-steam-api-sdk/configuration#without-an-api-key)
+   are all you need:
 
    ```dotenv title=".env"
    STEAM_API_KEY=your-steam-web-api-key

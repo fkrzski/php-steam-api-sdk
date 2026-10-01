@@ -1,0 +1,59 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "appnews": {
+            "appid": 440,
+            "newsitems": [
+                {
+                    "gid": "1844115010502391",
+                    "title": "Art Pass Contest",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1844115010502391",
+                    "is_external_url": true,
+                    "author": "erics",
+                    "contents": "{STEAM_CLAN_LOC_IMAGE}/554111/d651bb0462a39f27ab9058916f4fc4a3212c6f13.png (Image credit: Concept - ...",
+                    "feedlabel": "Community Announcements",
+                    "date": 1790020691,
+                    "feedname": "steam_community_announcements",
+                    "feed_type": 1,
+                    "appid": 440,
+                    "tags": [
+                        "mod_reviewed",
+                        "ModAct_1447510170_1790021217_0",
+                        "ModAct_1447510170_1790022585_4",
+                        "mod_require_rereview"
+                    ]
+                },
+                {
+                    "gid": "1844115010502396",
+                    "title": "Art Pass Contest",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/tf2_blog/1844115010502396",
+                    "is_external_url": true,
+                    "author": "",
+                    "contents": "<a href=\"https://discord.gg/y9b4QeFWv\" target=\"_blank\"> </a> (Image credit: Concept - <a href=\"https://steamcommunity.com/profiles/76561198914938199/\" target=\"_blank\">Endi</a>, SFM - <a href=\"https://steamcommunity.com/id/old_mann_forgot_his_age/\" target=\"_blank\">Oldmann</a>) <b>Movin' out!</b> The Hammer.tf (not an actual URL) commun...",
+                    "feedlabel": "TF2 Blog",
+                    "date": 1790020620,
+                    "feedname": "tf2_blog",
+                    "feed_type": 0,
+                    "appid": 440
+                },
+                {
+                    "gid": "1844115010495700",
+                    "title": "Operation Lithium Lunacy",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1844115010495700",
+                    "is_external_url": true,
+                    "author": "erics",
+                    "contents": "{STEAM_CLAN_LOC_IMAGE}/554111/60593e9552db8d5f6f4117eec71d415daf607913.png (Image credit: Phlogster)...",
+                    "feedlabel": "Community Announcements",
+                    "date": 1789754591,
+                    "feedname": "steam_community_announcements",
+                    "feed_type": 1,
+                    "appid": 440
+                }
+            ],
+            "count": 3939
+        }
+    }
+}

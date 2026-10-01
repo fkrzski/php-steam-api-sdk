@@ -10,6 +10,33 @@ Timestamps are always `DateTimeImmutable`. A nullable property (`?`) means Steam
 the field, never that decoding failed; where an absent field would be ambiguous the SDK
 raises a [domain exception](/php-steam-api-sdk/guide#exceptions) instead.
 
+## AppNews
+
+Returned by [`GetNewsForAppRequest`](/php-steam-api-sdk/api-reference#getnewsforapprequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `appId` | `int` | The app ID you asked for. |
+| `items` | `list<NewsItem>` | The page, newest first, capped by `count`. |
+| `total` | `int` | Items matching the filters up to `endDate`, ignoring `count`. |
+
+Each `NewsItem` carries:
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `id` | `string` | Steam's `gid`, unique per item. |
+| `title` | `string` | Headline. |
+| `url` | `string` | Link to the post. |
+| `isExternalUrl` | `bool` | Steam's own flag; `false` for posts hosted on the Steam store. |
+| `author` | `?string` | Byline; `null` when the feed names none. |
+| `contents` | `string` | Body in the feed's own markup, BBCode or HTML, or a flattened excerpt with `maxLength`. |
+| `feedLabel` | `string` | Display name of the feed, such as `Community Announcements`. |
+| `feedName` | `string` | The name `feeds` filters on, such as `tf2_blog`. |
+| `isCommunityAnnouncement` | `bool` | Whether the post is an announcement from the game's Steam community hub. |
+| `publishedAt` | `DateTimeImmutable` | Publication time. |
+| `appId` | `int` | The app the post belongs to: the base game for a DLC, or another app sharing the feed. |
+| `tags` | `list<string>` | Tags on the post, such as `patchnotes`; empty when it has none. |
+
 ## AppVersionCheck
 
 Returned by [`UpToDateCheckRequest`](/php-steam-api-sdk/api-reference#uptodatecheckrequest).

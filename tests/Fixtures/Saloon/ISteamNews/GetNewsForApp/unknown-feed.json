@@ -1,0 +1,59 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "appnews": {
+            "appid": 440,
+            "newsitems": [
+                {
+                    "gid": "1844115010502391",
+                    "title": "Art Pass Contest",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1844115010502391",
+                    "is_external_url": true,
+                    "author": "erics",
+                    "contents": "[img]{STEAM_CLAN_LOC_IMAGE}/554111/d651bb0462a39f27ab9058916f4fc4a3212c6f13.png[/img]\n(Image credit: Concept - Endi, SFM - Oldmann)\n\n[b]Movin' out![/b]\n\nThe Hammer.tf (not an actual URL) community is proud to announce their first [b]ART-PASS CONTEST![/b] Participants will art-pass an existing KOTH map donated by a community member! As for the theme, there is no theme! Jungle? City? Swamp? Halloween? Uncle Jerry's house? Participants have total creative control, so go wild with any and all ideas!\n\nAnd there will be prizes! The prize pool of [b]60+ Keys[/b] will be split amongst 3 winners!\n\nIn order to qualify, all submissions must be made in their [url=https://discord.gg/y9b4QeFWv]Discord server[/url], where the VMF and BSP files for the map can also be found. Submissions must be made before the deadline, [b]November 26th[/b], in order to be considered eligible for the contest.\n\nJoin their [url=https://discord.gg/y9b4QeFWv]Discord server[/url] for more details, the rules, and to participate! Happy mapping!\n",
+                    "feedlabel": "Community Announcements",
+                    "date": 1790020691,
+                    "feedname": "steam_community_announcements",
+                    "feed_type": 1,
+                    "appid": 440,
+                    "tags": [
+                        "mod_reviewed",
+                        "ModAct_1447510170_1790021217_0",
+                        "ModAct_1447510170_1790022585_4",
+                        "mod_require_rereview"
+                    ]
+                },
+                {
+                    "gid": "1844115010502396",
+                    "title": "Art Pass Contest",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/tf2_blog/1844115010502396",
+                    "is_external_url": true,
+                    "author": "",
+                    "contents": "<a href=\"https://discord.gg/y9b4QeFWv\" target=\"_blank\"><img src=\"https://steamcdn-a.akamaihd.net/steam/news/283924/artpass26_small.png?t=1516190994\"></a>\n(Image credit: Concept - <a href=\"https://steamcommunity.com/profiles/76561198914938199/\" target=\"_blank\">Endi</a>, SFM - <a href=\"https://steamcommunity.com/id/old_mann_forgot_his_age/\" target=\"_blank\">Oldmann</a>)<br><br>\n\n<p><b>Movin' out!</b></p><br>\n\n<p>The Hammer.tf (not an actual URL) community is proud to announce their first <b>ART-PASS CONTEST!</b> Participants will art-pass an existing KOTH map donated by a community member! As for the theme, there is no theme! Jungle? City? Swamp? Halloween? Uncle Jerry's house? Participants have total creative control, so go wild with any and all ideas!</p><br>\n\n<p>And there will be prizes! The prize pool of <b>60+ Keys</b> will be split amongst 3 winners!</p><br>\n\n<p>In order to qualify, all submissions must be made in their <a href=\"https://discord.gg/y9b4QeFWv\" target=\"_blank\">Discord server</a>, where the VMF and BSP files for the map can also be found. Submissions must be made before the deadline, <b>November 26th</b>, in order to be considered eligible for the contest.</p><br>\n\n<p>Join their <a href=\"https://discord.gg/y9b4QeFWv\" target=\"_blank\">Discord server</a> for more details, the rules, and to participate! Happy mapping!</p><br>",
+                    "feedlabel": "TF2 Blog",
+                    "date": 1790020620,
+                    "feedname": "tf2_blog",
+                    "feed_type": 0,
+                    "appid": 440
+                },
+                {
+                    "gid": "1844115010495700",
+                    "title": "Operation Lithium Lunacy",
+                    "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1844115010495700",
+                    "is_external_url": true,
+                    "author": "erics",
+                    "contents": "[img]{STEAM_CLAN_LOC_IMAGE}/554111/60593e9552db8d5f6f4117eec71d415daf607913.png[/img]\n(Image credit: Phlogster)\n\nMercenaries, the hot wind blows... the snow is melting... the air becomes polluted... and we detect the very presence of Gray Mann's Armageddon, but his robots aren't playing around anymore. They've taken on a gruesome approach that only the most talented warriors can handle. How rude of them to disrupt the aftermath of America's Independence Day... only now have they decided to really get serious. Did Gray Mann even plan any of those attacks? Has he been failing miserably until now? No matter the answer, reload your weapons, prepare your explosives, fill up your canteens, and stock up on upgrades because this war is where Gray Mann is the most red-blooded he's ever been, it will be the final war if you don't plan accordingly...\n\nOperation Lithium Lunacy is a brand new Mann vs. Machine charity event brought to you by Abyss MvM featuring 9 intermediate, 9 advanced, 2 nightmare, and 10 bone-breakingly hard expert missions across 28 maps. Complete at least 6 missions to earn in-game medals! Event servers are available worldwide in North America, Europe, Asia, and Australia. [url=https://abyss.tf/]Click here to get started[/url]!\n\nIs that all of the missions? Have you thought Gray Mann's limit test in the fall of 2023 was too easy and short lived? Think again, because now you can play a total of 3 master difficulty missions. This is crazy, right?! After 3 years, Abyss MvM has secretly worked with Gray Mann to create 3 new super hard missions designed for the fearless, challenge-seeking warriors among you. Alongside them is a returning master mission from the fall of 2023, redesigned to fit what we'll call the \"new skill level\" of our willing  contestants.\n\nWhether you have witnessed the 3 impossible challenges or not, you can also donate to [url=https://tiltify.com/ocean-connections]Ocean Connections[/url] and help the lives of seals. Three in-game medals are available for donating! Have the link to your Steam profile ready and [url=https://tiltify.com/@abyssmvm/operation-lithium-lunacy]click here for more information[/url].\n\nGood luck to you brave mercenaries on battling Gray Mann's toughest war, and best of all this event has no deadline!\n\nImportant Links:\n[list]\n[*][url=https://abyss.tf/]Event website[/url]\n[*][url=https://steamcommunity.com/groups/abyssmvm]Steam group[/url]\n[*][url=https://discord.gg/DjZBbW62MP]Discord server[/url]\n[/list]\n\n",
+                    "feedlabel": "Community Announcements",
+                    "date": 1789754591,
+                    "feedname": "steam_community_announcements",
+                    "feed_type": 1,
+                    "appid": 440
+                }
+            ],
+            "count": 3939
+        }
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "appnews": {
+            "appid": 440,
+            "newsitems": [],
+            "count": 0
+        }
+    }
+}

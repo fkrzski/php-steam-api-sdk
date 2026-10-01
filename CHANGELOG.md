@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `GetNewsForAppRequest` (`ISteamNews`) with the `AppNews` and `NewsItem` DTOs, returning a page of a game's news with Steam's total for the filter, reached anonymously through the new `NewsResource` as `$connector->news()->appNews()`. Steam answers an app ID it does not know exactly like some apps that exist, so both raise the new `AppNewsUnavailableException` ([#77](https://github.com/fkrzski/php-steam-api-sdk/issues/77)).
+
 ## [0.7.0] - 2026-10-01
 
 ### Added

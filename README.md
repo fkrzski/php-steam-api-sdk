@@ -1,6 +1,9 @@
 # PHP Steam API SDK
 
-![Banner of PHP Steam API SDK](art/banner.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="art/banner-dark.svg">
+  <img src="art/banner-light.svg" alt="PHP Steam API SDK — composer require fkrzski/php-steam-api-sdk">
+</picture>
 
 [![License](https://img.shields.io/packagist/l/fkrzski/php-steam-api-sdk.svg?style=for-the-badge)](https://packagist.org/packages/fkrzski/php-steam-api-sdk)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/fkrzski/php-steam-api-sdk.svg?style=for-the-badge)](https://packagist.org/packages/fkrzski/php-steam-api-sdk)

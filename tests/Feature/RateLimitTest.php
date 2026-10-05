@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
+use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
@@ -14,6 +15,7 @@ use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Request;
+use Saloon\Http\Response;
 use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
@@ -112,21 +114,35 @@ test('Steam throttling anonymous traffic still raises SteamRateLimitException', 
     'sendAsync' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->sendAsync($request)->wait()],
 ]);
 
-test('a pool counts every answer Steam sends against the budget', function (Closure $answering): void {
-    $connector = $answering();
+test('a pool counts every answer Steam sends against the budget', function (Closure $answering, array $statuses): void {
+    $connector = $answering($statuses);
+    $answered = [];
 
-    $connector->pool([friendListRequest(), friendListRequest()])->send()->wait();
+    $connector->pool(
+        array_map(friendListRequest(...), $statuses),
+        responseHandler: static function (Response $response) use (&$answered): void {
+            $answered[] = $response->status();
+        },
+        exceptionHandler: static function (SteamApiException $exception) use (&$answered): void {
+            $answered[] = $exception->getCode();
+        },
+    )->send()->wait();
 
-    expect(dailyHits($connector))->toBe(2);
+    expect($answered)->toEqualCanonicalizing($statuses)
+        ->and(dailyHits($connector))->toBe(count($statuses));
 })->with([
-    'MockClient' => [static fn (): SteamConnector => new SteamConnector(new SteamConfig('test-key'))->withMockClient(new MockClient([
-        MockResponse::make([], 403),
-        MockResponse::make('', 503),
-    ]))],
-    'Guzzle handler' => [static fn (): SteamConnector => connectorAnswering(
-        [new PsrResponse(403, [], '{}'), new PsrResponse(503)],
+    'MockClient' => [static fn (array $statuses): SteamConnector => new SteamConnector(new SteamConfig('test-key'))->withMockClient(new MockClient(array_map(
+        static fn (int $status): MockResponse => MockResponse::make('{}', $status),
+        $statuses,
+    )))],
+    'Guzzle handler' => [static fn (array $statuses): SteamConnector => connectorAnswering(
+        array_map(static fn (int $status): PsrResponse => new PsrResponse($status, [], '{}'), $statuses),
         new SteamConfig('test-key'),
     )],
+])->with([
+    'all succeed' => [[200, 200, 200]],
+    'all fail' => [[403, 404, 503]],
+    'some fail' => [[200, 403, 200, 503]],
 ]);
 
 test('a 429 in a pool refuses the requests queued after it', function (): void {

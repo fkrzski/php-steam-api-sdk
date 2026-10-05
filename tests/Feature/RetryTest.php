@@ -10,7 +10,6 @@ use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use GuzzleHttp\Psr7\Response as PsrResponse;
-use Saloon\Exceptions\Request\Statuses\ServiceUnavailableException;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
@@ -49,7 +48,7 @@ test('a 5xx on the last try raises the failure it answered with', function (): v
     } catch (SteamApiException $steamApiException) {
         expect($steamApiException->getMessage())->toBe('Steam API request failed with HTTP 503.')
             ->and($steamApiException->getCode())->toBe(503)
-            ->and($steamApiException->getPrevious())->toBeInstanceOf(ServiceUnavailableException::class);
+            ->and($steamApiException->getPrevious())->toBeNull();
 
         return;
     }

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **BC break.** `getPrevious()` is `null` on `SteamConnectionException` and on a `SteamApiException` raised from a `4xx` or `5xx`, where 0.7.0 chained Saloon's `FatalRequestException` or `RequestException`, so callers read the status from `getCode()` and the payload from `response`. Guzzle 7 quotes the request URI, API key included, in the exception beneath, and error trackers store every exception on the chain ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
+- Every exception built from a Steam response, and `SteamConnectionException`, opens its message with the Steam method called, as in `GetFriendList: Steam API request failed with HTTP 500.` Classes and codes are unchanged, so only code matching on the message text is affected ([#81](https://github.com/fkrzski/php-steam-api-sdk/issues/81)).
 
 ### Fixed
 

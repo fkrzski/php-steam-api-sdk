@@ -35,7 +35,7 @@ final class ResolveVanityUrlRequest extends Request
             return SteamId::fromSteamId64($payload['steamid']);
         }
 
-        throw SteamUserNotFoundException::forVanity($this->vanityName);
+        throw SteamUserNotFoundException::forVanity($this->vanityName, $response);
     }
 
     /**

@@ -119,3 +119,23 @@ test('private profile throws ProfileNotPublicException', function (): void {
 
     $connector->send(new GetOwnedGamesRequest(testSteamId()))->dto();
 })->throws(ProfileNotPublicException::class, 'Steam profile 76561198000000000 is not public.');
+
+test('the hidden library carries the 200 Steam answered with', function (): void {
+    $connector = ownedGamesConnector();
+    $connector->withMockClient(new MockClient([
+        GetOwnedGamesRequest::class => MockResponse::fixture('IPlayerService/GetOwnedGames/private'),
+    ]));
+
+    $response = $connector->send(new GetOwnedGamesRequest(testSteamId()));
+
+    try {
+        $response->dto();
+    } catch (ProfileNotPublicException $profileNotPublicException) {
+        expect($profileNotPublicException->response)->toBe($response)
+            ->and($profileNotPublicException->getCode())->toBe(200);
+
+        return;
+    }
+
+    throw new RuntimeException('Expected the library to be withheld.');
+});

@@ -19,12 +19,14 @@ class SteamApiException extends RuntimeException
         parent::__construct($message, $response?->status() ?? 0, $previous);
     }
 
+    /**
+     * Not chained: Saloon carries Guzzle's exception, which in 7.x quotes the URI, key included.
+     */
     public static function fromRequestException(RequestException $exception): self
     {
         return new self(
             sprintf('Steam API request failed with HTTP %d.', $exception->getStatus()),
             $exception->getResponse(),
-            $exception,
         );
     }
 

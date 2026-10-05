@@ -2,14 +2,18 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\ServerException;
+use GuzzleHttp\Psr7\Response as PsrResponse;
 use Psr\Http\Message\RequestInterface;
 
-covers([SteamConnectionException::class, SteamConnector::class]);
+covers([SteamApiException::class, SteamConnectionException::class, SteamConnector::class]);
 
 /**
  * Guzzle 8 drops the query from this message; the closure replays Guzzle 7, which quotes it whole.
@@ -20,6 +24,18 @@ function timeoutQuotingUri(): Closure
         sprintf('cURL error 28: Operation timed out after 5000 milliseconds (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for %s', $request->getUri()),
         $request,
     );
+}
+
+function failureQuotingUri(int $status): Closure
+{
+    return static function (RequestInterface $request) use ($status): ClientException|ServerException {
+        $response = new PsrResponse($status);
+        $summary = sprintf('`GET %s` resulted in a `%d %s` response', $request->getUri(), $status, $response->getReasonPhrase());
+
+        return $status >= 500
+            ? new ServerException('Server error: '.$summary, $request, $response)
+            : new ClientException('Client error: '.$summary, $request, $response);
+    };
 }
 
 function failureOf(Closure $call): Throwable
@@ -79,3 +95,24 @@ test('a request Steam serves anonymously keeps the quoted URI whole', function (
         ->and($thrown->getMessage())
         ->toEndWith('for https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=440');
 });
+
+test('a 4xx or 5xx chains nothing under SteamApiException', function (int $status): void {
+    $connector = connectorAnswering([failureQuotingUri($status)], new SteamConfig('secret-key'));
+
+    $thrown = failureOf(fn (): mixed => $connector->send(friendListRequest()));
+
+    expect($thrown::class)->toBe(SteamApiException::class)
+        ->and($thrown->getMessage())->toBe(sprintf('Steam API request failed with HTTP %d.', $status))
+        ->and($thrown->getCode())->toBe($status)
+        ->and($thrown->getPrevious())->toBeNull();
+})->with([404, 503]);
+
+test('no message in the chain of a 4xx or 5xx carries the key', function (Closure $call): void {
+    expect(chainMessages(failureOf($call)))->not->toContain('secret-key');
+})->with([
+    'send' => [static fn (): mixed => connectorAnswering([failureQuotingUri(503)], new SteamConfig('secret-key'))
+        ->send(friendListRequest())],
+    'sendAsync' => [static fn (): mixed => connectorAnswering([failureQuotingUri(503)], new SteamConfig('secret-key'))
+        ->sendAsync(friendListRequest())
+        ->wait()],
+]);

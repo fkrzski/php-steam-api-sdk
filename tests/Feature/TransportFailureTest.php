@@ -8,9 +8,7 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\Response as PsrResponse;
-use Saloon\Exceptions\Request\FatalRequestException;
 
 covers([SteamConnectionException::class, SteamConnector::class, SteamSender::class]);
 
@@ -24,7 +22,7 @@ test('a request that never reaches Steam raises SteamConnectionException', funct
         );
 });
 
-test('a connection failure carries no response, no status and the Saloon exception', function (): void {
+test('a connection failure carries no response, no status and nothing chained', function (): void {
     $connector = connectorAnswering([connectionFailure()]);
 
     try {
@@ -33,8 +31,7 @@ test('a connection failure carries no response, no status and the Saloon excepti
         expect($steamConnectionException)->toBeInstanceOf(SteamApiException::class)
             ->and($steamConnectionException->response)->toBeNull()
             ->and($steamConnectionException->getCode())->toBe(0)
-            ->and($steamConnectionException->getPrevious())->toBeInstanceOf(FatalRequestException::class)
-            ->and($steamConnectionException->getPrevious()?->getPrevious())->toBeInstanceOf(ConnectException::class);
+            ->and($steamConnectionException->getPrevious())->toBeNull();
 
         return;
     }
@@ -43,9 +40,7 @@ test('a connection failure carries no response, no status and the Saloon excepti
 });
 
 test('a network failure Saloon lets through is wrapped like a connection failure', function (): void {
-    $networkFailure = networkFailure();
-
-    $connector = connectorAnswering([$networkFailure]);
+    $connector = connectorAnswering([networkFailure()]);
 
     try {
         $connector->send(friendListRequest());
@@ -53,8 +48,7 @@ test('a network failure Saloon lets through is wrapped like a connection failure
         expect($steamConnectionException->getMessage())
             ->toBe('Could not reach the Steam Web API: cURL error 28: Operation timed out after 30000 milliseconds')
             ->and($steamConnectionException->response)->toBeNull()
-            ->and($steamConnectionException->getPrevious())->toBeInstanceOf(FatalRequestException::class)
-            ->and($steamConnectionException->getPrevious()?->getPrevious())->toBe($networkFailure);
+            ->and($steamConnectionException->getPrevious())->toBeNull();
 
         return;
     }

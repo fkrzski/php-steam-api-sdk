@@ -34,7 +34,7 @@ function makeSteamIds(int $count): array
  * Saloon's MockResponse cannot raise a transport failure, so the queue is handed to
  * Guzzle's own handler underneath the sender instead.
  *
- * @param  list<PsrResponse|Throwable>  $queue
+ * @param  list<PsrResponse|Throwable|Closure(RequestInterface): (PsrResponse|Throwable)>  $queue
  */
 function connectorAnswering(array $queue, SteamConfig $config = new SteamConfig('any')): SteamConnector
 {

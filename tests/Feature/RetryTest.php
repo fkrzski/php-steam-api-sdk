@@ -46,7 +46,7 @@ test('a 5xx on the last try raises the failure it answered with', function (): v
     try {
         $connector->send(friendListRequest());
     } catch (SteamApiException $steamApiException) {
-        expect($steamApiException->getMessage())->toBe('Steam API request failed with HTTP 503.')
+        expect($steamApiException->getMessage())->toBe('GetFriendList: Steam API request failed with HTTP 503.')
             ->and($steamApiException->getCode())->toBe(503)
             ->and($steamApiException->getPrevious())->toBeNull();
 

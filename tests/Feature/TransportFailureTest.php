@@ -46,7 +46,7 @@ test('a network failure Saloon lets through is wrapped like a connection failure
         $connector->send(friendListRequest());
     } catch (SteamConnectionException $steamConnectionException) {
         expect($steamConnectionException->getMessage())
-            ->toBe('Could not reach the Steam Web API: cURL error 28: Operation timed out after 30000 milliseconds')
+            ->toBe('GetFriendList: Could not reach the Steam Web API: cURL error 28: Operation timed out after 30000 milliseconds')
             ->and($steamConnectionException->response)->toBeNull()
             ->and($steamConnectionException->getPrevious())->toBeNull();
 
@@ -79,7 +79,7 @@ test('sendAsync leaves a failure Steam did answer mapped as it was', function ()
         $connector->sendAsync(friendListRequest())->wait();
     } catch (SteamApiException $steamApiException) {
         expect($steamApiException::class)->toBe(SteamApiException::class)
-            ->and($steamApiException->getMessage())->toBe('Steam API request failed with HTTP 500.')
+            ->and($steamApiException->getMessage())->toBe('GetFriendList: Steam API request failed with HTTP 500.')
             ->and($steamApiException->getCode())->toBe(500);
 
         return;
@@ -107,7 +107,7 @@ test('pool reports a failure Steam did answer as SteamApiException', function ()
     $pool->send()->wait();
 
     expect($thrown)->toBeInstanceOf(SteamApiException::class)
-        ->and($thrown?->getMessage())->toBe('Steam API request failed with HTTP 502.');
+        ->and($thrown?->getMessage())->toBe('GetFriendList: Steam API request failed with HTTP 502.');
 });
 
 test('pool reports a connection failure as SteamConnectionException', function (): void {

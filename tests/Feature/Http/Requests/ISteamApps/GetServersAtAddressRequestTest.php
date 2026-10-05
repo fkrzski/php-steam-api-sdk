@@ -116,7 +116,7 @@ test('a lookup Steam refuses surfaces its message on the root exception', functi
         $response->dto();
     } catch (SteamApiException $steamApiException) {
         expect($steamApiException::class)->toBe(SteamApiException::class)
-            ->and($steamApiException->getMessage())->toBe("Steam API request failed: Please don't call this API more often than once per minute for a given IP.")
+            ->and($steamApiException->getMessage())->toBe("GetServersAtAddress: Steam API request failed: Please don't call this API more often than once per minute for a given IP.")
             ->and($steamApiException->response)->toBe($response)
             ->and($steamApiException->getCode())->toBe(200);
 

@@ -22,9 +22,11 @@ use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use Override;
+use Psr\Http\Message\RequestInterface;
 use Saloon\Config;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Exceptions\Request\RequestException;
+use Saloon\Helpers\Debugger;
 use Saloon\Http\Connector;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\PendingRequest;
@@ -167,6 +169,23 @@ class SteamConnector extends Connector
     }
 
     /**
+     * A pasted dump or a logging callback is where the key would leak, so the callable
+     * gets a copy with it masked; the request Saloon sends is built separately.
+     */
+    #[Override]
+    public function debugRequest(?callable $onRequest = null, bool $die = false): static
+    {
+        $onRequest ??= Debugger::symfonyRequestDebugger(...);
+
+        return parent::debugRequest(
+            static function (PendingRequest $pendingRequest, RequestInterface $psrRequest) use ($onRequest): void {
+                $onRequest($pendingRequest, self::withMaskedKey($psrRequest));
+            },
+            $die,
+        );
+    }
+
+    /**
      * A status with no meaning of its own returns null: Saloon then throws its
      * RequestException, the one type the retry loop catches, and send() maps it back.
      * 429 is absent on purpose: the rate limit plugin runs as PipeOrder::FIRST
@@ -251,5 +270,15 @@ class SteamConnector extends Connector
     protected function throwLimitException(Limit $limit): void
     {
         throw SteamRateLimitException::fromLimit($limit);
+    }
+
+    private static function withMaskedKey(RequestInterface $request): RequestInterface
+    {
+        $uri = $request->getUri();
+
+        return $request->withUri($uri->withQuery(implode('&', array_map(
+            static fn (string $pair): string => str_starts_with($pair, 'key=') ? 'key=***' : $pair,
+            explode('&', $uri->getQuery()),
+        ))));
     }
 }

@@ -12,9 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `GetNewsForAppRequest` (`ISteamNews`) with the `AppNews` and `NewsItem` DTOs, returning a page of a game's news with Steam's total for the filter, reached anonymously through the new `NewsResource` as `$connector->news()->appNews()`. Steam answers an app ID it does not know exactly like some apps that exist, so both raise the new `AppNewsUnavailableException` ([#77](https://github.com/fkrzski/php-steam-api-sdk/issues/77)).
 - `symfony/var-dumper` in `suggest`, because the default dumpers behind `debug()` need it and Composer does not surface Saloon's own suggestion. Without it the first debugged request fails on a missing class ([#78](https://github.com/fkrzski/php-steam-api-sdk/issues/78)).
 
+### Changed
+
+- **BC break.** `getPrevious()` is `null` on `SteamConnectionException` and on a `SteamApiException` raised from a `4xx` or `5xx`, where 0.7.0 chained Saloon's `FatalRequestException` or `RequestException`, so callers read the status from `getCode()` and the payload from `response`. Guzzle 7 quotes the request URI, API key included, in the exception beneath, and error trackers store every exception on the chain ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
+
 ### Fixed
 
 - `SteamConnector::debugRequest()`, and `debug()` through it, pass the callable a copy of the PSR request with the API key masked as `key=***`, while the request sent to Steam keeps it. A pasted dump or a logging callback used to leak the key ([#78](https://github.com/fkrzski/php-steam-api-sdk/issues/78)).
+- `SteamConnectionException` masks the API key as `key=***` in the Guzzle message it quotes, which Guzzle 7 writes with the full request URI ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
+- `SteamConfig` marks `apiKey` as `#[\SensitiveParameter]`, so an invalid timeout or retry setting no longer puts the key among the stack-trace arguments when `zend.exception_ignore_args` is off ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
 
 ## [0.7.0] - 2026-10-01
 

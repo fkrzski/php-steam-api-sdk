@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `GetNewsForAppRequest` (`ISteamNews`) with the `AppNews` and `NewsItem` DTOs, returning a page of a game's news with Steam's total for the filter, reached anonymously through the new `NewsResource` as `$connector->news()->appNews()`. Steam answers an app ID it does not know exactly like some apps that exist, so both raise the new `AppNewsUnavailableException` ([#77](https://github.com/fkrzski/php-steam-api-sdk/issues/77)).
+- `symfony/var-dumper` in `suggest`, because the default dumpers behind `debug()` need it and Composer does not surface Saloon's own suggestion. Without it the first debugged request fails on a missing class ([#78](https://github.com/fkrzski/php-steam-api-sdk/issues/78)).
+
+### Fixed
+
+- `SteamConnector::debugRequest()`, and `debug()` through it, pass the callable a copy of the PSR request with the API key masked as `key=***`, while the request sent to Steam keeps it. A pasted dump or a logging callback used to leak the key ([#78](https://github.com/fkrzski/php-steam-api-sdk/issues/78)).
 
 ## [0.7.0] - 2026-10-01
 

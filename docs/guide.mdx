@@ -215,6 +215,44 @@ servers, and a `403` for an app whose news Steam does not publish. Every message
 cause rather than guessing.
 </Aside>
 
+## Debugging
+
+`debug()`, `debugRequest()` and `debugResponse()` are Saloon's. They register on the
+connector, so every call after them is dumped, with the API key masked as `key=***`:
+
+```php
+$connector->debug()->users()->summaries([$id]);
+```
+
+```text frame="terminal" title="php steam.php" "key=***"
+Saloon Request (GetPlayerSummariesRequest) -> array:6 [
+  "connector" => "Fkrzski\SteamApiSdk\SteamConnector"
+  "request" => "Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest"
+  "method" => "GET"
+  "uri" => "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=***&steamids=76561197960435530"
+  "headers" => array:1 [
+    "Host" => "api.steampowered.com"
+  ]
+  "body" => ""
+]
+```
+
+The default dumper is `symfony/var-dumper`, which the SDK suggests rather than requires:
+
+```bash
+composer require --dev symfony/var-dumper
+```
+
+<Aside type="caution" title="A missing dumper fails late">
+Without it, `debug()` itself succeeds and the first request then dies on
+`Class "Symfony\Component\VarDumper\VarDumper" not found`. Callables of your own passed to
+`debugRequest()` and `debugResponse()` need nothing.
+</Aside>
+
+A callable passed to `debugRequest()` gets the same masked PSR request, and only that request
+is masked. The `PendingRequest` beside it, the `Response` in `debugResponse()`, and
+`debugRequest()` called on a request object rather than the connector all still reach the key.
+
 ## Testing
 
 The connector is stock Saloon, so `MockClient` fakes it with no SDK-specific helper.

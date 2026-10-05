@@ -23,6 +23,9 @@
         "rector/rector": "^2.4.2",
         "symfony/var-dumper": "^8.0.8"
     },
+    "suggest": {
+        "symfony/var-dumper": "Needed by debug() and the default debugRequest() and debugResponse() dumpers."
+    },
     "autoload": {
         "psr-4": {
             "Fkrzski\\SteamApiSdk\\": "src/"

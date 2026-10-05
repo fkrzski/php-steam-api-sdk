@@ -9,10 +9,12 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRetryException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidTimeoutException;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
+use SensitiveParameter;
 
 final readonly class SteamConfig
 {
     public function __construct(
+        #[SensitiveParameter]
         public ?string $apiKey = null,
         public ?RateLimitStore $rateLimitStore = null,
         public ?Language $language = null,

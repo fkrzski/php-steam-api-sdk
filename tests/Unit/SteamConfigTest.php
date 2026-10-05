@@ -117,3 +117,22 @@ test('SteamConfig rejects a negative retry interval', function (): void {
             'SteamConfig::$retryInterval cannot be negative, got -1. Pass milliseconds, 0 for no pause between attempts.',
         );
 });
+
+test('SteamConfig keeps the key out of the trace of a config error', function (): void {
+    $ignoreArgs = (string) ini_get('zend.exception_ignore_args');
+    ini_set('zend.exception_ignore_args', '0');
+
+    try {
+        new SteamConfig('secret-key', tries: 0);
+    } catch (InvalidRetryException $invalidRetryException) {
+        expect($invalidRetryException->getTraceAsString())
+            ->toContain('SteamConfig->__construct(Object(SensitiveParameterValue), ')
+            ->not->toContain('secret-key');
+
+        return;
+    } finally {
+        ini_set('zend.exception_ignore_args', $ignoreArgs);
+    }
+
+    throw new RuntimeException('Expected the config to be rejected.');
+});

@@ -3,13 +3,18 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
+use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
+use Saloon\Http\Request;
+use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
@@ -93,16 +98,74 @@ test('anonymous requests leave no daily counter behind', function (): void {
     expect(dailyLimitKeys())->toBeEmpty();
 });
 
-test('Steam throttling anonymous traffic still raises SteamRateLimitException', function (): void {
+test('Steam throttling anonymous traffic still raises SteamRateLimitException', function (Closure $send): void {
     $connector = new SteamConnector(new SteamConfig);
 
     $connector->withMockClient(new MockClient([
         GetNumberOfCurrentPlayersRequest::class => MockResponse::make([], 429, ['Retry-After' => '120']),
     ]));
 
-    expect(fn (): mixed => $connector->send(new GetNumberOfCurrentPlayersRequest(381210)))
+    expect(fn (): mixed => $send($connector, new GetNumberOfCurrentPlayersRequest(381210)))
         ->toThrow(SteamRateLimitException::class);
+})->with([
+    'send' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->send($request)],
+    'sendAsync' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->sendAsync($request)->wait()],
+]);
+
+test('a pool counts every answer Steam sends against the budget', function (Closure $answering): void {
+    $connector = $answering();
+
+    $connector->pool([friendListRequest(), friendListRequest()])->send()->wait();
+
+    expect(dailyHits($connector))->toBe(2);
+})->with([
+    'MockClient' => [static fn (): SteamConnector => new SteamConnector(new SteamConfig('test-key'))->withMockClient(new MockClient([
+        MockResponse::make([], 403),
+        MockResponse::make('', 503),
+    ]))],
+    'Guzzle handler' => [static fn (): SteamConnector => connectorAnswering(
+        [new PsrResponse(403, [], '{}'), new PsrResponse(503)],
+        new SteamConfig('test-key'),
+    )],
+]);
+
+test('a 429 in a pool refuses the requests queued after it', function (): void {
+    $sent = [];
+    $thrown = [];
+    $friendList = new PsrResponse(200, [], '{"friendslist":{"friends":[]}}');
+    $connector = connectorAnswering(
+        [new PsrResponse(429, ['Retry-After' => '120']), $friendList, $friendList],
+        new SteamConfig('test-key'),
+    );
+    $sender = $connector->sender();
+
+    assert($sender instanceof GuzzleSender);
+
+    $sender->getHandlerStack()->push(Middleware::history($sent));
+
+    $connector->pool(
+        [friendListRequest(), friendListRequest()],
+        concurrency: 1,
+        exceptionHandler: static function (Throwable $reason) use (&$thrown): void {
+            $thrown[] = $reason::class;
+        },
+    )->send()->wait();
+
+    expect($thrown)->toBe([SteamRateLimitException::class, SteamRateLimitException::class])
+        ->and(fn (): mixed => $connector->send(friendListRequest()))->toThrow(SteamRateLimitException::class)
+        ->and($sent)->toHaveCount(1)
+        ->and(dailyHits($connector))->toBe(1);
 });
+
+test('a request Steam never answered costs nothing from the budget', function (Closure $send): void {
+    $connector = connectorAnswering([connectionFailure()], new SteamConfig('test-key'));
+
+    expect(fn (): mixed => $send($connector, friendListRequest()))->toThrow(SteamConnectionException::class)
+        ->and(dailyHits($connector))->toBe(0);
+})->with([
+    'send' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->send($request)],
+    'sendAsync' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->sendAsync($request)->wait()],
+]);
 
 test('a request refused for a missing API key never reaches the wire', function (): void {
     $connector = new SteamConnector(new SteamConfig);

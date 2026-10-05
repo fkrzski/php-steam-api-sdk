@@ -159,13 +159,13 @@ class SteamConnector extends Connector
     #[Override]
     public function sendAsync(Request $request, ?MockClient $mockClient = null): PromiseInterface
     {
-        return parent::sendAsync($request, $mockClient)->otherwise(
-            static fn (mixed $reason): PromiseInterface => match (true) {
+        return parent::sendAsync($request, $mockClient)
+            ->otherwise($this->runResponsePipeline(...))
+            ->otherwise(static fn (mixed $reason): PromiseInterface => match (true) {
                 $reason instanceof FatalRequestException => throw SteamConnectionException::fromFatalRequest($reason),
                 $reason instanceof RequestException => throw SteamApiException::fromRequestException($reason),
                 default => Create::rejectionFor($reason),
-            },
-        );
+            });
     }
 
     /**
@@ -188,8 +188,8 @@ class SteamConnector extends Connector
     /**
      * A status with no meaning of its own returns null: Saloon then throws its
      * RequestException, the one type the retry loop catches, and send() maps it back.
-     * 429 is absent on purpose: the rate limit plugin runs as PipeOrder::FIRST
-     * and throws before AlwaysThrowOnErrors (PipeOrder::LAST) reaches this.
+     * 429 is absent on purpose: the rate limit plugin claims it in the response
+     * pipeline, which sendAsync() runs on a failure too.
      */
     #[Override]
     public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
@@ -270,6 +270,24 @@ class SteamConnector extends Connector
     protected function throwLimitException(Limit $limit): void
     {
         throw SteamRateLimitException::fromLimit($limit);
+    }
+
+    /**
+     * Saloon runs it only on a fulfilled promise, so a 4xx or 5xx would skip the rate limiter.
+     */
+    private function runResponsePipeline(mixed $reason): PromiseInterface
+    {
+        $response = match (true) {
+            $reason instanceof SteamApiException => $reason->response,
+            $reason instanceof RequestException => $reason->getResponse(),
+            default => null,
+        };
+
+        if ($response instanceof Response) {
+            $response->getPendingRequest()->executeResponsePipeline($response);
+        }
+
+        return Create::rejectionFor($reason);
     }
 
     private static function withMaskedKey(RequestInterface $request): RequestInterface

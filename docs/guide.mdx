@@ -162,13 +162,18 @@ try {
 }
 ```
 
-A status the SDK gives no meaning of its own surfaces as the root `SteamApiException`, with
-Saloon's `RequestException` on `getPrevious()`.
+A status the SDK gives no meaning of its own surfaces as the root `SteamApiException`.
+
+No SDK exception chains Saloon's or Guzzle's, so `getPrevious()` is `null`: Guzzle 7 quotes
+the request URI, API key included, in its messages, and error trackers record the whole chain.
+A connection failure keeps Guzzle's wording in its message with the key masked as `key=***`,
+and `SteamConfig` marks the key `#[\SensitiveParameter]`, which keeps it out of stack-trace
+arguments. `response` still reaches it through the request it answered.
 
 <Aside type="note" title="A null response is routine, not an edge case">
 `response` is `null` for every failure raised before a request went out — a malformed
 SteamID64, an oversized batch, the quota exhausted locally — and for one that went out and
-got no answer, where the transport exception sits on `getPrevious()` instead.
+got no answer, where only the message says what failed.
 </Aside>
 
 ### How statuses are mapped

@@ -67,7 +67,7 @@ test('a connection failure masks the key in the URI Guzzle quoted', function ():
 
     expect($thrown)->toBeInstanceOf(SteamConnectionException::class)
         ->and($thrown->getMessage())->toBe(
-            'Could not reach the Steam Web API: cURL error 28: Operation timed out after 5000 milliseconds '
+            'GetFriendList: Could not reach the Steam Web API: cURL error 28: Operation timed out after 5000 milliseconds '
             .'(see https://curl.haxx.se/libcurl/c/libcurl-errors.html) '
             .'for https://api.steampowered.com/ISteamUser/GetFriendList/v1/?key=***&steamid=76561198148125221',
         )
@@ -102,7 +102,7 @@ test('a 4xx or 5xx chains nothing under SteamApiException', function (int $statu
     $thrown = failureOf(fn (): mixed => $connector->send(friendListRequest()));
 
     expect($thrown::class)->toBe(SteamApiException::class)
-        ->and($thrown->getMessage())->toBe(sprintf('Steam API request failed with HTTP %d.', $status))
+        ->and($thrown->getMessage())->toBe(sprintf('GetFriendList: Steam API request failed with HTTP %d.', $status))
         ->and($thrown->getCode())->toBe($status)
         ->and($thrown->getPrevious())->toBeNull();
 })->with([404, 503]);

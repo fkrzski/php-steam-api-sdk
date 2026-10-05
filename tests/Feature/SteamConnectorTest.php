@@ -170,7 +170,7 @@ function sendFailing(MockResponse|Fixture $response): Throwable
 test('401 maps to ProfileNotPublicException', function (): void {
     expect(sendFailing(MockResponse::make([], 401)))
         ->toBeInstanceOf(ProfileNotPublicException::class)
-        ->and(sendFailing(MockResponse::make([], 401))->getMessage())->toBe('Steam profile is not public.');
+        ->and(sendFailing(MockResponse::make([], 401))->getMessage())->toBe('GetFriendList: Steam profile is not public.');
 });
 
 test('403 carrying a JSON body maps to ProfileNotPublicException', function (): void {
@@ -182,28 +182,28 @@ test('403 naming the key parameter maps to InvalidApiKeyException', function ():
     $thrown = sendFailing(MockResponse::fixture('Errors/invalid-key'));
 
     expect($thrown)->toBeInstanceOf(InvalidApiKeyException::class)
-        ->and($thrown->getMessage())->toBe('Steam rejected the API key. Check that it is valid and active.');
+        ->and($thrown->getMessage())->toBe('GetFriendList: Steam rejected the API key. Check that it is valid and active.');
 });
 
 test('401 naming the key parameter maps to InvalidApiKeyException', function (): void {
     $thrown = sendFailing(MockResponse::fixture('Errors/unauthorized-key'));
 
     expect($thrown)->toBeInstanceOf(InvalidApiKeyException::class)
-        ->and($thrown->getMessage())->toBe('Steam rejected the API key. Check that it is valid and active.');
+        ->and($thrown->getMessage())->toBe('GetFriendList: Steam rejected the API key. Check that it is valid and active.');
 });
 
 test('400 reporting a missing key maps to InvalidApiKeyException', function (): void {
     $thrown = sendFailing(MockResponse::fixture('Errors/missing-key'));
 
     expect($thrown)->toBeInstanceOf(InvalidApiKeyException::class)
-        ->and($thrown->getMessage())->toBe('Steam received no API key. Check the key passed to SteamConfig.');
+        ->and($thrown->getMessage())->toBe('GetFriendList: Steam received no API key. Check the key passed to SteamConfig.');
 });
 
 test('400 unrelated to the key falls back to SteamApiException', function (): void {
     $thrown = sendFailing(MockResponse::make(['error' => 'whatever'], 400));
 
     expect($thrown)->toBeInstanceOf(SteamApiException::class)
-        ->and($thrown->getMessage())->toBe('Steam API request failed with HTTP 400.');
+        ->and($thrown->getMessage())->toBe('GetFriendList: Steam API request failed with HTTP 400.');
 });
 
 test('server errors fall back to SteamApiException', function (): void {
@@ -211,7 +211,7 @@ test('server errors fall back to SteamApiException', function (): void {
 
     expect($thrown)->toBeInstanceOf(SteamApiException::class)
         ->and($thrown::class)->toBe(SteamApiException::class)
-        ->and($thrown->getMessage())->toBe('Steam API request failed with HTTP 500.')
+        ->and($thrown->getMessage())->toBe('GetFriendList: Steam API request failed with HTTP 500.')
         ->and($thrown->getCode())->toBe(500)
         ->and($thrown->response?->body())->toBe('<html>Server Error</html>')
         ->and($thrown->getPrevious())->toBeNull();

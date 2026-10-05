@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
@@ -13,6 +14,7 @@ use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
+use Saloon\Http\Response;
 use Saloon\Http\Senders\GuzzleSender;
 use Symfony\Component\VarDumper\VarDumper;
 
@@ -71,6 +73,20 @@ test('keeps the key on the request Steam receives', function (): void {
     expect($history)->toHaveCount(1)
         ->and($history[0]['request']->getUri()->getQuery())->toBe('key=secret-key&steamid=76561198148125221');
 });
+
+test('hands a failed answer to the response debugger', function (Closure $send): void {
+    $statuses = [];
+    $connector = connectorAnswering([new PsrResponse(503)])
+        ->debugResponse(static function (Response $response) use (&$statuses): void {
+            $statuses[] = $response->status();
+        });
+
+    expect(fn (): mixed => $send($connector))->toThrow(SteamApiException::class)
+        ->and($statuses)->toBe([503]);
+})->with([
+    'send' => [static fn (SteamConnector $connector): mixed => $connector->send(friendListRequest())],
+    'sendAsync' => [static fn (SteamConnector $connector): mixed => $connector->sendAsync(friendListRequest())->wait()],
+]);
 
 test('masks the key in the default dump of debug()', function (): void {
     $dumps = [];

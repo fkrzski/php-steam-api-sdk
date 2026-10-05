@@ -163,8 +163,19 @@ try {
 }
 ```
 
-Steam bills that budget to the key, so a connector without one counts nothing locally. It
-still raises the same exception when Steam itself answers `429`.
+Every answer Steam sends counts — a `4xx`, `5xx` or `429` as much as a `200` — through
+`send()`, `sendAsync()` and `pool()` alike. A request that got no answer counts nothing,
+though Steam may still have billed one that timed out.
+
+When Steam itself answers `429`, the connector raises the same exception and refuses every
+request locally until Steam's `Retry-After` passes, or for a minute without one. Steam bills
+the budget to the key, so a connector without one counts nothing locally, but still honours
+a `429`.
+
+<Aside type="caution" title="A pool cannot recall what it sent">
+Requests a `pool()` already has in flight when a `429` arrives still reach Steam. Only the
+ones it starts afterwards are refused locally.
+</Aside>
 
 ## Multiple API keys
 

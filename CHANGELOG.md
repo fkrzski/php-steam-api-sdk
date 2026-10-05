@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SteamConnector::debugRequest()`, and `debug()` through it, pass the callable a copy of the PSR request with the API key masked as `key=***`, while the request sent to Steam keeps it. A pasted dump or a logging callback used to leak the key ([#78](https://github.com/fkrzski/php-steam-api-sdk/issues/78)).
 - `SteamConnectionException` masks the API key as `key=***` in the Guzzle message it quotes, which Guzzle 7 writes with the full request URI ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
 - `SteamConfig` marks `apiKey` as `#[\SensitiveParameter]`, so an invalid timeout or retry setting no longer puts the key among the stack-trace arguments when `zend.exception_ignore_args` is off ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
+- `sendAsync()` and `pool()` count a `4xx` or `5xx` against the daily budget and turn a `429` into `SteamRateLimitException`, refusing the requests after it locally, where they used to count only a `2xx` and raise `SteamApiException` with code `429`. A failed response runs the response pipeline as under `send()`, so `debugResponse()` sees it too ([#85](https://github.com/fkrzski/php-steam-api-sdk/issues/85)).
 
 ## [0.7.0] - 2026-10-01
 

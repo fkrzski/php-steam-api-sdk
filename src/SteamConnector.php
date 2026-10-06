@@ -21,6 +21,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\Utils;
 use Override;
 use Psr\Http\Message\RequestInterface;
 use Saloon\Config;
@@ -154,13 +155,21 @@ class SteamConnector extends Connector
     }
 
     /**
-     * Covers pool(), which sends every request through here.
+     * Covers pool(), which sends every request through here. Saloon's own version runs the
+     * pipeline on a branch it drops, losing whatever a middleware throws on a 2xx.
      */
     #[Override]
     public function sendAsync(Request $request, ?MockClient $mockClient = null): PromiseInterface
     {
-        return parent::sendAsync($request, $mockClient)
-            ->otherwise($this->runResponsePipeline(...))
+        return Utils::task(function () use ($request, $mockClient): PromiseInterface {
+            $pendingRequest = $this->createPendingRequest($request, $mockClient)->setAsynchronous(true);
+
+            $promise = $pendingRequest->hasFakeResponse()
+                ? Create::promiseFor($this->createFakeResponse($pendingRequest))
+                : $this->sender()->sendAsync($pendingRequest);
+
+            return $promise->then($this->runResponsePipeline(...), $this->runResponsePipeline(...));
+        })
             ->otherwise(static fn (mixed $reason): PromiseInterface => match (true) {
                 $reason instanceof FatalRequestException => throw SteamConnectionException::fromFatalRequest($reason),
                 $reason instanceof RequestException => throw SteamApiException::fromRequestException($reason),
@@ -273,13 +282,18 @@ class SteamConnector extends Connector
     }
 
     /**
-     * Saloon runs it only on a fulfilled promise, so a 4xx or 5xx would skip the rate limiter.
+     * Both senders reject a 4xx or 5xx before any pipeline runs, so a failure takes the
+     * pipeline here as well and stays rejected, while a success resolves to what it returns.
      */
-    private function runResponsePipeline(mixed $reason): PromiseInterface
+    private function runResponsePipeline(mixed $outcome): mixed
     {
+        if ($outcome instanceof Response) {
+            return $outcome->getPendingRequest()->executeResponsePipeline($outcome);
+        }
+
         $response = match (true) {
-            $reason instanceof SteamApiException => $reason->response,
-            $reason instanceof RequestException => $reason->getResponse(),
+            $outcome instanceof SteamApiException => $outcome->response,
+            $outcome instanceof RequestException => $outcome->getResponse(),
             default => null,
         };
 
@@ -287,7 +301,7 @@ class SteamConnector extends Connector
             $response->getPendingRequest()->executeResponsePipeline($response);
         }
 
-        return Create::rejectionFor($reason);
+        return Create::rejectionFor($outcome);
     }
 
     private static function withMaskedKey(RequestInterface $request): RequestInterface

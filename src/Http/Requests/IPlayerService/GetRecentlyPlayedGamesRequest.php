@@ -11,6 +11,7 @@ use Override;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
+use Throwable;
 
 final class GetRecentlyPlayedGamesRequest extends Request
 {
@@ -27,10 +28,36 @@ final class GetRecentlyPlayedGamesRequest extends Request
         return '/IPlayerService/GetRecentlyPlayedGames/v1/';
     }
 
+    /**
+     * A player with nothing played still gets `total_count: 0`; only a withheld profile
+     * drops the key, which makes its absence the discriminator.
+     */
+    #[Override]
+    public function hasRequestFailed(Response $response): ?bool
+    {
+        // No opinion off a 200: false would overrule Saloon's own 4xx and 5xx check.
+        if ($response->status() !== 200) {
+            return null;
+        }
+
+        /** @var array{response?: array{total_count?: int}} $body */
+        $body = $response->json();
+
+        return ! array_key_exists('total_count', $body['response'] ?? []);
+    }
+
+    #[Override]
+    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    {
+        return $this->hasRequestFailed($response) === true
+            ? ProfileNotPublicException::forPrivateOrMissing($this->steamId, $response)
+            : null;
+    }
+
     public function createDtoFromResponse(Response $response): RecentlyPlayedGames
     {
         /**
-         * @var array{response?: array{total_count: int, games?: list<array{
+         * @var array{response: array{total_count: int, games?: list<array{
          *     appid: int,
          *     name: string,
          *     playtime_2weeks: int,
@@ -43,15 +70,8 @@ final class GetRecentlyPlayedGamesRequest extends Request
          * }>}} $body
          */
         $body = $response->json();
-        $responseBody = $body['response'] ?? [];
 
-        // A player with nothing played still gets `total_count: 0`; only a withheld
-        // profile drops the key, which makes its absence the discriminator.
-        if (! array_key_exists('total_count', $responseBody)) {
-            throw ProfileNotPublicException::forPrivateOrMissing($this->steamId, $response);
-        }
-
-        return RecentlyPlayedGames::fromArray($responseBody);
+        return RecentlyPlayedGames::fromArray($body['response']);
     }
 
     /**

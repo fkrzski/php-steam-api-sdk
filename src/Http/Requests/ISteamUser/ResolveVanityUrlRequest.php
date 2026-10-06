@@ -10,6 +10,7 @@ use Override;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
+use Throwable;
 
 final class ResolveVanityUrlRequest extends Request
 {
@@ -25,17 +26,35 @@ final class ResolveVanityUrlRequest extends Request
         return '/ISteamUser/ResolveVanityURL/v1/';
     }
 
-    public function createDtoFromResponse(Response $response): SteamId
+    #[Override]
+    public function hasRequestFailed(Response $response): ?bool
     {
+        // No opinion off a 200: false would overrule Saloon's own 4xx and 5xx check.
+        if ($response->status() !== 200) {
+            return null;
+        }
+
         /** @var array{response?: array{success?: int, steamid?: string}} $body */
         $body = $response->json();
         $payload = $body['response'] ?? [];
 
-        if (($payload['success'] ?? null) === 1 && isset($payload['steamid'])) {
-            return SteamId::fromSteamId64($payload['steamid']);
-        }
+        return ($payload['success'] ?? null) !== 1 || ! isset($payload['steamid']);
+    }
 
-        throw SteamUserNotFoundException::forVanity($this->vanityName, $response);
+    #[Override]
+    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    {
+        return $this->hasRequestFailed($response) === true
+            ? SteamUserNotFoundException::forVanity($this->vanityName, $response)
+            : null;
+    }
+
+    public function createDtoFromResponse(Response $response): SteamId
+    {
+        /** @var array{response: array{success: 1, steamid: string}} $body */
+        $body = $response->json();
+
+        return SteamId::fromSteamId64($body['response']['steamid']);
     }
 
     /**

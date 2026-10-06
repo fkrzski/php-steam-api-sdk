@@ -11,6 +11,7 @@ use Override;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
+use Throwable;
 
 final class GetBadgesRequest extends Request
 {
@@ -26,10 +27,36 @@ final class GetBadgesRequest extends Request
         return '/IPlayerService/GetBadges/v1/';
     }
 
+    /**
+     * A SteamID64 that belongs to no account still gets the zeroed progress fields, so
+     * only a withheld profile drops them — which makes it the one identifiable cause.
+     */
+    #[Override]
+    public function hasRequestFailed(Response $response): ?bool
+    {
+        // No opinion off a 200: false would overrule Saloon's own 4xx and 5xx check.
+        if ($response->status() !== 200) {
+            return null;
+        }
+
+        /** @var array{response?: array{player_level?: int}} $body */
+        $body = $response->json();
+
+        return ! array_key_exists('player_level', $body['response'] ?? []);
+    }
+
+    #[Override]
+    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    {
+        return $this->hasRequestFailed($response) === true
+            ? ProfileNotPublicException::forSteamId($this->steamId, $response)
+            : null;
+    }
+
     public function createDtoFromResponse(Response $response): PlayerBadges
     {
         /**
-         * @var array{response?: array{badges?: list<array{
+         * @var array{response: array{badges?: list<array{
          *     badgeid: int,
          *     appid?: int,
          *     level: int,
@@ -41,15 +68,8 @@ final class GetBadgesRequest extends Request
          * }>, player_xp: int, player_level: int, player_xp_needed_to_level_up: int, player_xp_needed_current_level: int}} $body
          */
         $body = $response->json();
-        $responseBody = $body['response'] ?? [];
 
-        // A SteamID64 that belongs to no account still gets the zeroed progress fields,
-        // so only a withheld profile drops them — which makes it the one identifiable cause.
-        if (! array_key_exists('player_level', $responseBody)) {
-            throw ProfileNotPublicException::forSteamId($this->steamId, $response);
-        }
-
-        return PlayerBadges::fromArray($responseBody);
+        return PlayerBadges::fromArray($body['response']);
     }
 
     /**

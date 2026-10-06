@@ -261,6 +261,44 @@ A callable passed to `debugRequest()` gets the same masked PSR request, and only
 is masked. The `PendingRequest` beside it, the `Response` in `debugResponse()`, and
 `debugRequest()` called on a request object rather than the connector all still reach the key.
 
+### Request and response hooks
+
+`onRequest()` and `onResponse()` fire on every attempt, retries included, with a payload that
+carries no API key. Hooks run in the order they were registered:
+
+```php
+use Fkrzski\SteamApiSdk\Hooks\RequestSending;
+use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
+
+$connector
+    ->onRequest(fn (RequestSending $request) => $logger->debug($request->method, $request->query))
+    ->onResponse(fn (ResponseReceived $response) => $logger->info(sprintf(
+        '%s answered %d in %.3fs on attempt %d',
+        $response->method,
+        $response->status,
+        $response->duration,
+        $response->attempt,
+    )));
+```
+
+| Property | Type | Value |
+| --- | --- | --- |
+| `method` | `string` | `ISteamUser/GetPlayerSummaries/v2` |
+| `query` | `array<string, mixed>` | the query Steam receives, without `key` |
+| `attempt` | `int` | `1`, then `2` for the first retry; always `1` under `sendAsync()` and `pool()` |
+| `status` | `int` | `ResponseReceived` only: the HTTP status |
+| `duration` | `float` | `ResponseReceived` only: seconds from sending to the answer, `onRequest` hooks excluded |
+
+A `429` reaches `onResponse` before the rate limiter turns it into `SteamRateLimitException`.
+A request refused locally, for the quota or a missing key, fires neither hook, and an attempt
+Steam never answered fires `onRequest` alone. `middleware()` still covers headers, the body
+and anything else lower-level, key included.
+
+<Aside type="caution" title="A throwing hook fails the call">
+An exception thrown in a hook reaches the caller in place of Steam's result and ends the
+retries. Thrown in `onRequest`, it keeps the request from being sent at all.
+</Aside>
+
 ## Testing
 
 The connector is stock Saloon, so `MockClient` fakes it with no SDK-specific helper.

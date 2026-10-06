@@ -66,6 +66,11 @@ class SteamConnector extends Connector
     private array $responseHooks = [];
 
     /**
+     * @var list<callable(Throwable): void>
+     */
+    private array $failureHooks = [];
+
+    /**
      * Saloon builds a new PendingRequest for every try of send() and numbers none of them.
      *
      * @var array<int, int>
@@ -130,6 +135,16 @@ class SteamConnector extends Connector
     public function onResponse(callable $hook): static
     {
         $this->responseHooks[] = $hook;
+
+        return $this;
+    }
+
+    /**
+     * @param  callable(Throwable): void  $hook
+     */
+    public function onFailure(callable $hook): static
+    {
+        $this->failureHooks[] = $hook;
 
         return $this;
     }
@@ -224,10 +239,8 @@ class SteamConnector extends Connector
 
         try {
             return parent::send($request, $mockClient, $handleRetry);
-        } catch (FatalRequestException $fatalRequestException) {
-            throw SteamConnectionException::fromFatalRequest($fatalRequestException);
-        } catch (RequestException $requestException) {
-            throw SteamApiException::fromRequestException($requestException);
+        } catch (Throwable $throwable) {
+            throw $this->failed($throwable);
         } finally {
             unset($this->attempts[$key]);
         }
@@ -248,12 +261,7 @@ class SteamConnector extends Connector
                 : $this->sender()->sendAsync($pendingRequest);
 
             return $promise->then($this->runResponsePipeline(...), $this->runResponsePipeline(...));
-        })
-            ->otherwise(static fn (mixed $reason): PromiseInterface => match (true) {
-                $reason instanceof FatalRequestException => throw SteamConnectionException::fromFatalRequest($reason),
-                $reason instanceof RequestException => throw SteamApiException::fromRequestException($reason),
-                default => Create::rejectionFor($reason),
-            });
+        })->otherwise(fn (Throwable $reason): never => throw $this->failed($reason));
     }
 
     /**
@@ -381,6 +389,25 @@ class SteamConnector extends Connector
         }
 
         return Create::rejectionFor($outcome);
+    }
+
+    private function failed(Throwable $throwable): Throwable
+    {
+        $exception = match (true) {
+            $throwable instanceof FatalRequestException => SteamConnectionException::fromFatalRequest($throwable),
+            $throwable instanceof RequestException => SteamApiException::fromRequestException($throwable),
+            default => $throwable,
+        };
+
+        foreach ($this->failureHooks as $hook) {
+            try {
+                $hook($exception);
+            } catch (Throwable) {
+                // A broken hook must not replace the exception the caller is owed.
+            }
+        }
+
+        return $exception;
     }
 
     private function sending(PendingRequest $pendingRequest, int $attempt): RequestSending

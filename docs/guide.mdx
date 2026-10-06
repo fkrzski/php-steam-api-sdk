@@ -299,6 +299,28 @@ An exception thrown in a hook reaches the caller in place of Steam's result and 
 retries. Thrown in `onRequest`, it keeps the request from being sent at all.
 </Aside>
 
+### Failure hook
+
+`onFailure()` fires once per call with the exception the caller is about to get: after the
+retries are spent, and as the SDK exception rather than Saloon's.
+
+```php
+$connector->onFailure(fn (Throwable $e) => $logger->error($e->getMessage(), ['exception' => $e]));
+```
+
+It fires for a request refused locally, for the quota or a missing key, which neither hook above
+sees, and for an exception thrown by another hook or a middleware. Under `sendAsync()` and
+`pool()` it fires once for every request that fails, before its promise rejects.
+
+A failure Steam reports in a `200` payload, the two `200` rows of the
+[mapping table](#how-statuses-are-mapped), is raised while the resource builds the DTO, after the
+call has returned, so it never reaches `onFailure`.
+
+<Aside type="caution" title="A throwing failure hook fails silently">
+An exception thrown in `onFailure` is dropped: the caller still gets the original, and the hooks
+registered after it still run. A broken logger leaves no trace.
+</Aside>
+
 ## Testing
 
 The connector is stock Saloon, so `MockClient` fakes it with no SDK-specific helper.

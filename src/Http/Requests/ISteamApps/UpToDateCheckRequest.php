@@ -11,6 +11,7 @@ use Override;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
+use Throwable;
 
 final class UpToDateCheckRequest extends Request implements SendsNoApiKey
 {
@@ -31,6 +32,28 @@ final class UpToDateCheckRequest extends Request implements SendsNoApiKey
      * Steam answers 200 with `success: false` alike for an app ID it does not know and for
      * an app that runs no versioned servers, so the failure can only be read from the body.
      */
+    #[Override]
+    public function hasRequestFailed(Response $response): ?bool
+    {
+        // No opinion off a 200: false would overrule Saloon's own 4xx and 5xx check.
+        if ($response->status() !== 200) {
+            return null;
+        }
+
+        /** @var array{response: array{success: bool}} $body */
+        $body = $response->json();
+
+        return $body['response']['success'] === false;
+    }
+
+    #[Override]
+    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    {
+        return $this->hasRequestFailed($response) === true
+            ? AppVersionUnavailableException::forAppId($this->appId, $response)
+            : null;
+    }
+
     public function createDtoFromResponse(Response $response): AppVersionCheck
     {
         /**
@@ -40,16 +63,9 @@ final class UpToDateCheckRequest extends Request implements SendsNoApiKey
          *     version_is_listable: bool,
          *     required_version?: int,
          *     message?: string,
-         * }|array{
-         *     success: false,
-         *     error: string,
          * }} $body
          */
         $body = $response->json();
-
-        if ($body['response']['success'] === false) {
-            throw AppVersionUnavailableException::forAppId($this->appId, $response);
-        }
 
         return AppVersionCheck::fromArray($body['response']);
     }

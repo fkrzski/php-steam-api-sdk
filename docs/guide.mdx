@@ -83,8 +83,10 @@ $summaries = $response->dto();
 
 The connector uses Saloon's `AlwaysThrowOnErrors`, so a non-2xx response fails before the
 DTO is built — always as an SDK exception, never a Saloon one. The same holds when no
-response comes back at all, through `send()`, `sendAsync()` and `pool()` alike. Which call
-returns which DTO is in the [API reference](/php-steam-api-sdk/api-reference).
+response comes back at all, through `send()`, `sendAsync()` and `pool()` alike. A `200` whose
+payload reports a failure, one of the two `200` rows in the [mapping table](#how-statuses-are-mapped),
+fails the same way, so `send()` never hands back its response. Which call returns which DTO
+is in the [API reference](/php-steam-api-sdk/api-reference).
 
 ## Exceptions
 
@@ -311,10 +313,6 @@ $connector->onFailure(fn (Throwable $e) => $logger->error($e->getMessage(), ['ex
 It fires for a request refused locally, for the quota or a missing key, which neither hook above
 sees, and for an exception thrown by another hook or a middleware. Under `sendAsync()` and
 `pool()` it fires once for every request that fails, before its promise rejects.
-
-A failure Steam reports in a `200` payload, the two `200` rows of the
-[mapping table](#how-statuses-are-mapped), is raised while the resource builds the DTO, after the
-call has returned, so it never reaches `onFailure`.
 
 <Aside type="caution" title="A throwing failure hook fails silently">
 An exception thrown in `onFailure` is dropped: the caller still gets the original, and the hooks

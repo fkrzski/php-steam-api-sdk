@@ -10,12 +10,15 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetSteamLevelRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetSchemaForGameRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Http\PendingRequest;
+use Saloon\Http\Request;
 use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
@@ -345,6 +348,19 @@ test('a failure raised before sending reaches onFailure', function (Closure $con
         SteamRateLimitException::class,
     ],
 ])->with('sending one request');
+
+test('a failure Steam reports in a 200 payload reaches onFailure', function (Closure $send): void {
+    $failures = [];
+    $connector = recordingFailures(connectorAnswering([emptyAnswer()]), $failures);
+
+    $caught = callerGets(static fn (): mixed => $send($connector, new GetSteamLevelRequest(SteamId::fromSteamId64('76561198148125221'))));
+
+    expect($caught::class)->toBe(ProfileNotPublicException::class)
+        ->and($failures)->toBe([$caught]);
+})->with([
+    'send' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->send($request)],
+    'sendAsync' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->sendAsync($request)->wait()],
+]);
 
 test('pool fires onFailure for every failed request', function (): void {
     $failures = [];

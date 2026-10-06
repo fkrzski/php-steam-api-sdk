@@ -56,17 +56,16 @@ test('not-found response throws SteamUserNotFoundException', function (): void {
 });
 
 test('the unresolved name carries the 200 Steam answered with', function (): void {
-    $connector = connector();
-    $connector->withMockClient(new MockClient([
+    $mockClient = new MockClient([
         ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/not_found'),
-    ]));
-
-    $response = $connector->send(new ResolveVanityUrlRequest('missingUser'));
+    ]);
+    $connector = connector();
+    $connector->withMockClient($mockClient);
 
     try {
-        $response->dto();
+        $connector->send(new ResolveVanityUrlRequest('missingUser'));
     } catch (SteamUserNotFoundException $steamUserNotFoundException) {
-        expect($steamUserNotFoundException->response)->toBe($response)
+        expect($steamUserNotFoundException->response)->toBe($mockClient->getLastResponse())
             ->and($steamUserNotFoundException->getCode())->toBe(200);
 
         return;

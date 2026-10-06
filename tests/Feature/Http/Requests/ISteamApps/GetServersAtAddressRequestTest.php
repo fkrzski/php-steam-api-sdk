@@ -89,15 +89,14 @@ test('an address Steam rejects throws InvalidServerAddressException', function (
 );
 
 test('the rejected address carries the 200 Steam answered with', function (): void {
+    $mockClient = serversAtAddressMock('invalid-address');
     $connector = new SteamConnector(new SteamConfig('test-key'));
-    $connector->withMockClient(serversAtAddressMock('invalid-address'));
-
-    $response = $connector->send(new GetServersAtAddressRequest('not-an-ip'));
+    $connector->withMockClient($mockClient);
 
     try {
-        $response->dto();
+        $connector->send(new GetServersAtAddressRequest('not-an-ip'));
     } catch (InvalidServerAddressException $invalidServerAddressException) {
-        expect($invalidServerAddressException->response)->toBe($response)
+        expect($invalidServerAddressException->response)->toBe($mockClient->getLastResponse())
             ->and($invalidServerAddressException->getCode())->toBe(200);
 
         return;
@@ -107,17 +106,16 @@ test('the rejected address carries the 200 Steam answered with', function (): vo
 });
 
 test('a lookup Steam refuses surfaces its message on the root exception', function (): void {
+    $mockClient = serversAtAddressMock('refused');
     $connector = new SteamConnector(new SteamConfig('test-key'));
-    $connector->withMockClient(serversAtAddressMock('refused'));
-
-    $response = $connector->send(new GetServersAtAddressRequest('127.0.0.1'));
+    $connector->withMockClient($mockClient);
 
     try {
-        $response->dto();
+        $connector->send(new GetServersAtAddressRequest('127.0.0.1'));
     } catch (SteamApiException $steamApiException) {
         expect($steamApiException::class)->toBe(SteamApiException::class)
             ->and($steamApiException->getMessage())->toBe("GetServersAtAddress: Steam API request failed: Please don't call this API more often than once per minute for a given IP.")
-            ->and($steamApiException->response)->toBe($response)
+            ->and($steamApiException->response)->toBe($mockClient->getLastResponse())
             ->and($steamApiException->getCode())->toBe(200);
 
         return;

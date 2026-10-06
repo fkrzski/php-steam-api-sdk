@@ -76,15 +76,14 @@ test('an app Steam cannot check throws AppVersionUnavailableException', function
 ]);
 
 test('the unavailable check carries the 200 Steam answered with', function (): void {
+    $mockClient = upToDateCheckMock('unavailable');
     $connector = new SteamConnector(new SteamConfig('test-key'));
-    $connector->withMockClient(upToDateCheckMock('unavailable'));
-
-    $response = $connector->send(new UpToDateCheckRequest(620, 1));
+    $connector->withMockClient($mockClient);
 
     try {
-        $response->dto();
+        $connector->send(new UpToDateCheckRequest(620, 1));
     } catch (AppVersionUnavailableException $appVersionUnavailableException) {
-        expect($appVersionUnavailableException->response)->toBe($response)
+        expect($appVersionUnavailableException->response)->toBe($mockClient->getLastResponse())
             ->and($appVersionUnavailableException->getCode())->toBe(200);
 
         return;

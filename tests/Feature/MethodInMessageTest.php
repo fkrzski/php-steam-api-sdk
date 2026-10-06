@@ -11,12 +11,15 @@ use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
+use Fkrzski\SteamApiSdk\Exceptions\SteamUserNotFoundException;
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetRecentlyPlayedGamesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetSteamLevelRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetSdrConfigRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetServersAtAddressRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\UpToDateCheckRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetGlobalAchievementPercentagesForAppRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetSchemaForGameRequest;
@@ -39,6 +42,7 @@ covers([
     InvalidServerAddressException::class,
     ProfileNotPublicException::class,
     StatsUnavailableException::class,
+    SteamUserNotFoundException::class,
 ]);
 
 function messageOfFailed(Request $request, MockResponse|Fixture $response): string
@@ -92,6 +96,16 @@ test('every failure Steam answered opens with the method', function (Request $re
         new GetRecentlyPlayedGamesRequest(SteamId::fromSteamId64('76561198148125221')),
         MockResponse::fixture('IPlayerService/GetRecentlyPlayedGames/private'),
         'GetRecentlyPlayedGames: Steam returned no data for profile 76561198148125221: it is not public, or it does not exist.',
+    ],
+    'a hidden library' => [
+        new GetOwnedGamesRequest(SteamId::fromSteamId64('76561198148125221')),
+        MockResponse::fixture('IPlayerService/GetOwnedGames/private'),
+        'GetOwnedGames: Steam profile 76561198148125221 is not public.',
+    ],
+    'an unresolved vanity name' => [
+        new ResolveVanityUrlRequest('missingUser'),
+        MockResponse::fixture('ISteamUser/ResolveVanityUrl/not_found'),
+        'ResolveVanityURL: No Steam user found for vanity name "missingUser".',
     ],
     'stats Steam withholds' => [
         new GetPlayerAchievementsRequest(SteamId::fromSteamId64('76561198148125221'), 440),

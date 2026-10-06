@@ -148,8 +148,8 @@ The [API reference](/php-steam-api-sdk/api-reference) notes which request throws
 
 ### Inspecting the failed response
 
-Exceptions raised from an HTTP failure carry the response that produced them, and
-their code is the HTTP status:
+Exceptions raised from Steam's answer carry the response that produced them, and their code
+is the HTTP status, `200` included when only the payload reports the failure:
 
 ```php {6,7}
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;

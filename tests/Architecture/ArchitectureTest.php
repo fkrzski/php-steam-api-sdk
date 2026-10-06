@@ -31,6 +31,12 @@ arch('value objects are final readonly classes')
     ->toBeFinal()
     ->toBeReadonly();
 
+arch('hook payloads are final readonly classes')
+    ->expect('Fkrzski\SteamApiSdk\Hooks')
+    ->toBeClasses()
+    ->toBeFinal()
+    ->toBeReadonly();
+
 arch('contracts are interfaces')
     ->expect('Fkrzski\SteamApiSdk\Contracts')
     ->toBeInterfaces();

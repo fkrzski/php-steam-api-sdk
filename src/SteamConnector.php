@@ -13,6 +13,8 @@ use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Hooks\RequestSending;
+use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
 use Fkrzski\SteamApiSdk\Http\Resources\AppsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\NewsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
@@ -25,6 +27,7 @@ use GuzzleHttp\Promise\Utils;
 use Override;
 use Psr\Http\Message\RequestInterface;
 use Saloon\Config;
+use Saloon\Enums\PipeOrder;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Exceptions\Request\RequestException;
 use Saloon\Helpers\Debugger;
@@ -44,11 +47,30 @@ use Throwable;
 class SteamConnector extends Connector
 {
     use AlwaysThrowOnErrors;
-    use HasRateLimits;
+    use HasRateLimits {
+        bootHasRateLimits as private bootRateLimiter;
+    }
     use HasTimeout;
 
     #[Override]
     protected string $defaultSender = SteamSender::class;
+
+    /**
+     * @var list<callable(RequestSending): void>
+     */
+    private array $requestHooks = [];
+
+    /**
+     * @var list<callable(ResponseReceived): void>
+     */
+    private array $responseHooks = [];
+
+    /**
+     * Saloon builds a new PendingRequest for every try of send() and numbers none of them.
+     *
+     * @var array<int, int>
+     */
+    private array $attempts = [];
 
     /**
      * Saloon's send() reads the retry settings straight off these properties, so the
@@ -93,6 +115,26 @@ class SteamConnector extends Connector
     }
 
     /**
+     * @param  callable(RequestSending): void  $hook
+     */
+    public function onRequest(callable $hook): static
+    {
+        $this->requestHooks[] = $hook;
+
+        return $this;
+    }
+
+    /**
+     * @param  callable(ResponseReceived): void  $hook
+     */
+    public function onResponse(callable $hook): static
+    {
+        $this->responseHooks[] = $hook;
+
+        return $this;
+    }
+
+    /**
      * Saloon merges the request query before booting, so both defaults act on a query
      * that is already complete: the key can be taken back out, and the configured
      * language only fills the gap a request left open — an explicit one always wins.
@@ -114,6 +156,38 @@ class SteamConnector extends Connector
         if ($this->steamConfig->language instanceof Language) {
             $pendingRequest->query()->add('l', $this->steamConfig->language->value);
         }
+    }
+
+    /**
+     * The limiter turns a 429 into an exception in its first response pipe, so the hooks go in ahead of it.
+     */
+    public function bootHasRateLimits(PendingRequest $pendingRequest): void
+    {
+        $key = spl_object_id($pendingRequest->getRequest());
+        $attempt = isset($this->attempts[$key]) ? ++$this->attempts[$key] : 1;
+        $sentAt = null;
+
+        $pendingRequest->middleware()
+            ->onRequest(function (PendingRequest $pendingRequest) use ($attempt, &$sentAt): void {
+                $sending = $this->sending($pendingRequest, $attempt);
+
+                foreach ($this->requestHooks as $hook) {
+                    $hook($sending);
+                }
+
+                $sentAt = microtime(true);
+            }, order: PipeOrder::LAST)
+            ->onResponse(function (Response $response) use ($attempt, &$sentAt): void {
+                $duration = microtime(true) - $sentAt;
+                $sending = $this->sending($response->getPendingRequest(), $attempt);
+                $received = new ResponseReceived($sending->method, $sending->query, $attempt, $response->status(), $duration);
+
+                foreach ($this->responseHooks as $hook) {
+                    $hook($received);
+                }
+            }, order: PipeOrder::FIRST);
+
+        $this->bootRateLimiter($pendingRequest);
     }
 
     /**
@@ -145,12 +219,17 @@ class SteamConnector extends Connector
     #[Override]
     public function send(Request $request, ?MockClient $mockClient = null, ?callable $handleRetry = null): Response
     {
+        $key = spl_object_id($request);
+        $this->attempts[$key] = 0;
+
         try {
             return parent::send($request, $mockClient, $handleRetry);
         } catch (FatalRequestException $fatalRequestException) {
             throw SteamConnectionException::fromFatalRequest($fatalRequestException);
         } catch (RequestException $requestException) {
             throw SteamApiException::fromRequestException($requestException);
+        } finally {
+            unset($this->attempts[$key]);
         }
     }
 
@@ -302,6 +381,15 @@ class SteamConnector extends Connector
         }
 
         return Create::rejectionFor($outcome);
+    }
+
+    private function sending(PendingRequest $pendingRequest, int $attempt): RequestSending
+    {
+        $query = $pendingRequest->query()->all();
+
+        unset($query['key']);
+
+        return new RequestSending(trim($pendingRequest->getUri()->getPath(), '/'), $query, $attempt);
     }
 
     private static function withMaskedKey(RequestInterface $request): RequestInterface

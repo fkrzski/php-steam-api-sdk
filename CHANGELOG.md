@@ -7,24 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-07
+
 ### Added
 
 - `GetNewsForAppRequest` (`ISteamNews`) with the `AppNews` and `NewsItem` DTOs, returning a page of a game's news with Steam's total for the filter, reached anonymously through the new `NewsResource` as `$connector->news()->appNews()`. Steam answers an app ID it does not know exactly like some apps that exist, so both raise the new `AppNewsUnavailableException` ([#77](https://github.com/fkrzski/php-steam-api-sdk/issues/77)).
-- `symfony/var-dumper` in `suggest`, because the default dumpers behind `debug()` need it and Composer does not surface Saloon's own suggestion. Without it the first debugged request fails on a missing class ([#78](https://github.com/fkrzski/php-steam-api-sdk/issues/78)).
-- `SteamConnector::onRequest()` and `onResponse()`, fired on every attempt including under `sendAsync()` and `pool()`, with the key-free `RequestSending` and `ResponseReceived` payloads: the Steam method, the query, the attempt number and, on the response, the status and the `duration` in seconds. A `429` reaches `onResponse` before it becomes `SteamRateLimitException`, and an exception thrown in a hook reaches the caller ([#79](https://github.com/fkrzski/php-steam-api-sdk/issues/79)).
 - `SteamConnector::onFailure()`, fired once per call under `send()`, `sendAsync()` and `pool()` with the exception the caller gets: after the retries, as the SDK exception, and also for a request refused locally for the quota or a missing key. An exception thrown in the hook is dropped, so the caller still gets the original ([#80](https://github.com/fkrzski/php-steam-api-sdk/issues/80)).
+- `SteamConnector::onRequest()` and `onResponse()`, fired on every attempt including under `sendAsync()` and `pool()`, with the key-free `RequestSending` and `ResponseReceived` payloads: the Steam method, the query, the attempt number and, on the response, the status and the `duration` in seconds. A `429` reaches `onResponse` before it becomes `SteamRateLimitException`, and an exception thrown in a hook reaches the caller ([#79](https://github.com/fkrzski/php-steam-api-sdk/issues/79)).
+- `symfony/var-dumper` in `suggest`, because the default dumpers behind `debug()` need it and Composer does not surface Saloon's own suggestion. Without it the first debugged request fails on a missing class ([#78](https://github.com/fkrzski/php-steam-api-sdk/issues/78)).
 
 ### Changed
 
 - **BC break.** `getPrevious()` is `null` on `SteamConnectionException` and on a `SteamApiException` raised from a `4xx` or `5xx`, where 0.7.0 chained Saloon's `FatalRequestException` or `RequestException`, so callers read the status from `getCode()` and the payload from `response`. Guzzle 7 quotes the request URI, API key included, in the exception beneath, and error trackers store every exception on the chain ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
-- Every exception built from a Steam response, and `SteamConnectionException`, opens its message with the Steam method called, as in `GetFriendList: Steam API request failed with HTTP 500.` Classes and codes are unchanged, so only code matching on the message text is affected ([#81](https://github.com/fkrzski/php-steam-api-sdk/issues/81)).
 - **BC break.** `ProfileNotPublicException::forSteamId()`, `ProfileNotPublicException::forPrivateOrMissing()` and `SteamUserNotFoundException::forVanity()` require the Saloon `Response`, so callers building them by hand have to pass one. `GetOwnedGamesRequest` and `ResolveVanityUrlRequest` now do, which gives their failures a `response`, code `200` rather than `0` and the Steam method in the message ([#90](https://github.com/fkrzski/php-steam-api-sdk/issues/90)).
 - **BC break.** `send()`, `sendAsync()` and `pool()` raise the failure Steam reports in a `200` payload for `GetOwnedGamesRequest`, `GetSteamLevelRequest`, `GetBadgesRequest`, `GetRecentlyPlayedGamesRequest`, `GetCommunityBadgeProgressRequest`, `ResolveVanityUrlRequest`, `UpToDateCheckRequest` and `GetServersAtAddressRequest`, where they used to return the `Response` and leave the exception to `dto()`, so callers catch it around the call itself. That brings it to `onFailure()` and to the `pool()` exception handler, while the resource methods throw what they did before ([#94](https://github.com/fkrzski/php-steam-api-sdk/issues/94)).
+- Every exception built from a Steam response, and `SteamConnectionException`, opens its message with the Steam method called, as in `GetFriendList: Steam API request failed with HTTP 500.` Classes and codes are unchanged, so only code matching on the message text is affected ([#81](https://github.com/fkrzski/php-steam-api-sdk/issues/81)).
 
 ### Fixed
 
 - `SteamConnector::debugRequest()`, and `debug()` through it, pass the callable a copy of the PSR request with the API key masked as `key=***`, while the request sent to Steam keeps it. A pasted dump or a logging callback used to leak the key ([#78](https://github.com/fkrzski/php-steam-api-sdk/issues/78)).
-- `SteamConnectionException` masks the API key as `key=***` in the Guzzle message it quotes, which Guzzle 7 writes with the full request URI ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
+- `SteamConnectionException` masks the API key as `key=***` in the Guzzle message it quotes ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
 - `SteamConfig` marks `apiKey` as `#[\SensitiveParameter]`, so an invalid timeout or retry setting no longer puts the key among the stack-trace arguments when `zend.exception_ignore_args` is off ([#86](https://github.com/fkrzski/php-steam-api-sdk/issues/86)).
 - `sendAsync()` and `pool()` count a `4xx` or `5xx` against the daily budget and turn a `429` into `SteamRateLimitException`, refusing the requests after it locally, where they used to count only a `2xx` and raise `SteamApiException` with code `429`. A failed response runs the response pipeline as under `send()`, so `debugResponse()` sees it too ([#85](https://github.com/fkrzski/php-steam-api-sdk/issues/85)).
 - `sendAsync()` and `pool()` return the promise their response pipeline settles, so a middleware throwing on a `2xx` rejects the call and a `Response` a middleware swaps in reaches the caller. Saloon ran that pipeline on a branch it dropped, losing both ([#79](https://github.com/fkrzski/php-steam-api-sdk/issues/79)).
@@ -153,7 +155,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
-[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.7.0...HEAD
+[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.8.0...HEAD
+[0.8.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.8.0
 [0.7.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.7.0
 [0.6.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.6.0
 [0.5.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.5.0

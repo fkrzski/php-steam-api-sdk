@@ -1,6 +1,6 @@
 ---
 title: Guide
-description: The core building blocks — the SteamId value object, the resources that return readonly DTOs, the exception hierarchy every failure shares, and testing.
+description: The core building blocks — the SteamId value object, the resources that return readonly DTOs, the exception hierarchy, debugging hooks, and testing.
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -228,7 +228,8 @@ cause rather than guessing.
 ## Debugging
 
 `debug()`, `debugRequest()` and `debugResponse()` are Saloon's. They register on the
-connector, so every call after them is dumped, with the API key masked as `key=***`:
+connector, so every call after them is dumped. A dump pasted into an issue or a log is where
+a key leaks, so the API key comes out masked as `key=***`:
 
 ```php
 $connector->debug()->users()->summaries([$id]);

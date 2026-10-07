@@ -168,3 +168,25 @@ test('hidden profile in a batch does not break the other summaries', function ()
         ->and($dtos[1]->communityVisibility)->toBe(CommunityVisibility::Visible)
         ->and($dtos[1]->timeCreated?->getTimestamp())->toBe(1433676282);
 });
+
+test('friends-only profile in a batch maps to FriendsOnly and does not break the other summaries', function (): void {
+    $mock = new MockClient([
+        GetPlayerSummariesRequest::class => MockResponse::fixture('ISteamUser/GetPlayerSummaries/friends-only'),
+    ]);
+
+    $connector = summariesConnector();
+    $connector->withMockClient($mock);
+
+    /** @var list<PlayerSummary> $dtos */
+    $dtos = $connector->send(new GetPlayerSummariesRequest(makeSteamIds(2)))->dto();
+
+    expect($dtos)->toHaveCount(2)
+        ->and($dtos[0]->communityVisibility)->toBe(CommunityVisibility::FriendsOnly)
+        ->and($dtos[0]->commentPermission)->toBe(CommentPermission::FriendsOnly)
+        ->and($dtos[0]->timeCreated)->toBeNull()
+        ->and($dtos[0]->realName)->toBeNull()
+        ->and($dtos[0]->primaryClanId)->toBeNull()
+        ->and($dtos[0]->countryCode)->toBeNull()
+        ->and($dtos[1]->communityVisibility)->toBe(CommunityVisibility::Visible)
+        ->and($dtos[1]->timeCreated?->getTimestamp())->toBe(1433676282);
+});

@@ -10,15 +10,17 @@ test('maps API values to enum cases', function (int $value, CommunityVisibility 
     expect(CommunityVisibility::fromApiValue($value))->toBe($expected);
 })->with([
     'hidden' => [1, CommunityVisibility::Hidden],
+    'friends only' => [2, CommunityVisibility::FriendsOnly],
     'visible' => [3, CommunityVisibility::Visible],
 ]);
 
 test('unknown values throw UnexpectedValueException', function (): void {
-    CommunityVisibility::fromApiValue(2);
-})->throws(UnexpectedValueException::class, 'Unknown communityvisibilitystate value "2".');
+    CommunityVisibility::fromApiValue(4);
+})->throws(UnexpectedValueException::class, 'Unknown communityvisibilitystate value "4".');
 
 test('backing values mirror the API and survive json_encode', function (): void {
     expect(CommunityVisibility::Hidden->value)->toBe(1)
+        ->and(CommunityVisibility::FriendsOnly->value)->toBe(2)
         ->and(CommunityVisibility::Visible->value)->toBe(3)
         ->and(json_encode(CommunityVisibility::Visible, JSON_THROW_ON_ERROR))->toBe('3');
 });

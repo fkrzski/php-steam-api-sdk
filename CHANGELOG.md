@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The daily budget resets at 00:00 UTC instead of 24 hours after the first request of its window. The limit is now named `100000_every_utc_midnight`, so counters already held in a persistent store restart from zero once ([#100](https://github.com/fkrzski/php-steam-api-sdk/issues/100)).
+- `PlayerSummary` maps the `communityvisibilitystate` `2` that Steam returns for friends-only profiles to the new `CommunityVisibility::FriendsOnly`, where it threw `UnexpectedValueException` and failed the whole `GetPlayerSummariesRequest` batch. Any other value outside `1`–`3` still throws ([#106](https://github.com/fkrzski/php-steam-api-sdk/issues/106)).
 
 ## [0.8.0] - 2026-10-07
 

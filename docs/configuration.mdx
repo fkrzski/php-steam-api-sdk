@@ -164,6 +164,9 @@ try {
 }
 ```
 
+The budget resets at 00:00 UTC whatever `date.timezone` says, so `getRemainingSeconds()`
+counts down to the next midnight UTC. Valve documents no reset time; UTC is an assumption.
+
 Every answer Steam sends counts — a `4xx`, `5xx` or `429` as much as a `200` — through
 `send()`, `sendAsync()` and `pool()` alike. A request that got no answer counts nothing,
 though Steam may still have billed one that timed out.

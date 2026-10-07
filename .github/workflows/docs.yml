@@ -23,15 +23,16 @@ jobs:
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v7.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - name: Setup Node.js
-      uses: actions/setup-node@v7.0.0
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version: 24
 
     # Validates docs/ against the shared @fkrzski/docs-schema contract:
     # frontmatter (title + SEO-bounded description, project fields), markdownlint,
     # and internal-link resolution. Exits non-zero on any violation.
+    # Bumped by hand: Dependabot doesn't read npx calls.
     - name: Validate docs
-      run: npx --yes @fkrzski/docs-schema docs
+      run: npx --yes @fkrzski/docs-schema@0.1.0 docs

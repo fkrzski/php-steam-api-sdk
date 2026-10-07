@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- GitHub Actions are pinned to full commit SHAs with the version in a trailing comment, and the docs workflow runs `@fkrzski/docs-schema` 0.1.0 instead of the latest release. A tag can be moved to another commit after the fact, so the version tags used since 0.3.0 did not fix what runs ([#103](https://github.com/fkrzski/php-steam-api-sdk/issues/103)).
+
 ## [0.8.0] - 2026-10-07
 
 ### Added

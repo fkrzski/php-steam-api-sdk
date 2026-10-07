@@ -228,9 +228,10 @@ Returned by [`GetPlayerSummariesRequest`](/php-steam-api-sdk/api-reference#getpl
 | `cityId` | `?int` | Steam city ID, if shared. |
 
 <Aside type="caution" title="A hidden profile arrives stripped">
-When `communityVisibility` is `Hidden`, Steam sends only the identity and avatar fields —
-`timeCreated`, `realName`, `primaryClanId`, `countryCode`, `stateCode` and `cityId` all come
-back `null`, and a mixed batch returns those summaries alongside the public ones.
+When `communityVisibility` is `Hidden` or `FriendsOnly`, Steam sends only the identity and
+avatar fields — `timeCreated`, `realName`, `primaryClanId`, `countryCode`, `stateCode` and
+`cityId` all come back `null`, and a mixed batch returns those summaries alongside the public
+ones.
 </Aside>
 
 ## RecentlyPlayedGames
@@ -320,8 +321,9 @@ rather than the wire values. Use `fromApiValue()` to map from a raw payload.
 
 ### CommunityVisibility
 
-Backed by `int` — `Hidden` (`1`), `Visible` (`3`). Steam's own `communityvisibilitystate`
-codes; those two are the only ones the live API returns.
+Backed by `int` — `Hidden` (`1`), `FriendsOnly` (`2`), `Visible` (`3`). Steam's own
+`communityvisibilitystate` codes; Valve documents only `1` and `3`, but `2` comes back for
+profiles set to friends only.
 
 ### EconomyBan
 

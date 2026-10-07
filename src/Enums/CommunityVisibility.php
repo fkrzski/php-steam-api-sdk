@@ -9,6 +9,7 @@ use UnexpectedValueException;
 enum CommunityVisibility: int
 {
     case Hidden = 1;
+    case FriendsOnly = 2;
     case Visible = 3;
 
     public static function fromApiValue(int $value): self

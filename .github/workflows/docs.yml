@@ -33,5 +33,6 @@ jobs:
     # Validates docs/ against the shared @fkrzski/docs-schema contract:
     # frontmatter (title + SEO-bounded description, project fields), markdownlint,
     # and internal-link resolution. Exits non-zero on any violation.
+    # Bumped by hand: Dependabot doesn't read npx calls.
     - name: Validate docs
-      run: npx --yes @fkrzski/docs-schema docs
+      run: npx --yes @fkrzski/docs-schema@0.1.0 docs

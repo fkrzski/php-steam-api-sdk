@@ -60,9 +60,41 @@ test('limits are keyed by a hash of the API key', function (): void {
     );
 
     expect($names)->toBe([
-        'SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:100000_every_86400',
+        'SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:100000_every_utc_midnight',
         'SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:too_many_attempts_limit',
     ])->and(implode('', $names))->not->toContain('test-key');
+});
+
+test('the daily budget resets at the next midnight UTC whatever date.timezone says', function (string $timezone): void {
+    $default = date_default_timezone_get();
+    date_default_timezone_set($timezone);
+
+    try {
+        $connector = sendVanityUrlRequest('test-key');
+    } finally {
+        date_default_timezone_set($default);
+    }
+
+    $expiry = $connector->getLimits()[0]->update($connector->rateLimitStore())->getExpiryTimestamp();
+
+    expect($expiry % 86_400)->toBe(0)
+        ->and($expiry - time())->toBeGreaterThan(0)->toBeLessThanOrEqual(86_400);
+})->with(['UTC', 'Pacific/Kiritimati', 'Pacific/Pago_Pago']);
+
+test('a spent budget is refused until midnight UTC', function (): void {
+    $connector = new SteamConnector(new SteamConfig('test-key'))->withMockClient(new MockClient([
+        MockResponse::make('{"friendslist":{"friends":[]}}'),
+    ]));
+
+    $connector->getLimits()[0]->hit(100_000)->save($connector->rateLimitStore());
+
+    try {
+        $connector->send(friendListRequest());
+        $this->fail('Expected SteamRateLimitException was not thrown.');
+    } catch (SteamRateLimitException $steamRateLimitException) {
+        expect($steamRateLimitException->limit->getExpiryTimestamp() % 86_400)->toBe(0)
+            ->and($steamRateLimitException->limit->getRemainingSeconds())->toBeGreaterThan(0)->toBeLessThanOrEqual(86_400);
+    }
 });
 
 test('each API key gets its own counter', function (): void {
@@ -257,7 +289,7 @@ function dailyLimitKeys(): array
 {
     return array_values(array_filter(
         array_keys((new MemoryStore)->getStore()),
-        static fn (string $key): bool => str_ends_with($key, '100000_every_86400'),
+        static fn (string $key): bool => str_ends_with($key, '100000_every_utc_midnight'),
     ));
 }
 

@@ -327,6 +327,8 @@ class SteamConnector extends Connector
     /**
      * Steam bills the daily budget to the API key, so a keyless connector meters
      * nothing locally and leans on the 429 limiter the plugin adds on its own.
+     * The day is taken to turn at 00:00 UTC, which Valve does not document;
+     * untilMidnightTonight() would follow date.timezone instead.
      *
      * @return array<Limit>
      */
@@ -337,7 +339,7 @@ class SteamConnector extends Connector
         }
 
         return [
-            Limit::allow(100_000)->everyDay(),
+            Limit::allow(100_000)->everySeconds(86_400 - time() % 86_400, 'utc_midnight'),
         ];
     }
 

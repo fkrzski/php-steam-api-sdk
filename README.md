@@ -20,6 +20,7 @@ It powers the player profiles on [Dead by Stats](https://deadbystats.eu).
 - Domain exception hierarchy rooted at `SteamApiException`.
 - Daily 100 000-request rate limit baked in via [`saloonphp/rate-limit-plugin`](https://github.com/saloonphp/rate-limit-plugin).
 - Timeouts and opt-in retries on `SteamConfig` — only a `5xx` or no answer at all is retried, since every attempt spends quota.
+- Request, response and failure hooks with key-free payloads, and `debug()` output with the key masked.
 - Zero framework coupling — a [Laravel bridge package](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
 
 ## Requirements
@@ -49,7 +50,7 @@ echo $summaries[0]->personaName;
 
 ## Documentation
 
-Full documentation — every request, the `SteamId` value object, configuration, DTOs, and the exception hierarchy — lives at **[docs.fkrzski.dev/php-steam-api-sdk](https://docs.fkrzski.dev/php-steam-api-sdk)**.
+Full documentation — every request, the `SteamId` value object, configuration, DTOs, the exception hierarchy, and debugging hooks — lives at **[docs.fkrzski.dev/php-steam-api-sdk](https://docs.fkrzski.dev/php-steam-api-sdk)**.
 
 ## License
 

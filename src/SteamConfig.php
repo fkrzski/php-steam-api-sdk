@@ -9,6 +9,7 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRateLimitException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRetryException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidTimeoutException;
+use Saloon\Contracts\Sender;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 use Saloon\RateLimitPlugin\Limit;
 use SensitiveParameter;
@@ -29,6 +30,7 @@ final readonly class SteamConfig
         public int $retryInterval = 0,
         public bool $exponentialBackoff = false,
         public ?array $rateLimits = null,
+        public ?Sender $sender = null,
     ) {
         if ($apiKey !== null && trim($apiKey) === '') {
             throw ApiKeyNotConfiguredException::blank();

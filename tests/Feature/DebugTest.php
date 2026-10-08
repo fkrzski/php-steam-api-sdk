@@ -6,7 +6,6 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Psr\Http\Message\RequestInterface;
 use Saloon\Helpers\Debugger;
@@ -15,7 +14,6 @@ use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Http\Senders\GuzzleSender;
 use Symfony\Component\VarDumper\VarDumper;
 
 covers([SteamConnector::class]);
@@ -61,12 +59,7 @@ test('leaves a request Steam serves anonymously untouched', function (): void {
 
 test('keeps the key on the request Steam receives', function (): void {
     $history = [];
-    $connector = connectorAnswering([new PsrResponse(200, [], '{"friendslist":{"friends":[]}}')], new SteamConfig('secret-key'));
-    $sender = $connector->sender();
-
-    assert($sender instanceof GuzzleSender);
-
-    $sender->getHandlerStack()->push(Middleware::history($history));
+    $connector = connectorAnswering([new PsrResponse(200, [], '{"friendslist":{"friends":[]}}')], new SteamConfig('secret-key'), $history);
 
     $connector->debugRequest(static function (): void {})->send(friendListRequest());
 

@@ -8,10 +8,19 @@ use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Psr7\HttpFactory;
 use GuzzleHttp\Psr7\Request as PsrRequest;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
+use Saloon\Contracts\Sender;
+use Saloon\Data\FactoryCollection;
+use Saloon\Http\PendingRequest;
+use Saloon\Http\Response;
+use Saloon\Http\Senders\Factories\GuzzleMultipartBodyFactory;
 use Saloon\Http\Senders\GuzzleSender;
 use Saloon\MockConfig;
 
@@ -32,20 +41,73 @@ function makeSteamIds(int $count): array
 
 /**
  * Saloon's MockResponse cannot raise a transport failure, so the queue is handed to
- * Guzzle's own handler underneath the sender instead.
+ * Guzzle's own handler underneath an injected sender instead.
+ *
+ * @param  list<PsrResponse|Throwable|Closure(RequestInterface): (PsrResponse|Throwable)>  $queue
+ * @param  list<array<string, mixed>>|null  $history
+ */
+function connectorAnswering(array $queue, SteamConfig $config = new SteamConfig('any'), ?array &$history = null): SteamConnector
+{
+    $sender = new GuzzleSender;
+    $sender->getHandlerStack()->setHandler(new MockHandler($queue));
+
+    if ($history !== null) {
+        $sender->getHandlerStack()->push(Middleware::history($history));
+    }
+
+    return new SteamConnector(new SteamConfig(...[...get_object_vars($config), 'sender' => $sender]));
+}
+
+/**
+ * Unlike GuzzleSender, it resolves every status and hands a failure on exactly as queued.
  *
  * @param  list<PsrResponse|Throwable|Closure(RequestInterface): (PsrResponse|Throwable)>  $queue
  */
-function connectorAnswering(array $queue, SteamConfig $config = new SteamConfig('any')): SteamConnector
+function senderAnswering(array $queue): Sender
 {
-    $connector = new SteamConnector($config);
-    $sender = $connector->sender();
+    return new class($queue) implements Sender
+    {
+        /**
+         * @param  list<PsrResponse|Throwable|Closure(RequestInterface): (PsrResponse|Throwable)>  $queue
+         */
+        public function __construct(private array $queue) {}
 
-    assert($sender instanceof GuzzleSender);
+        public function getFactoryCollection(): FactoryCollection
+        {
+            $factory = new HttpFactory;
 
-    $sender->getHandlerStack()->setHandler(new MockHandler($queue));
+            return new FactoryCollection($factory, $factory, $factory, $factory, new GuzzleMultipartBodyFactory);
+        }
 
-    return $connector;
+        public function send(PendingRequest $pendingRequest): Response
+        {
+            $answer = $this->answer($pendingRequest);
+
+            if ($answer instanceof Throwable) {
+                throw $answer;
+            }
+
+            return $answer;
+        }
+
+        public function sendAsync(PendingRequest $pendingRequest): PromiseInterface
+        {
+            $answer = $this->answer($pendingRequest);
+
+            return $answer instanceof Throwable ? Create::rejectionFor($answer) : Create::promiseFor($answer);
+        }
+
+        private function answer(PendingRequest $pendingRequest): Response|Throwable
+        {
+            $psrRequest = $pendingRequest->createPsrRequest();
+            $answer = array_shift($this->queue) ?? throw new RuntimeException('The sender queue is empty.');
+            $answer = $answer instanceof Closure ? $answer($psrRequest) : $answer;
+
+            return $answer instanceof Throwable
+                ? $answer
+                : $pendingRequest->getResponseClass()::fromPsrResponse($answer, $pendingRequest, $psrRequest);
+        }
+    };
 }
 
 function connectionFailure(string $message = 'cURL error 28: Operation timed out after 5000 milliseconds'): ConnectException

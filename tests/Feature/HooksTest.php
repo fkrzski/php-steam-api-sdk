@@ -15,11 +15,9 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetSchemaForGameRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
-use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
-use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([SteamConnector::class, RequestSending::class, ResponseReceived::class]);
@@ -57,20 +55,6 @@ function attemptsAndStatuses(array $received): array
         static fn (ResponseReceived $responseReceived): array => [$responseReceived->attempt, $responseReceived->status],
         $received,
     );
-}
-
-/**
- * @param  list<array<string, mixed>>  $history
- */
-function recordingWire(SteamConnector $connector, array &$history): SteamConnector
-{
-    $sender = $connector->sender();
-
-    assert($sender instanceof GuzzleSender);
-
-    $sender->getHandlerStack()->push(Middleware::history($history));
-
-    return $connector;
 }
 
 function emptyAnswer(): PsrResponse
@@ -278,7 +262,7 @@ test('a throwing hook reaches the caller', function (Closure $register, Closure 
 
 test('a throwing onRequest hook keeps the request from Steam', function (): void {
     $history = [];
-    $connector = recordingWire(connectorAnswering([emptyAnswer()]), $history)
+    $connector = connectorAnswering([emptyAnswer()], history: $history)
         ->onRequest(static fn (): never => throw new RuntimeException('Hook failed.'));
 
     expect(fn (): mixed => $connector->send(friendListRequest()))->toThrow(RuntimeException::class, 'Hook failed.')
@@ -287,10 +271,11 @@ test('a throwing onRequest hook keeps the request from Steam', function (): void
 
 test('a throwing hook stops the retries', function (): void {
     $history = [];
-    $connector = recordingWire(connectorAnswering(
+    $connector = connectorAnswering(
         [new PsrResponse(503), new PsrResponse(503), new PsrResponse(503)],
         new SteamConfig('any', tries: 3),
-    ), $history)->onResponse(static fn (): never => throw new RuntimeException('Hook failed.'));
+        $history,
+    )->onResponse(static fn (): never => throw new RuntimeException('Hook failed.'));
 
     expect(fn (): mixed => $connector->send(friendListRequest()))->toThrow(RuntimeException::class, 'Hook failed.')
         ->and($history)->toHaveCount(1);
@@ -299,10 +284,11 @@ test('a throwing hook stops the retries', function (): void {
 test('onFailure gets the exception the caller gets, once the retries are spent', function (): void {
     $failures = [];
     $history = [];
-    $connector = recordingWire(recordingFailures(connectorAnswering(
+    $connector = recordingFailures(connectorAnswering(
         [new PsrResponse(503), new PsrResponse(503), new PsrResponse(503)],
         new SteamConfig('any', tries: 3),
-    ), $failures), $history);
+        $history,
+    ), $failures);
 
     $caught = callerGets(static fn (): mixed => $connector->send(friendListRequest()));
 

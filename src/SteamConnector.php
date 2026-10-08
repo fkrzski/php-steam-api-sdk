@@ -27,6 +27,7 @@ use GuzzleHttp\Promise\Utils;
 use Override;
 use Psr\Http\Message\RequestInterface;
 use Saloon\Config;
+use Saloon\Contracts\Sender;
 use Saloon\Enums\PipeOrder;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Exceptions\Request\RequestException;
@@ -36,6 +37,7 @@ use Saloon\Http\Faking\MockClient;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
+use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
@@ -51,9 +53,6 @@ class SteamConnector extends Connector
         bootHasRateLimits as private bootRateLimiter;
     }
     use HasTimeout;
-
-    #[Override]
-    protected string $defaultSender = SteamSender::class;
 
     /**
      * @var list<callable(RequestSending): void>
@@ -324,6 +323,12 @@ class SteamConnector extends Connector
         ];
     }
 
+    #[Override]
+    protected function defaultSender(): Sender
+    {
+        return new SteamSender($this->steamConfig->sender ?? new GuzzleSender);
+    }
+
     /**
      * Steam bills the daily budget to the API key, so a keyless connector meters
      * nothing locally and leans on the 429 limiter the plugin adds on its own.
@@ -376,8 +381,8 @@ class SteamConnector extends Connector
     }
 
     /**
-     * Both senders reject a 4xx or 5xx before any pipeline runs, so a failure takes the
-     * pipeline here as well and stays rejected, while a success resolves to what it returns.
+     * Guzzle and the mock client reject a 4xx or 5xx before any pipeline runs, so a failure takes
+     * the pipeline here as well and stays rejected, while a success resolves to what it returns.
      */
     private function runResponsePipeline(mixed $outcome): mixed
     {

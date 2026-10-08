@@ -10,14 +10,12 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Config;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
@@ -185,12 +183,8 @@ test('a 429 in a pool refuses the requests queued after it', function (): void {
     $connector = connectorAnswering(
         [new PsrResponse(429, ['Retry-After' => '120']), $friendList, $friendList],
         new SteamConfig('test-key'),
+        $sent,
     );
-    $sender = $connector->sender();
-
-    assert($sender instanceof GuzzleSender);
-
-    $sender->getHandlerStack()->push(Middleware::history($sent));
 
     $connector->pool(
         [friendListRequest(), friendListRequest()],

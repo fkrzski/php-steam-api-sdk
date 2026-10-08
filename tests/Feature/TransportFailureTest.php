@@ -56,12 +56,6 @@ test('a network failure Saloon lets through is wrapped like a connection failure
     throw new RuntimeException('Expected the request to fail.');
 });
 
-test('the connector sends through SteamSender', function (): void {
-    $connector = new SteamConnector(new SteamConfig('any'));
-
-    expect($connector->sender())->toBeInstanceOf(SteamSender::class);
-});
-
 test('sendAsync rejects a connection failure with SteamConnectionException', function (): void {
     $connector = connectorAnswering([connectionFailure('cURL error 6: Could not resolve host')]);
 

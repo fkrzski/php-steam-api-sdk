@@ -99,6 +99,7 @@ SteamApiException                  (root, extends RuntimeException)
 ├── AppNotFoundException           No Steam app carries the given app ID.
 ├── AppVersionUnavailableException No server version to check against, or unknown app.
 ├── InvalidApiKeyException         Steam refused the key: wrong, revoked, or absent.
+├── InvalidRateLimitException      Two rate limits on SteamConfig share a name.
 ├── InvalidRetryException          Fewer than one try, or a negative retry interval.
 ├── InvalidServerAddressException  Address is neither IPv4 nor IPv4:queryport.
 ├── InvalidSteamIdException        Malformed SteamID64.
@@ -106,7 +107,7 @@ SteamApiException                  (root, extends RuntimeException)
 ├── ProfileNotPublicException      Profile, games list, groups, or stats are private.
 ├── StatsUnavailableException      Stats withheld: none exist, unknown app, or private profile.
 ├── SteamConnectionException       Steam never answered: timeout, DNS, TLS, refused connection.
-├── SteamRateLimitException        Daily 100k quota reached; exposes the offending Limit.
+├── SteamRateLimitException        A local limit ran out, or Steam answered 429; exposes the Limit.
 ├── SteamUserNotFoundException     Vanity URL unresolved or profile missing.
 └── TooManySteamIdsException       More than 100 IDs in a batch request.
 ```

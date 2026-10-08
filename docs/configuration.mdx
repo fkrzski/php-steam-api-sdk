@@ -40,6 +40,7 @@ The key is appended to every request as the `key` query parameter, so you never 
 per call. The endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`,
 `GetGlobalAchievementPercentagesForApp`, `GetSDRConfig`, `GetServersAtAddress`,
 `UpToDateCheck`, `GetNewsForApp` and `GetServerInfo` — go out with it stripped back off.
+`GetSupportedAPIList` keeps it, to list the methods the key can call.
 
 ## SteamConfig options
 
@@ -63,8 +64,8 @@ new connector.
 
 ## Without an API key
 
-A config built without one reaches the anonymous endpoints and nothing else. Every
-other request raises `ApiKeyNotConfiguredException` before it leaves your process, naming
+A config built without one reaches the anonymous endpoints and `GetSupportedAPIList`, which
+then lists only the methods Steam serves without a key. Every other request raises `ApiKeyNotConfiguredException` before it leaves your process, naming
 the request class that needed the key:
 
 ```php title="steam.php"

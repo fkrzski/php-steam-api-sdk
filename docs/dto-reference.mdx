@@ -307,6 +307,34 @@ Returned by [`GetUserStatsForGameRequest`](/php-steam-api-sdk/api-reference#getu
 `UserStat` has `name` (`string`) and `value` (`int|float`). `UserStatAchievement`
 has `name` (`string`) and `achieved` (`bool`).
 
+## WebApiInterface
+
+Returned by [`GetSupportedApiListRequest`](/php-steam-api-sdk/api-reference#getsupportedapilistrequest).
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `name` | `string` | As Steam sends it; a game's own interface carries the app ID, as in `IGCVersion_440`. |
+| `methods` | `list<WebApiMethod>` | Each version of a method is its own entry. |
+
+Each `WebApiMethod` carries:
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `name` | `string` | Method name, such as `GetPlayerSummaries`. |
+| `version` | `int` | The `vN` in the method's path. |
+| `httpMethod` | `string` | `GET` or `POST`, as Steam sends it. |
+| `description` | `?string` | `null` where Steam has none. |
+| `parameters` | `list<WebApiParameter>` | Empty for a method that takes none. |
+
+Each `WebApiParameter` carries:
+
+| Property | Type | Notes |
+| --- | --- | --- |
+| `name` | `string` | As Steam sends it, array notation such as `publishedfileids[0]` included. |
+| `type` | `string` | Steam's type name, such as `uint64`, `{enum}` or `{message}`. |
+| `isOptional` | `bool` | Whether Steam marks the parameter optional. |
+| `description` | `?string` | `null` where Steam has none, or sends it empty. |
+
 ## Enums
 
 Five of these mirror Steam's wire values; `CommentPermission` and `EconomyBan` do not,

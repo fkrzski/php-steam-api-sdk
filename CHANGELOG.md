@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `GetServerInfoRequest` (`ISteamWebAPIUtil`), returning Steam's clock as a `DateTimeImmutable` in UTC, reached anonymously through the new `WebApiResource` as `$connector->webApi()->serverTime()` ([#98](https://github.com/fkrzski/php-steam-api-sdk/issues/98)).
+- `GetSupportedApiListRequest` (`ISteamWebAPIUtil`) with the `WebApiInterface`, `WebApiMethod` and `WebApiParameter` DTOs, listing every Web API method Steam lets the caller see as `$connector->webApi()->supportedApis()`. It implements the new `SendsOptionalApiKey` contract, so the configured key goes along and adds the methods it can call, a connector without one gets the anonymous list, and a rejected key raises `InvalidApiKeyException` ([#99](https://github.com/fkrzski/php-steam-api-sdk/issues/99)).
 - `rateLimits` on `SteamConfig`, a list of the rate limit plugin's `Limit`s that replaces the daily budget of 100 000, with a key or without; `[]` meters nothing locally, and a `429` from Steam still raises `SteamRateLimitException`. Two limits sharing a name throw the new `InvalidRateLimitException` as the config is built ([#101](https://github.com/fkrzski/php-steam-api-sdk/issues/101)).
 - `sender` on `SteamConfig`, any Saloon `Sender` in place of the default `GuzzleSender`. Whatever is injected, a request Steam never answered, a PSR-18 network exception included, raises `SteamConnectionException` and is retried ([#102](https://github.com/fkrzski/php-steam-api-sdk/issues/102)).
 

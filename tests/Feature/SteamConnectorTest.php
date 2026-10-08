@@ -10,6 +10,7 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListRequest;
 use Fkrzski\SteamApiSdk\Http\Resources\AppsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\NewsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
@@ -140,6 +141,16 @@ test('a request Steam serves anonymously needs no configured key', function (): 
     $query = $connector->createPendingRequest(new GetNumberOfCurrentPlayersRequest(381210))->query()->all();
 
     expect($query)->toBe(['appid' => 381210]);
+});
+
+test('a request that takes the key optionally keeps the configured one', function (): void {
+    expect(bootedQuery(null, new GetSupportedApiListRequest))->toBe(['key' => 'any']);
+});
+
+test('a request that takes the key optionally needs no configured key', function (): void {
+    $connector = new SteamConnector(new SteamConfig);
+
+    expect($connector->createPendingRequest(new GetSupportedApiListRequest)->query()->all())->toBe([]);
 });
 
 test('a request that carries a key fails locally when none is configured', function (): void {

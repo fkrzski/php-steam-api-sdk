@@ -1,0 +1,82 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "apilist": {
+            "interfaces": [
+                {
+                    "name": "IClientStats_1046930",
+                    "methods": [
+                        {
+                            "name": "ReportEvent",
+                            "version": 1,
+                            "httpmethod": "POST",
+                            "parameters": []
+                        }
+                    ]
+                },
+                {
+                    "name": "IGCVersion_440",
+                    "methods": [
+                        {
+                            "name": "GetClientVersion",
+                            "version": 1,
+                            "httpmethod": "GET",
+                            "parameters": []
+                        },
+                        {
+                            "name": "GetServerVersion",
+                            "version": 1,
+                            "httpmethod": "GET",
+                            "parameters": []
+                        }
+                    ]
+                },
+                {
+                    "name": "ISteamWebAPIUtil",
+                    "methods": [
+                        {
+                            "name": "GetServerInfo",
+                            "version": 1,
+                            "httpmethod": "GET",
+                            "parameters": []
+                        },
+                        {
+                            "name": "GetSupportedAPIList",
+                            "version": 1,
+                            "httpmethod": "GET",
+                            "parameters": [
+                                {
+                                    "name": "key",
+                                    "type": "string",
+                                    "optional": true,
+                                    "description": "access key"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "IStoreService",
+                    "methods": [
+                        {
+                            "name": "GetGamesFollowedCount",
+                            "version": 1,
+                            "httpmethod": "GET",
+                            "description": "Get the number of games a user is following",
+                            "parameters": [
+                                {
+                                    "name": "steamid",
+                                    "type": "uint64",
+                                    "optional": false
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -50,6 +50,7 @@ interface, and one request class per endpoint:
       - GetUserStatsForGameRequest.php
     - ISteamWebAPIUtil
       - GetServerInfoRequest.php
+      - GetSupportedApiListRequest.php
   - Resources
     - AppsResource.php
     - NewsResource.php
@@ -78,6 +79,7 @@ interface, and one request class per endpoint:
 | [`GetServerInfoRequest`](#getserverinforequest) | `webApi()->serverTime()` | `DateTimeImmutable` |
 | [`GetServersAtAddressRequest`](#getserversataddressrequest) | `apps()->serversAtAddress()` | `list<GameServer>` |
 | [`GetSteamLevelRequest`](#getsteamlevelrequest) | `players()->steamLevel()` | `int` |
+| [`GetSupportedApiListRequest`](#getsupportedapilistrequest) | `webApi()->supportedApis()` | `list<WebApiInterface>` |
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `users()->groups()` | `list<UserGroup>` |
 | [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `stats()->userStats()` | `UserStats` |
 | [`ResolveVanityUrlRequest`](#resolvevanityurlrequest) | `users()->resolveVanityUrl()` | `SteamId` |
@@ -534,6 +536,29 @@ $level = $connector->players()->steamLevel($steamId);
 Steam reports level `0` for a SteamID64 belonging to no account, exactly as it does for a
 brand-new one. Nothing in the payload separates the two, so neither does the SDK.
 </Aside>
+
+## GetSupportedApiListRequest
+
+```text frame="none"
+$connector->webApi()->supportedApis()
+
+new GetSupportedApiListRequest
+```
+
+<p><Badge text="ISteamWebAPIUtil" variant="note" size="small" />{' '}<Badge text="throws InvalidApiKeyException" variant="danger" size="small" /></p>
+
+Every Web API method Steam lets the caller see, grouped by interface. The key is optional:
+the configured one goes along and adds the methods it can call, and a connector built
+without one gets the anonymous list. Steam refuses a bad key here with a JSON `403` rather
+than its usual HTML, and the request still raises it as the exception.
+
+```php
+foreach ($connector->webApi()->supportedApis() as $interface) {
+    foreach ($interface->methods as $method) {
+        echo $interface->name, '/', $method->name, '/v', $method->version, PHP_EOL;
+    }
+}
+```
 
 ## GetUserGroupListRequest
 

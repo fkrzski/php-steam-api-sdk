@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk;
 
 use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
+use Fkrzski\SteamApiSdk\Contracts\SendsOptionalApiKey;
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
@@ -165,7 +166,7 @@ class SteamConnector extends Connector
 
         if ($request instanceof SendsNoApiKey) {
             $pendingRequest->query()->remove('key');
-        } elseif ($this->steamConfig->apiKey === null) {
+        } elseif ($this->steamConfig->apiKey === null && ! $request instanceof SendsOptionalApiKey) {
             throw ApiKeyNotConfiguredException::forRequest($request);
         }
 

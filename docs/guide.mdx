@@ -191,6 +191,7 @@ Steam never answers at all:
 | --- | --- |
 | `400` + HTML naming the `key` parameter | `InvalidApiKeyException` (missing) |
 | `401` or `403` + HTML naming the `key` parameter | `InvalidApiKeyException` (rejected) |
+| `403` + JSON, on `GetSupportedAPIList` | `InvalidApiKeyException` (rejected) |
 | `400` or `403` + JSON, on `ISteamUserStats` | `StatsUnavailableException` / `ProfileNotPublicException` / `AppNotFoundException` |
 | `403` + `{}`, on `GetNewsForApp` | `AppNewsUnavailableException` |
 | `401` or `403` not naming the `key` parameter | `ProfileNotPublicException` |
@@ -207,7 +208,7 @@ needs a key the config does not carry never reaches Steam at all.
 
 Steam overloads `400` across unrelated causes. Key errors are the one case it answers
 with HTML rather than JSON — that is what keeps a misconfigured key from surfacing as a
-data problem. Which status a key error lands on is the endpoint's choice, not the SDK's:
+data problem. Only `GetSupportedAPIList` refuses a key with JSON, so its request reads its own `403`. Which status a key error lands on is the endpoint's choice, not the SDK's:
 `ISteamUser` reports an absent key as `400`, `GetBadges` and `GetSteamLevel` answer `403`,
 and `GetCommunityBadgeProgress` answers `401`. Only `ISteamUser` separates an absent key
 from a rejected one, so everywhere else it surfaces as rejected. A JSON `400` on

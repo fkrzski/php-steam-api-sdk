@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Configure the SteamConnector through the readonly SteamConfig — API key, default language, timeouts, retries, rate limits, and quota across processes.
+description: Configure the SteamConnector through the readonly SteamConfig — API key, language, timeouts, retries, rate limits, shared quota and the HTTP sender.
 ---
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -47,6 +47,7 @@ per call. The endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`
 | --- | --- | --- | --- |
 | `apiKey` | `?string` | `null` | Your Steam Web API key. Leave it out to reach only the anonymous endpoints. |
 | `rateLimitStore` | `?RateLimitStore` | `MemoryStore` | Where the daily request budget is tracked. |
+| `sender` | `?Sender` | `GuzzleSender` | The HTTP client requests go out through. |
 | `language` | `?Language` | `null` | Language for endpoints that localise their payload. |
 | `connectTimeout` | `?float` | `10.0` | Seconds to wait for a connection to Steam. |
 | `requestTimeout` | `?float` | `30.0` | Seconds the whole request may take. |
@@ -279,3 +280,46 @@ $connector = new SteamConnector(new SteamConfig(
 `MemoryStore` and a `FileStore` on ephemeral disk both look fine in development and stop
 working the moment you scale out. Pick a store every process genuinely reaches.
 </Aside>
+
+## Your own sender
+
+`sender` takes any `Saloon\Contracts\Sender`: one your framework already configures, one
+built on another HTTP client, or one `GuzzleSender` with your middleware, shared by every
+connector:
+
+```php title="steam.php" "sender: $sender"
+use GuzzleHttp\Middleware;
+use Psr\Http\Message\RequestInterface;
+use Saloon\Http\Senders\GuzzleSender;
+
+$sender = new GuzzleSender;
+$sender->addMiddleware(Middleware::mapRequest(
+    static fn (RequestInterface $request): RequestInterface => $request->withHeader('User-Agent', 'my-app/1.0'),
+));
+
+$store = new SteamConnector(new SteamConfig(apiKey: $_ENV['STEAM_STORE_KEY'], sender: $sender));
+$stats = new SteamConnector(new SteamConfig(apiKey: $_ENV['STEAM_STATS_KEY'], sender: $sender));
+```
+
+The connector wraps whatever you pass in `SteamSender`, so a request Steam never answered
+still raises `SteamConnectionException` and is [retried](/php-steam-api-sdk/configuration#retries),
+and a `4xx` or `5xx` maps the same under `send()`, `sendAsync()` and `pool()`.
+`$connector->sender()` returns that wrapper rather than a `GuzzleSender`, so keep your own
+handle to reach Guzzle.
+
+<Aside type="caution" title="Middleware sees the key">
+A Guzzle middleware gets the request Steam receives, `key=` in its query. Log the method and
+the path, never the full URI.
+</Aside>
+
+### What a sender has to honour
+
+A sender built on another client has to:
+
+- read `connect_timeout` and `timeout` from `$pendingRequest->config()`: seconds, set from
+  `connectTimeout` and `requestTimeout`, `0` for no limit;
+- send `$pendingRequest->createPsrRequest()` as built, the API key in its query;
+- return a `Response` from `$pendingRequest->getResponseClass()::fromPsrResponse()` for every
+  status, and under `sendAsync()` resolve it or reject with `$response->toException()`;
+- report a request that got no answer as `FatalRequestException` or a PSR-18
+  `NetworkExceptionInterface`. Anything else reaches the caller as it is, without a retry.

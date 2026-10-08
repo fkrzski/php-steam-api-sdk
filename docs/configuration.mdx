@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Configure the SteamConnector through the readonly SteamConfig — API key, default language, timeouts, retries, rate-limit store, and quota across processes.
+description: Configure the SteamConnector through the readonly SteamConfig — API key, default language, timeouts, retries, rate limits, and quota across processes.
 ---
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -53,6 +53,7 @@ per call. The endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`
 | `tries` | `int` | `1` | Attempts per request, the first one included. |
 | `retryInterval` | `int` | `0` | Milliseconds to pause before a retry. |
 | `exponentialBackoff` | `bool` | `false` | Double the pause after every retry. |
+| `rateLimits` | `?array<Limit>` | 100 000 a day with a key | Limits that replace the daily budget; `[]` meters nothing locally. |
 
 <Aside type="note" title="Readonly, so replace rather than mutate">
 `SteamConfig` is `final readonly` — to change a setting, construct a new config and a
@@ -173,12 +174,44 @@ though Steam may still have billed one that timed out.
 
 When Steam itself answers `429`, the connector raises the same exception and refuses every
 request locally until Steam's `Retry-After` passes, or for a minute without one. Steam bills
-the budget to the key, so a connector without one counts nothing locally, but still honours
-a `429`.
+the budget to the key, so by default a connector without one counts nothing locally, but
+still honours a `429`.
 
 <Aside type="caution" title="A pool cannot recall what it sent">
 Requests a `pool()` already has in flight when a `429` arrives still reach Steam. Only the
 ones it starts afterwards are refused locally.
+</Aside>
+
+### Your own limits
+
+`rateLimits` swaps the daily budget for your own `Limit`s — a key with a bigger budget, a
+share of one that several apps use, a window per second:
+
+```php title="steam.php" "rateLimits:"
+use Saloon\RateLimitPlugin\Limit;
+
+$connector = new SteamConnector(new SteamConfig(
+    apiKey: $_ENV['STEAM_API_KEY'],
+    rateLimits: [
+        Limit::allow(500_000)->everySeconds(86_400 - time() % 86_400, 'utc_midnight'),
+        Limit::allow(10)->everySeconds(1)->sleep(),
+    ],
+));
+```
+
+The list replaces the default whole, so a per-second limit alone leaves the day unmetered.
+The first line keeps a daily budget that resets at 00:00 UTC, like the default. `[]` meters
+nothing locally, and a `429` from Steam still throws either way.
+
+The limits apply without an API key too, and still count per key, so connectors sharing a
+store don't drain each other. `->sleep()` waits for the window to pass instead of throwing,
+blocking the process meanwhile, in `pool()` as well. Two limits with one name throw
+`InvalidRateLimitException` as the config is built; give one of them a `->name()`.
+
+<Aside type="caution" title="A window counted to a moment freezes with the config">
+`everySeconds()` fed with `time()`, `untilMidnightTonight()` and `untilEndOfMonth()` work out
+their seconds when the `Limit` is built. In a process that keeps one connector for hours,
+build the config per job, or each window runs past the moment it was meant to end.
 </Aside>
 
 ## Multiple API keys

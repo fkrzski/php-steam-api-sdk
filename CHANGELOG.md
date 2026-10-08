@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `rateLimits` on `SteamConfig`, a list of the rate limit plugin's `Limit`s that replaces the daily budget of 100 000, with a key or without; `[]` meters nothing locally, and a `429` from Steam still raises `SteamRateLimitException`. Two limits sharing a name throw the new `InvalidRateLimitException` as the config is built ([#101](https://github.com/fkrzski/php-steam-api-sdk/issues/101)).
+- `sender` on `SteamConfig`, any Saloon `Sender` in place of the default `GuzzleSender`. Whatever is injected, a request Steam never answered, a PSR-18 network exception included, raises `SteamConnectionException` and is retried ([#102](https://github.com/fkrzski/php-steam-api-sdk/issues/102)).
 
 ### Changed
 
+- **BC break.** `SteamConnector::sender()` returns `SteamSender`, which wraps the sender in use, instead of a `GuzzleSender`, so `addMiddleware()`, `getHandlerStack()` and `getGuzzleClient()` are gone from it. Callers that need Guzzle pass a `GuzzleSender` of their own as `sender` ([#102](https://github.com/fkrzski/php-steam-api-sdk/issues/102)).
 - GitHub Actions are pinned to full commit SHAs with the version in a trailing comment, and the docs workflow runs `@fkrzski/docs-schema` 0.1.0 instead of the latest release. A tag can be moved to another commit after the fact, so the version tags used since 0.3.0 did not fix what runs ([#103](https://github.com/fkrzski/php-steam-api-sdk/issues/103)).
 
 ### Fixed

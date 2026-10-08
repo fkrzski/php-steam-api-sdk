@@ -1,0 +1,97 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "apilist": {
+            "interfaces": [
+                {
+                    "name": "IDOTA2MatchStats_570",
+                    "methods": [
+                        {
+                            "name": "GetRealtimeStats",
+                            "version": 1,
+                            "httpmethod": "GET",
+                            "parameters": [
+                                {
+                                    "name": "server_steam_id",
+                                    "type": "uint64",
+                                    "optional": false,
+                                    "description": ""
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "ISteamUser",
+                    "methods": [
+                        {
+                            "name": "GetPlayerSummaries",
+                            "version": 1,
+                            "httpmethod": "GET",
+                            "parameters": [
+                                {
+                                    "name": "key",
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "access key"
+                                },
+                                {
+                                    "name": "steamids",
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "Comma-delimited list of SteamIDs"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetPlayerSummaries",
+                            "version": 2,
+                            "httpmethod": "GET",
+                            "parameters": [
+                                {
+                                    "name": "key",
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "access key"
+                                },
+                                {
+                                    "name": "steamids",
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "Comma-delimited list of SteamIDs (max: 100)"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "ISteamWebAPIUtil",
+                    "methods": [
+                        {
+                            "name": "GetServerInfo",
+                            "version": 1,
+                            "httpmethod": "GET",
+                            "parameters": []
+                        },
+                        {
+                            "name": "GetSupportedAPIList",
+                            "version": 1,
+                            "httpmethod": "GET",
+                            "parameters": [
+                                {
+                                    "name": "key",
+                                    "type": "string",
+                                    "optional": true,
+                                    "description": "access key"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

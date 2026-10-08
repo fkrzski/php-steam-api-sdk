@@ -15,6 +15,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\NewsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
+use Fkrzski\SteamApiSdk\Http\Resources\WebApiResource;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
@@ -48,7 +49,8 @@ test('resource accessors expose one resource per Steam interface', function (): 
         ->and($connector->users())->toBeInstanceOf(UsersResource::class)
         ->and($connector->stats())->toBeInstanceOf(StatsResource::class)
         ->and($connector->apps())->toBeInstanceOf(AppsResource::class)
-        ->and($connector->news())->toBeInstanceOf(NewsResource::class);
+        ->and($connector->news())->toBeInstanceOf(NewsResource::class)
+        ->and($connector->webApi())->toBeInstanceOf(WebApiResource::class);
 });
 
 test('connector uses AlwaysThrowOnErrors plugin', function (): void {

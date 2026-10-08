@@ -20,6 +20,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\NewsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
+use Fkrzski\SteamApiSdk\Http\Resources\WebApiResource;
 use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -116,6 +117,11 @@ class SteamConnector extends Connector
     public function news(): NewsResource
     {
         return new NewsResource($this);
+    }
+
+    public function webApi(): WebApiResource
+    {
+        return new WebApiResource($this);
     }
 
     /**

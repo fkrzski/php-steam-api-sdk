@@ -8,6 +8,7 @@ use Fkrzski\SteamApiSdk\Exceptions\InvalidRateLimitException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRetryException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidTimeoutException;
 use Fkrzski\SteamApiSdk\SteamConfig;
+use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Limit;
 
 covers([SteamConfig::class, ApiKeyNotConfiguredException::class, InvalidRateLimitException::class, InvalidRetryException::class, InvalidTimeoutException::class]);
@@ -157,6 +158,16 @@ test('SteamConfig leaves the rate limits it checks untouched', function (): void
     new SteamConfig(rateLimits: [$limit]);
 
     expect($limit->getName())->toBe('saloon_rate_limiter:10_every_60');
+});
+
+test('SteamConfig leaves the sender to the connector until one is set', function (): void {
+    expect((new SteamConfig)->sender)->toBeNull();
+});
+
+test('SteamConfig stores the sender it is given', function (): void {
+    $sender = new GuzzleSender;
+
+    expect((new SteamConfig(sender: $sender))->sender)->toBe($sender);
 });
 
 test('SteamConfig keeps the key out of the trace of a config error', function (): void {

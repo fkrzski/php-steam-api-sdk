@@ -61,7 +61,7 @@ object. Decoding is not symmetric — rebuild it with `SteamId::fromSteamId64()`
 
 The connector groups every endpoint into a resource per Steam interface — `players()` for
 `IPlayerService`, `users()` for `ISteamUser`, `stats()` for `ISteamUserStats`, `apps()` for
-`ISteamApps`, `news()` for `ISteamNews`. Each method
+`ISteamApps`, `news()` for `ISteamNews`, `webApi()` for `ISteamWebAPIUtil`. Each method
 sends the request and hands back the DTO, so nothing needs importing:
 
 ```php

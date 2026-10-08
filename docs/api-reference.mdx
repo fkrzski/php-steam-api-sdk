@@ -48,12 +48,15 @@ interface, and one request class per endpoint:
       - GetPlayerAchievementsRequest.php
       - GetSchemaForGameRequest.php
       - GetUserStatsForGameRequest.php
+    - ISteamWebAPIUtil
+      - GetServerInfoRequest.php
   - Resources
     - AppsResource.php
     - NewsResource.php
     - PlayersResource.php
     - StatsResource.php
     - UsersResource.php
+    - WebApiResource.php
 
 </FileTree>
 
@@ -72,6 +75,7 @@ interface, and one request class per endpoint:
 | [`GetRecentlyPlayedGamesRequest`](#getrecentlyplayedgamesrequest) | `players()->recentlyPlayedGames()` | `RecentlyPlayedGames` |
 | [`GetSchemaForGameRequest`](#getschemaforgamerequest) | `stats()->schema()` | `GameSchema` |
 | [`GetSdrConfigRequest`](#getsdrconfigrequest) | `apps()->sdrConfig()` | `SdrConfig` |
+| [`GetServerInfoRequest`](#getserverinforequest) | `webApi()->serverTime()` | `DateTimeImmutable` |
 | [`GetServersAtAddressRequest`](#getserversataddressrequest) | `apps()->serversAtAddress()` | `list<GameServer>` |
 | [`GetSteamLevelRequest`](#getsteamlevelrequest) | `players()->steamLevel()` | `int` |
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `users()->groups()` | `list<UserGroup>` |
@@ -462,6 +466,25 @@ foreach ($config->pointsOfPresence['waw']->relays as $relay) {
 `GetSupportedAPIList` lists the method and its `appid` parameter, but Valve documents nothing
 of the answer. The DTOs are written against payloads captured from the live API.
 </Aside>
+
+## GetServerInfoRequest
+
+```text frame="none"
+$connector->webApi()->serverTime()
+
+new GetServerInfoRequest
+```
+
+<p><Badge text="ISteamWebAPIUtil" variant="note" size="small" /></p>
+
+Steam's clock, as a `DateTimeImmutable` in UTC rather than a DTO. Steam serves it
+anonymously, so the SDK strips the configured key from the query, and a connector built
+without one can send it. The `servertimestring` Steam sends beside it is left out: it is US
+Pacific local time with no offset.
+
+```php
+$skew = $connector->webApi()->serverTime()->getTimestamp() - time();
+```
 
 ## GetServersAtAddressRequest
 

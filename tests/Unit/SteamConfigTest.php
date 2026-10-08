@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
+use Fkrzski\SteamApiSdk\Exceptions\InvalidRateLimitException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRetryException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidTimeoutException;
 use Fkrzski\SteamApiSdk\SteamConfig;
+use Saloon\RateLimitPlugin\Limit;
 
-covers([SteamConfig::class, ApiKeyNotConfiguredException::class, InvalidRetryException::class, InvalidTimeoutException::class]);
+covers([SteamConfig::class, ApiKeyNotConfiguredException::class, InvalidRateLimitException::class, InvalidRetryException::class, InvalidTimeoutException::class]);
 
 test('SteamConfig stores api key', function (): void {
     $config = new SteamConfig(apiKey: 'test-key');
@@ -116,6 +118,45 @@ test('SteamConfig rejects a negative retry interval', function (): void {
             InvalidRetryException::class,
             'SteamConfig::$retryInterval cannot be negative, got -1. Pass milliseconds, 0 for no pause between attempts.',
         );
+});
+
+test('SteamConfig leaves the rate limits to the connector until they are set', function (): void {
+    expect((new SteamConfig)->rateLimits)->toBeNull();
+});
+
+test('SteamConfig stores the rate limits it is given', function (array $rateLimits): void {
+    expect((new SteamConfig(rateLimits: $rateLimits))->rateLimits)->toBe($rateLimits);
+})->with([
+    'none' => [[]],
+    'one budget over two windows' => [[Limit::allow(10)->everyMinute(), Limit::allow(10)->everyHour()]],
+]);
+
+test('SteamConfig rejects two rate limits under one name', function (array $rateLimits, string $message): void {
+    expect(fn (): SteamConfig => new SteamConfig(rateLimits: $rateLimits))
+        ->toThrow(function (InvalidRateLimitException $invalidRateLimitException) use ($message): void {
+            expect($invalidRateLimitException->getMessage())->toBe($message);
+        });
+})->with([
+    'one window twice' => [
+        [Limit::allow(10)->everyMinute(), Limit::allow(10)->everyHour(), Limit::allow(10)->everyMinute()->sleep()],
+        'SteamConfig::$rateLimits[0] and [2] are both named "10_every_60". Give one of them a name of its own with ->name().',
+    ],
+    'one custom name' => [
+        ['burst' => Limit::allow(5)->everySeconds(1)->name('burst'), 'steady' => Limit::allow(100)->everyMinute()->name('burst')],
+        'SteamConfig::$rateLimits[burst] and [steady] are both named "burst". Give one of them a name of its own with ->name().',
+    ],
+    'two prefixes' => [
+        [Limit::allow(10)->everyMinute()->setPrefix('first'), Limit::allow(10)->everyMinute()->setPrefix('second')],
+        'SteamConfig::$rateLimits[0] and [1] are both named "10_every_60". Give one of them a name of its own with ->name().',
+    ],
+]);
+
+test('SteamConfig leaves the rate limits it checks untouched', function (): void {
+    $limit = Limit::allow(10)->everyMinute();
+
+    new SteamConfig(rateLimits: [$limit]);
+
+    expect($limit->getName())->toBe('saloon_rate_limiter:10_every_60');
 });
 
 test('SteamConfig keeps the key out of the trace of a config error', function (): void {

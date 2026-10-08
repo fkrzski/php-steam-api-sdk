@@ -1,0 +1,10 @@
+{
+    "statusCode": 200,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {
+        "servertime": 1791489578,
+        "servertimestring": "Thu Oct  8 12:59:38 2026"
+    }
+}

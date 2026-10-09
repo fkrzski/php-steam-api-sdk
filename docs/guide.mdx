@@ -407,10 +407,11 @@ built from the fake, so assertions run against real DTOs:
   </TabItem>
 </Tabs>
 
-<Aside type="caution" title="Reset the budget between tests">
-`MemoryStore` keeps its backing array **static**, so the counter survives from one test
-to the next and a long suite can trip `SteamRateLimitException` on its own. Clear it in
-your setup hook.
+<Aside type="caution" title="Reset the store between tests">
+`MemoryStore` keeps its backing array **static**, so the budget and the lock after a mocked
+`429` outlive the test, and the next one using the same key fails with `SteamRateLimitException`
+for `tooManyRequestsCooldown` seconds. `rateLimits: []` stops the counting, not the lock. Clear
+the store in your setup hook.
 </Aside>
 
 <Tabs syncKey="php-test-runner">

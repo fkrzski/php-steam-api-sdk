@@ -225,7 +225,7 @@ Steam never answers at all:
 | `401` or `403` not naming the `key` parameter | `ProfileNotPublicException` |
 | `404` + JSON, on `ISteamUserStats` | `AppNotFoundException` |
 | `500` + JSON `Failed to get appinfo`, on `GetSDRConfig` | `AppNotFoundException`, never retried |
-| `429` | `SteamRateLimitException` |
+| `429` | `SteamRateLimitException`, then a [cool-down](/php-steam-api-sdk/rate-limiting#after-a-429) |
 | any other `4xx` / `5xx` | `SteamApiException`, a `5xx` once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
 | `200` with an empty, `success: 42` or `success: false` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` / `AppVersionUnavailableException` / `InvalidServerAddressException` |
 | `200` with `success: false` and a message the SDK does not recognise | `SteamApiException`, quoting Steam's message |

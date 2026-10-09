@@ -40,7 +40,8 @@ The key is appended to every request as the `key` query parameter, so you never 
 per call. The endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`,
 `GetGlobalAchievementPercentagesForApp`, `GetSDRConfig`, `GetServersAtAddress`,
 `UpToDateCheck`, `GetNewsForApp` and `GetServerInfo` — go out with it stripped back off.
-`GetSupportedAPIList` keeps it, to list the methods the key can call.
+`GetSupportedAPIList` keeps it, to list the methods the key can call. A request of your own
+picks the same way, through [marker interfaces](/php-steam-api-sdk/custom-requests#the-api-key).
 
 ## SteamConfig options
 
@@ -60,7 +61,7 @@ per call. The endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`
 
 <Aside type="note" title="Readonly, so replace rather than mutate">
 `SteamConfig` is `final readonly` — to change a setting, construct a new config and a
-new connector.
+new connector. The one in use stays readable as `$connector->steamConfig`.
 </Aside>
 
 ## Without an API key

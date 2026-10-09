@@ -20,10 +20,11 @@ on [Dead by Stats](https://deadbystats.eu).
 - **Strongly typed** — PHP 8.5, PHPStan max, 100% type coverage.
 - **Readonly DTOs** — immutable objects with `DateTimeImmutable`, never framework date wrappers.
 - **Domain exceptions** — one hierarchy rooted at `SteamApiException` for every failure.
-- **Rate limit baked in** — the 100 000 requests/day quota is enforced by the connector, per API key.
+- **Rate limit baked in** — the 100 000 requests/day quota is enforced per API key and resets at 00:00 UTC; `rateLimits` swaps in your own.
 - **Timeouts and retries** — set once on `SteamConfig`; only a `5xx` or no answer at all is retried, since every attempt spends quota.
 - **Hooks without the key** — `onRequest()`, `onResponse()` and `onFailure()` for logs and metrics, and `debug()` masks the key as `key=***`.
-- **Zero framework coupling** — plain Saloon; a [Laravel bridge](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
+- **Your own requests** — a method the SDK does not ship is one Saloon request away, sent with the key, the budget and SDK exceptions.
+- **Zero framework coupling** — plain Saloon over any `Sender` you hand it; a [Laravel bridge](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
 
 ## Requirements
 

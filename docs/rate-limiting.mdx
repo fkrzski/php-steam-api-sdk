@@ -1,0 +1,139 @@
+---
+title: Rate limiting
+description: How the connector meters Steam's 100 000 daily requests per API key — the UTC reset, a 429 from Steam, limits of your own and shared stores.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The Steam Web API allows **100 000 requests per API key per day**. The connector
+enforces this via [`saloonphp/rate-limit-plugin`](https://github.com/saloonphp/rate-limit-plugin)
+and throws `SteamRateLimitException` once the budget is spent — locally, before a
+request leaves your process. The exception carries the `Limit` that tripped:
+
+```php
+use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+
+try {
+    $connector->send($request)->dto();
+} catch (SteamRateLimitException $e) {
+    $seconds = $e->limit->getRemainingSeconds();
+}
+```
+
+The budget resets at 00:00 UTC whatever `date.timezone` says, so `getRemainingSeconds()`
+counts down to the next midnight UTC. Valve documents no reset time; UTC is an assumption.
+
+Every answer Steam sends counts — a `4xx`, `5xx` or `429` as much as a `200` — through
+`send()`, `sendAsync()` and `pool()` alike. A request that got no answer counts nothing,
+though Steam may still have billed one that timed out.
+
+When Steam itself answers `429`, the connector raises the same exception and refuses every
+request locally until Steam's `Retry-After` passes, or for a minute without one. Steam bills
+the budget to the key, so by default a connector without one counts nothing locally, but
+still honours a `429`.
+
+<Aside type="caution" title="A pool cannot recall what it sent">
+Requests a `pool()` already has in flight when a `429` arrives still reach Steam. Only the
+ones it starts afterwards are refused locally.
+</Aside>
+
+## Your own limits
+
+`rateLimits` swaps the daily budget for your own `Limit`s — a key with a bigger budget, a
+share of one that several apps use, a window per second:
+
+```php title="steam.php" "rateLimits:"
+use Saloon\RateLimitPlugin\Limit;
+
+$connector = new SteamConnector(new SteamConfig(
+    apiKey: $_ENV['STEAM_API_KEY'],
+    rateLimits: [
+        Limit::allow(500_000)
+            ->everySeconds(86_400, 'utc_midnight')
+            ->setExpiryTimestamp(new DateTimeImmutable('tomorrow', new DateTimeZone('UTC'))->getTimestamp()),
+        Limit::allow(10)->everySeconds(1)->sleep(),
+    ],
+));
+```
+
+The list replaces the default whole, so a per-second limit alone leaves the day unmetered.
+The first line keeps a daily budget that resets at 00:00 UTC, like the default. `[]` meters
+nothing locally, and a `429` from Steam still throws either way.
+
+The limits apply without an API key too, and still count per key, so connectors sharing a
+store don't drain each other. `->sleep()` waits for the window to pass instead of throwing,
+blocking the process meanwhile, in `pool()` as well. Two limits with one name throw
+`InvalidRateLimitException` as the config is built; give one of them a `->name()`.
+
+<Aside type="caution" title="A window counted to a moment freezes with the config">
+`setExpiryTimestamp()`, `everySeconds()` fed with `time()`, `untilMidnightTonight()` and
+`untilEndOfMonth()` fix their moment when the `Limit` is built. In a process that keeps one
+connector for hours, build the config per job, or each window runs past the moment it was
+meant to end.
+</Aside>
+
+## Multiple API keys
+
+The budget is tracked per API key, so one process — or one shared store — can serve
+several keys without them draining each other's quota.
+
+<Aside type="tip" title="Your key never reaches the store">
+The limiter key is `SteamConnector:` plus a **SHA-256 hash** of the API key, so a shared
+store holds counters, never credentials.
+</Aside>
+
+## Sharing the budget across processes
+
+The default `MemoryStore` keeps its backing array static, so the budget is process-wide.
+That is fine for a script, but every FPM or queue worker then gets a counter of its own
+and the real quota can be overrun several times over.
+
+Inject a shared store instead — any `Saloon\RateLimitPlugin\Contracts\RateLimitStore`
+is accepted:
+
+```php
+$connector = new SteamConnector(new SteamConfig(
+    apiKey: $_ENV['STEAM_API_KEY'],
+    rateLimitStore: $store,
+));
+```
+
+<Tabs syncKey="steam-rate-limit-store">
+  <TabItem label="Redis (Predis)">
+    ```php
+    use Saloon\RateLimitPlugin\Stores\PredisStore;
+
+    $store = new PredisStore(new Predis\Client());
+    ```
+  </TabItem>
+  <TabItem label="Redis (ext-redis)">
+    ```php
+    use Saloon\RateLimitPlugin\Stores\RedisStore;
+
+    $redis = new Redis();
+    $redis->connect('127.0.0.1');
+
+    $store = new RedisStore($redis);
+    ```
+  </TabItem>
+  <TabItem label="PSR-16 cache">
+    ```php
+    use Saloon\RateLimitPlugin\Stores\PsrStore;
+
+    // $cache is any Psr\SimpleCache\CacheInterface implementation.
+    $store = new PsrStore($cache);
+    ```
+  </TabItem>
+  <TabItem label="Filesystem">
+    ```php
+    use Saloon\RateLimitPlugin\Stores\FileStore;
+
+    $store = new FileStore(__DIR__.'/storage/steam-rate-limit');
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="A per-process store is not a shared one">
+`MemoryStore` and a `FileStore` on ephemeral disk both look fine in development and stop
+working the moment you scale out. Pick a store every process genuinely reaches.
+</Aside>

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Contracts\SendsOptionalApiKey;
@@ -356,7 +358,9 @@ class SteamConnector extends Connector
         }
 
         return [
-            Limit::allow(100_000)->everySeconds(86_400 - time() % 86_400, 'utc_midnight'),
+            Limit::allow(100_000)
+                ->everySeconds(86_400, 'utc_midnight')
+                ->setExpiryTimestamp(new DateTimeImmutable('tomorrow', new DateTimeZone('UTC'))->getTimestamp()),
         ];
     }
 

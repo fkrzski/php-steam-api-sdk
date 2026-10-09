@@ -195,7 +195,9 @@ use Saloon\RateLimitPlugin\Limit;
 $connector = new SteamConnector(new SteamConfig(
     apiKey: $_ENV['STEAM_API_KEY'],
     rateLimits: [
-        Limit::allow(500_000)->everySeconds(86_400 - time() % 86_400, 'utc_midnight'),
+        Limit::allow(500_000)
+            ->everySeconds(86_400, 'utc_midnight')
+            ->setExpiryTimestamp(new DateTimeImmutable('tomorrow', new DateTimeZone('UTC'))->getTimestamp()),
         Limit::allow(10)->everySeconds(1)->sleep(),
     ],
 ));
@@ -211,9 +213,10 @@ blocking the process meanwhile, in `pool()` as well. Two limits with one name th
 `InvalidRateLimitException` as the config is built; give one of them a `->name()`.
 
 <Aside type="caution" title="A window counted to a moment freezes with the config">
-`everySeconds()` fed with `time()`, `untilMidnightTonight()` and `untilEndOfMonth()` work out
-their seconds when the `Limit` is built. In a process that keeps one connector for hours,
-build the config per job, or each window runs past the moment it was meant to end.
+`setExpiryTimestamp()`, `everySeconds()` fed with `time()`, `untilMidnightTonight()` and
+`untilEndOfMonth()` fix their moment when the `Limit` is built. In a process that keeps one
+connector for hours, build the config per job, or each window runs past the moment it was
+meant to end.
 </Aside>
 
 ## Multiple API keys

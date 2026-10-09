@@ -1,6 +1,6 @@
 ---
 title: Guide
-description: The core building blocks — the SteamId value object, the resources that return readonly DTOs, the exception hierarchy, debugging hooks, and testing.
+description: The SteamId value object, the resources that return readonly DTOs, pooled requests, the exception hierarchy, debugging hooks and testing.
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -87,6 +87,34 @@ response comes back at all, through `send()`, `sendAsync()` and `pool()` alike. 
 payload reports a failure, one of the two `200` rows in the [mapping table](#how-statuses-are-mapped),
 fails the same way, so `send()` never hands back its response. Which call returns which DTO
 is in the [API reference](/php-steam-api-sdk/api-reference).
+
+### Concurrent requests
+
+`pool()` sends a batch several at a time, and each handler gets the request's key:
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
+use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+use Saloon\Http\Response;
+
+$libraries = [];
+
+$connector->pool(
+    requests: array_map(fn (SteamId $id) => new GetOwnedGamesRequest($id), $ids),
+    concurrency: 5,
+    responseHandler: function (Response $response, int $key) use (&$libraries): void {
+        $libraries[$key] = $response->dto();
+    },
+    exceptionHandler: function (Throwable $e, int $key) use ($logger): void {
+        $logger->warning($e->getMessage());
+    },
+)->send()->wait();
+```
+
+A failure reaches `exceptionHandler` as the SDK exception, a hidden profile Steam reports in a
+`200` included, and fires `onFailure()`. Each request goes out once, whatever `tries` says, and
+every answer counts against the [budget](/php-steam-api-sdk/rate-limiting). `sendAsync()` sends
+one request the same way and returns a promise that rejects with the same exceptions.
 
 ## Exceptions
 

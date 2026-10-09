@@ -31,6 +31,7 @@ final readonly class SteamConfig
         public bool $exponentialBackoff = false,
         public ?array $rateLimits = null,
         public ?Sender $sender = null,
+        public int $tooManyRequestsCooldown = 60,
     ) {
         if ($apiKey !== null && trim($apiKey) === '') {
             throw ApiKeyNotConfiguredException::blank();
@@ -54,6 +55,10 @@ final readonly class SteamConfig
 
         if ($rateLimits !== null) {
             $this->assertUniqueNames($rateLimits);
+        }
+
+        if ($tooManyRequestsCooldown < 1) {
+            throw InvalidRateLimitException::tooShortCooldown($tooManyRequestsCooldown);
         }
     }
 

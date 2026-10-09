@@ -392,6 +392,14 @@ class SteamConnector extends Connector
     }
 
     /**
+     * The plugin falls back to this interval only when a 429 carries no Retry-After.
+     */
+    protected function getTooManyAttemptsLimiter(): Limit
+    {
+        return Limit::custom($this->handleTooManyAttempts(...))->everySeconds($this->steamConfig->tooManyRequestsCooldown);
+    }
+
+    /**
      * Guzzle and the mock client reject a 4xx or 5xx before any pipeline runs, so a failure takes
      * the pipeline here as well and stays rejected, while a success resolves to what it returns.
      */

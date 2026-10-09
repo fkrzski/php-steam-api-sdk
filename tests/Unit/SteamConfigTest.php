@@ -170,6 +170,24 @@ test('SteamConfig stores the sender it is given', function (): void {
     expect((new SteamConfig(sender: $sender))->sender)->toBe($sender);
 });
 
+test('SteamConfig holds requests back for a minute after a 429 until told otherwise', function (): void {
+    expect((new SteamConfig)->tooManyRequestsCooldown)->toBe(60);
+});
+
+test('SteamConfig stores the cool-down it is given', function (int $seconds): void {
+    expect((new SteamConfig(tooManyRequestsCooldown: $seconds))->tooManyRequestsCooldown)->toBe($seconds);
+})->with(['one second' => 1, 'five minutes' => 300]);
+
+test('SteamConfig rejects a cool-down under a second', function (int $seconds): void {
+    expect(fn (): SteamConfig => new SteamConfig(tooManyRequestsCooldown: $seconds))
+        ->toThrow(function (InvalidRateLimitException $invalidRateLimitException) use ($seconds): void {
+            expect($invalidRateLimitException->getMessage())->toBe(sprintf(
+                'SteamConfig::$tooManyRequestsCooldown must be at least 1, got %d. Pass the seconds to hold requests back after a 429 that carries no Retry-After.',
+                $seconds,
+            ));
+        });
+})->with(['zero' => 0, 'negative' => -1]);
+
 test('SteamConfig keeps the key out of the trace of a config error', function (): void {
     $ignoreArgs = (string) ini_get('zend.exception_ignore_args');
     ini_set('zend.exception_ignore_args', '0');

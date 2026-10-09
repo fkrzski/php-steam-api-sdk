@@ -15,4 +15,12 @@ final class InvalidRateLimitException extends SteamApiException
             $name,
         ));
     }
+
+    public static function tooShortCooldown(int $seconds): self
+    {
+        return new self(sprintf(
+            'SteamConfig::$tooManyRequestsCooldown must be at least 1, got %d. Pass the seconds to hold requests back after a 429 that carries no Retry-After.',
+            $seconds,
+        ));
+    }
 }

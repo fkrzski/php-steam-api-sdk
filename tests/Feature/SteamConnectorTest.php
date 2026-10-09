@@ -65,7 +65,8 @@ test('resolveLimits exposes a single 100,000 requests-per-day limit', function (
     $limits = $connector->getLimits();
 
     expect($limits)->toHaveCount(2)
-        ->and($limits[0]->getAllow())->toBe(100_000);
+        ->and($limits[0]->getAllow())->toBe(100_000)
+        ->and($limits[0]->getReleaseInSeconds())->toBe(86_400);
 });
 
 test('resolveRateLimitStore returns the store configured on SteamConfig', function (): void {

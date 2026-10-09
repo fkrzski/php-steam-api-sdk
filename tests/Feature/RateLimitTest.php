@@ -80,6 +80,14 @@ test('the daily budget resets at the next midnight UTC whatever date.timezone sa
         ->and($expiry - time())->toBeGreaterThan(0)->toBeLessThanOrEqual(86_400);
 })->with(['UTC', 'Pacific/Kiritimati', 'Pacific/Pago_Pago']);
 
+test('the daily budget still resets at midnight UTC when a second passes after the limit is resolved', function (): void {
+    $limit = new SteamConnector(new SteamConfig('test-key'))->getLimits()[0];
+
+    time_sleep_until(time() + 1);
+
+    expect($limit->getExpiryTimestamp() % 86_400)->toBe(0);
+});
+
 test('a spent budget is refused until midnight UTC', function (): void {
     $connector = new SteamConnector(new SteamConfig('test-key'))->withMockClient(new MockClient([
         MockResponse::make('{"friendslist":{"friends":[]}}'),

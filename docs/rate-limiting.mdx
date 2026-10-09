@@ -85,6 +85,24 @@ connector for hours, build the config per job, or each window runs past the mome
 meant to end.
 </Aside>
 
+## Checking before you send
+
+The plugin's own methods read the store without sending anything, for a job that would
+rather wait than fail:
+
+```php "0.9"
+if ($connector->hasReachedRateLimit(0.9)) {
+    $seconds = $connector->getExceededLimit(0.9)->getRemainingSeconds();
+}
+```
+
+The argument is the share of a limit already spent, so `0.9` answers once 90 000 of the
+100 000 are gone; without it a limit has to be spent whole. Both see the lock after a `429` too.
+
+`$connector->useRateLimitPlugin(false)` turns the limiter off altogether: nothing is counted
+or refused locally, and a `429` surfaces as `SteamApiException` with code `429` rather than
+`SteamRateLimitException`. To stop counting but keep the lock, pass `rateLimits: []` instead.
+
 ## Multiple API keys
 
 The budget is tracked per API key, so one process — or one shared store — can serve

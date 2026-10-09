@@ -208,6 +208,77 @@ test('a 429 in a pool refuses the requests queued after it', function (): void {
         ->and(dailyHits($connector))->toBe(1);
 });
 
+test('a 429 without Retry-After refuses the requests after it for the configured cool-down', function (Closure $send): void {
+    $sent = [];
+    $connector = connectorAnswering([new PsrResponse(429)], new SteamConfig('test-key', tooManyRequestsCooldown: 300), $sent);
+
+    $before = time();
+    rateLimitOf(fn (): mixed => $send($connector, friendListRequest()));
+    $refused = rateLimitOf(fn (): mixed => $send($connector, friendListRequest()));
+    $after = time();
+
+    expect($refused->limit->getExpiryTimestamp())->toBeGreaterThanOrEqual($before + 300)->toBeLessThanOrEqual($after + 300)
+        ->and($refused->limit->getRemainingSeconds())->toBeGreaterThan(60)->toBeLessThanOrEqual(300)
+        ->and($sent)->toHaveCount(1);
+})->with([
+    'send' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->send($request)],
+    'pool' => [static function (SteamConnector $connector, Request $request): never {
+        $reasons = [];
+
+        $connector->pool(
+            [$request],
+            exceptionHandler: static function (Throwable $reason) use (&$reasons): void {
+                $reasons[] = $reason;
+            },
+        )->send()->wait();
+
+        throw $reasons[0] ?? new LogicException('Expected the pool to fail.');
+    }],
+]);
+
+test('requests go through again once the cool-down passes', function (): void {
+    $sent = [];
+    $connector = connectorAnswering(
+        [new PsrResponse(429), new PsrResponse(200, [], '{"friendslist":{"friends":[]}}')],
+        new SteamConfig('test-key', tooManyRequestsCooldown: 1),
+        $sent,
+    );
+
+    rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
+    $refused = rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
+
+    time_sleep_until($refused->limit->getExpiryTimestamp() + 1);
+
+    expect($connector->send(friendListRequest())->status())->toBe(200)
+        ->and($sent)->toHaveCount(2);
+});
+
+test('a 429 refuses requests for as long as Retry-After says, or for the cool-down without one', function (SteamConfig $config, array $headers, int $seconds): void {
+    $connector = connectorAnswering([new PsrResponse(429, $headers)], $config);
+
+    $before = time();
+    $throttled = rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
+    $after = time();
+
+    expect($throttled->limit->getExpiryTimestamp())->toBeGreaterThanOrEqual($before + $seconds)->toBeLessThanOrEqual($after + $seconds);
+})->with([
+    'default cool-down' => [new SteamConfig('test-key'), [], 60],
+    'Retry-After under the cool-down' => [new SteamConfig('test-key', tooManyRequestsCooldown: 300), ['Retry-After' => '120'], 120],
+    'Retry-After over the cool-down' => [new SteamConfig('test-key', tooManyRequestsCooldown: 30), ['Retry-After' => '120'], 120],
+]);
+
+test('the cool-down holds with a key or without and whatever the rate limits', function (SteamConfig $config): void {
+    $limiter = array_last(new SteamConnector($config)->getLimits());
+
+    expect($limiter->getName())->toEndWith(':too_many_attempts_limit')
+        ->and($limiter->getReleaseInSeconds())->toBe(300);
+})->with([
+    'without a key' => [new SteamConfig(tooManyRequestsCooldown: 300)],
+    'with a key' => [new SteamConfig('test-key', tooManyRequestsCooldown: 300)],
+    'no local limits' => [new SteamConfig('test-key', rateLimits: [], tooManyRequestsCooldown: 300)],
+    'own limits' => [new SteamConfig('test-key', rateLimits: [Limit::allow(10)->everyMinute()], tooManyRequestsCooldown: 300)],
+]);
+
 test('a request Steam never answered costs nothing from the budget', function (Closure $send): void {
     $connector = connectorAnswering([connectionFailure()], new SteamConfig('test-key'));
 
@@ -385,6 +456,17 @@ function dailyLimitKeys(): array
         array_keys((new MemoryStore)->getStore()),
         static fn (string $key): bool => str_ends_with($key, '100000_every_utc_midnight'),
     ));
+}
+
+function rateLimitOf(Closure $call): SteamRateLimitException
+{
+    try {
+        $call();
+    } catch (SteamRateLimitException $steamRateLimitException) {
+        return $steamRateLimitException;
+    }
+
+    throw new RuntimeException('Expected the request to be rate limited.');
 }
 
 function dailyHits(SteamConnector $connector): int

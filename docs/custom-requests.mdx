@@ -1,0 +1,132 @@
+---
+title: Custom requests
+description: Send a Steam Web API method the SDK does not ship through the connector, with the key handling, rate limit, retries, hooks and exceptions it already applies.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A method the SDK does not cover is one Saloon `Request` away. Sent through `SteamConnector`, it
+gets what the shipped requests get: the API key, the [rate limit](/php-steam-api-sdk/rate-limiting),
+retries, hooks, `debug()` with the key masked, and SDK exceptions.
+
+```php title="src/Steam/GetCmListRequest.php"
+use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
+use Saloon\Enums\Method;
+use Saloon\Http\Request;
+use Saloon\Http\Response;
+
+final class GetCmListRequest extends Request implements SendsNoApiKey
+{
+    protected Method $method = Method::GET;
+
+    public function __construct(
+        public readonly int $cellId,
+    ) {}
+
+    public function resolveEndpoint(): string
+    {
+        return '/ISteamDirectory/GetCMList/v1/';
+    }
+
+    protected function defaultQuery(): array
+    {
+        return ['cellid' => $this->cellId];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function createDtoFromResponse(Response $response): array
+    {
+        return $response->json('response.serverlist');
+    }
+}
+```
+
+```php
+$servers = $connector->send(new GetCmListRequest(0))->dto();
+```
+
+`sendAsync()`, `pool()` and `MockClient` take it as they take the SDK's own requests.
+
+## The API key
+
+The connector puts the configured key on every request, and refuses one locally with
+`ApiKeyNotConfiguredException` when the config carries none. Two marker interfaces change that:
+
+| Request | Key configured | No key configured |
+| --- | --- | --- |
+| plain `Request` | sent | `ApiKeyNotConfiguredException`, nothing goes out |
+| `implements SendsOptionalApiKey` | sent | sent without one |
+| `implements SendsNoApiKey` | stripped from the query | sent |
+
+Mark a method Steam serves anonymously `SendsNoApiKey`, so the key stays off a URL that does not
+need it. `SendsOptionalApiKey` is for one that answers both ways but differently, as
+[`GetSupportedAPIList`](/php-steam-api-sdk/api-reference#getsupportedapilistrequest) does.
+
+## Language
+
+`HasLanguage` lets the [default language](/php-steam-api-sdk/configuration#default-language) reach
+a method that reads Steam's `l` parameter. It asks for a public `?Language $language`, and the
+connector fills `l` only while that is `null`, so the request sends its own:
+
+```php "implements HasLanguage" "public readonly ?Language $language"
+use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
+use Fkrzski\SteamApiSdk\Enums\Language;
+
+final class LocalisedRequest extends Request implements HasLanguage
+{
+    public function __construct(
+        public readonly int $appId,
+        public readonly ?Language $language = null,
+    ) {}
+
+    protected function defaultQuery(): array
+    {
+        return array_filter(['appid' => $this->appId, 'l' => $this->language?->value]);
+    }
+
+    // ...
+}
+```
+
+## Failures
+
+A request with no mapping of its own fails as the [status table](/php-steam-api-sdk/guide#how-statuses-are-mapped)
+says for any endpoint: a key error raises `InvalidApiKeyException`, any other `401` or `403`
+raises `ProfileNotPublicException`, and every other `4xx` or `5xx` raises `SteamApiException`. A
+`5xx` and a request Steam never answered are [retried](/php-steam-api-sdk/configuration#retries).
+
+<Aside type="caution" title="A 403 is not always about a profile">
+The connector reads every `401` or `403` that does not name the key as a hidden profile, so a
+method refusing access for any other reason surfaces as `ProfileNotPublicException`.
+</Aside>
+
+The request's own `getRequestException()` runs before the connector's, and `null` hands the
+response back to it, so map only the statuses you know. Extending `SteamApiException` keeps one
+catch covering everything, and handing it the response sets the code and the method prefix:
+
+```php "extends SteamApiException"
+use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+
+final class CmListUnavailableException extends SteamApiException {}
+```
+
+```php
+public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+{
+    return $response->status() === 403
+        ? new CmListUnavailableException('Steam refused the cell.', $response)
+        : null;
+}
+```
+
+`hasRequestFailed()` flags a failure Steam reports in a `200` payload. It raises
+`SteamApiException` with code `200`, or what `getRequestException()` returns, and is never retried:
+
+```php
+public function hasRequestFailed(Response $response): bool
+{
+    return $response->json('response.result') !== 1;
+}
+```

@@ -1,6 +1,6 @@
 ---
 title: Guide
-description: The core building blocks — the SteamId value object, the resources that return readonly DTOs, the exception hierarchy, debugging hooks, and testing.
+description: The SteamId value object, the resources that return readonly DTOs, pooled requests, the exception hierarchy, debugging hooks and testing.
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -88,6 +88,34 @@ payload reports a failure, one of the two `200` rows in the [mapping table](#how
 fails the same way, so `send()` never hands back its response. Which call returns which DTO
 is in the [API reference](/php-steam-api-sdk/api-reference).
 
+### Concurrent requests
+
+`pool()` sends a batch several at a time, and each handler gets the request's key:
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
+use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+use Saloon\Http\Response;
+
+$libraries = [];
+
+$connector->pool(
+    requests: array_map(fn (SteamId $id) => new GetOwnedGamesRequest($id), $ids),
+    concurrency: 5,
+    responseHandler: function (Response $response, int $key) use (&$libraries): void {
+        $libraries[$key] = $response->dto();
+    },
+    exceptionHandler: function (Throwable $e, int $key) use ($logger): void {
+        $logger->warning($e->getMessage());
+    },
+)->send()->wait();
+```
+
+A failure reaches `exceptionHandler` as the SDK exception, a hidden profile Steam reports in a
+`200` included, and fires `onFailure()`. Each request goes out once, whatever `tries` says, and
+every answer counts against the [budget](/php-steam-api-sdk/rate-limiting). `sendAsync()` sends
+one request the same way and returns a promise that rejects with the same exceptions.
+
 ## Exceptions
 
 Every SDK failure extends `SteamApiException`, so one catch handles them all:
@@ -99,7 +127,7 @@ SteamApiException                  (root, extends RuntimeException)
 ├── AppNotFoundException           No Steam app carries the given app ID.
 ├── AppVersionUnavailableException No server version to check against, or unknown app.
 ├── InvalidApiKeyException         Steam refused the key: wrong, revoked, or absent.
-├── InvalidRateLimitException      Two rate limits on SteamConfig share a name.
+├── InvalidRateLimitException      Two rate limits share a name, or a 429 cool-down under 1 s.
 ├── InvalidRetryException          Fewer than one try, or a negative retry interval.
 ├── InvalidServerAddressException  Address is neither IPv4 nor IPv4:queryport.
 ├── InvalidSteamIdException        Malformed SteamID64.
@@ -197,7 +225,7 @@ Steam never answers at all:
 | `401` or `403` not naming the `key` parameter | `ProfileNotPublicException` |
 | `404` + JSON, on `ISteamUserStats` | `AppNotFoundException` |
 | `500` + JSON `Failed to get appinfo`, on `GetSDRConfig` | `AppNotFoundException`, never retried |
-| `429` | `SteamRateLimitException` |
+| `429` | `SteamRateLimitException`, then a [cool-down](/php-steam-api-sdk/rate-limiting#after-a-429) |
 | any other `4xx` / `5xx` | `SteamApiException`, a `5xx` once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
 | `200` with an empty, `success: 42` or `success: false` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` / `AppVersionUnavailableException` / `InvalidServerAddressException` |
 | `200` with `success: false` and a message the SDK does not recognise | `SteamApiException`, quoting Steam's message |
@@ -379,10 +407,11 @@ built from the fake, so assertions run against real DTOs:
   </TabItem>
 </Tabs>
 
-<Aside type="caution" title="Reset the budget between tests">
-`MemoryStore` keeps its backing array **static**, so the counter survives from one test
-to the next and a long suite can trip `SteamRateLimitException` on its own. Clear it in
-your setup hook.
+<Aside type="caution" title="Reset the store between tests">
+`MemoryStore` keeps its backing array **static**, so the budget and the lock after a mocked
+`429` outlive the test, and the next one using the same key fails with `SteamRateLimitException`
+for `tooManyRequestsCooldown` seconds. `rateLimits: []` stops the counting, not the lock. Clear
+the store in your setup hook.
 </Aside>
 
 <Tabs syncKey="php-test-runner">

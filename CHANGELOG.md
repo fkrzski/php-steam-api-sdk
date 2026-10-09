@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-09
+
 ### Added
 
 - `GetServerInfoRequest` (`ISteamWebAPIUtil`), returning Steam's clock as a `DateTimeImmutable` in UTC, reached anonymously through the new `WebApiResource` as `$connector->webApi()->serverTime()` ([#98](https://github.com/fkrzski/php-steam-api-sdk/issues/98)).
@@ -173,7 +175,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
-[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.8.0...HEAD
+[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.9.0...HEAD
+[0.9.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.9.0
 [0.8.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.8.0
 [0.7.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.7.0
 [0.6.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.6.0

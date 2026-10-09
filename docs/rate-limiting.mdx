@@ -1,6 +1,6 @@
 ---
 title: Rate limiting
-description: How the connector meters Steam's 100 000 daily requests per API key — the UTC reset, a 429 from Steam, limits of your own and shared stores.
+description: How the connector meters Steam's 100 000 daily requests per API key — the UTC reset, the cool-down after a 429, your own limits and shared stores.
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -25,12 +25,25 @@ counts down to the next midnight UTC. Valve documents no reset time; UTC is an a
 
 Every answer Steam sends counts — a `4xx`, `5xx` or `429` as much as a `200` — through
 `send()`, `sendAsync()` and `pool()` alike. A request that got no answer counts nothing,
-though Steam may still have billed one that timed out.
+though Steam may still have billed one that timed out. Steam bills the budget to the key, so
+by default a connector without one counts nothing locally.
+
+## After a 429
 
 When Steam itself answers `429`, the connector raises the same exception and refuses every
-request locally until Steam's `Retry-After` passes, or for a minute without one. Steam bills
-the budget to the key, so by default a connector without one counts nothing locally, but
-still honours a `429`.
+request locally until Steam's `Retry-After` passes. Without the header it holds them back for
+`tooManyRequestsCooldown` seconds, 60 unless you set it:
+
+```php title="steam.php" "tooManyRequestsCooldown: 300"
+$connector = new SteamConnector(new SteamConfig(
+    apiKey: $_ENV['STEAM_API_KEY'],
+    tooManyRequestsCooldown: 300,
+));
+```
+
+A `Retry-After` from Steam still wins. The cool-down applies with a key or without and
+whatever `rateLimits` holds, `[]` included, and it lives in the store next to the budget, per
+key. A value under 1 throws `InvalidRateLimitException` as the config is built.
 
 <Aside type="caution" title="A pool cannot recall what it sent">
 Requests a `pool()` already has in flight when a `429` arrives still reach Steam. Only the

@@ -99,7 +99,7 @@ SteamApiException                  (root, extends RuntimeException)
 ├── AppNotFoundException           No Steam app carries the given app ID.
 ├── AppVersionUnavailableException No server version to check against, or unknown app.
 ├── InvalidApiKeyException         Steam refused the key: wrong, revoked, or absent.
-├── InvalidRateLimitException      Two rate limits on SteamConfig share a name.
+├── InvalidRateLimitException      Two rate limits share a name, or a 429 cool-down under 1 s.
 ├── InvalidRetryException          Fewer than one try, or a negative retry interval.
 ├── InvalidServerAddressException  Address is neither IPv4 nor IPv4:queryport.
 ├── InvalidSteamIdException        Malformed SteamID64.

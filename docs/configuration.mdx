@@ -47,7 +47,7 @@ per call. The endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `apiKey` | `?string` | `null` | Your Steam Web API key. Leave it out to reach only the anonymous endpoints. |
-| `rateLimitStore` | `?RateLimitStore` | `MemoryStore` | Where the daily request budget is [tracked](/php-steam-api-sdk/rate-limiting#sharing-the-budget-across-processes). |
+| `rateLimitStore` | `?RateLimitStore` | `MemoryStore` | Where the request budget, and the lock after a `429`, are [kept](/php-steam-api-sdk/rate-limiting#sharing-the-budget-across-processes). |
 | `sender` | `?Sender` | `GuzzleSender` | The HTTP client requests go out through. |
 | `language` | `?Language` | `null` | Language for endpoints that localise their payload. |
 | `connectTimeout` | `?float` | `10.0` | Seconds to wait for a connection to Steam. |
@@ -56,6 +56,7 @@ per call. The endpoints Steam serves anonymously — `GetNumberOfCurrentPlayers`
 | `retryInterval` | `int` | `0` | Milliseconds to pause before a retry. |
 | `exponentialBackoff` | `bool` | `false` | Double the pause after every retry. |
 | `rateLimits` | `?array<Limit>` | 100 000 a day with a key | [Limits](/php-steam-api-sdk/rate-limiting#your-own-limits) that replace the daily budget; `[]` meters nothing locally. |
+| `tooManyRequestsCooldown` | `int` | `60` | Seconds a `429` without `Retry-After` [refuses requests](/php-steam-api-sdk/rate-limiting#after-a-429) locally. |
 
 <Aside type="note" title="Readonly, so replace rather than mutate">
 `SteamConfig` is `final readonly` — to change a setting, construct a new config and a

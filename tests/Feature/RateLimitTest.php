@@ -468,8 +468,3 @@ function rateLimitOf(Closure $call): SteamRateLimitException
 
     throw new RuntimeException('Expected the request to be rate limited.');
 }
-
-function dailyHits(SteamConnector $connector): int
-{
-    return $connector->getLimits()[0]->update($connector->rateLimitStore())->getHits();
-}

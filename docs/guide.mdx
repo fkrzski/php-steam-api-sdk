@@ -116,6 +116,25 @@ A failure reaches `exceptionHandler` as the SDK exception, a hidden profile Stea
 every answer counts against the [budget](/php-steam-api-sdk/rate-limiting). `sendAsync()` sends
 one request the same way and returns a promise that rejects with the same exceptions.
 
+### More than 100 Steam IDs
+
+`GetPlayerSummariesRequest` and `GetPlayerBansRequest` take up to 100 IDs. `users()->summaries()`
+and `users()->bans()` take any number: up to 100 go out as one request, retried as `tries` says,
+and a longer list is cut into requests of 100 that `pool()` sends `concurrency` at a time:
+
+```php "concurrency: 10"
+$summaries = $connector->users()->summaries($ids, concurrency: 10);
+```
+
+Each chunk is sent once and counts as one request, so 1 000 IDs spend 10. The first failure is
+thrown once the chunks in flight have answered, and no chunk goes out after it. A `concurrency`
+under 1 throws `InvalidArgumentException`.
+
+<Aside type="caution" title="Key the result by Steam ID">
+Steam answers in no particular order, even within one request, and returns a repeated ID once
+per occurrence. Only the chunks keep their order.
+</Aside>
+
 ## Exceptions
 
 Every SDK failure extends `SteamApiException`, so one catch handles them all:
@@ -137,7 +156,7 @@ SteamApiException                  (root, extends RuntimeException)
 ├── SteamConnectionException       Steam never answered: timeout, DNS, TLS, refused connection.
 ├── SteamRateLimitException        A local limit ran out, or Steam answered 429; exposes the Limit.
 ├── SteamUserNotFoundException     Vanity URL unresolved or profile missing.
-└── TooManySteamIdsException       More than 100 IDs in a batch request.
+└── TooManySteamIdsException       More than 100 IDs in one request; summaries() and bans() split them.
 ```
 
 Catch the leaf you care about, or the root to handle every SDK failure uniformly:
@@ -343,7 +362,8 @@ $connector->onFailure(fn (Throwable $e) => $logger->error($e->getMessage(), ['ex
 
 It fires for a request refused locally, for the quota or a missing key, which neither hook above
 sees, and for an exception thrown by another hook or a middleware. Under `sendAsync()` and
-`pool()` it fires once for every request that fails, before its promise rejects.
+`pool()` it fires once for every request that fails, before its promise rejects, and so it does
+for every chunk that fails in a [list over 100 IDs](#more-than-100-steam-ids).
 
 <Aside type="caution" title="A throwing failure hook fails silently">
 An exception thrown in `onFailure` is dropped: the caller still gets the original, and the hooks

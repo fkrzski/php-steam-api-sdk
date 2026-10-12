@@ -65,27 +65,29 @@ interface, and one request class per endpoint:
 | --- | --- | --- |
 | [`GetBadgesRequest`](#getbadgesrequest) | `players()->badges()` | `PlayerBadges` |
 | [`GetCommunityBadgeProgressRequest`](#getcommunitybadgeprogressrequest) | `players()->communityBadgeProgress()` | `list<CommunityBadgeQuest>` |
-| [`GetFriendListRequest`](#getfriendlistrequest) | `users()->friends()` | `list<Friend>` |
-| [`GetGlobalAchievementPercentagesForAppRequest`](#getglobalachievementpercentagesforapprequest) | `stats()->globalAchievements()` | `list<GlobalAchievement>` |
-| [`GetNewsForAppRequest`](#getnewsforapprequest) | `news()->appNews()` | `AppNews` |
-| [`GetNumberOfCurrentPlayersRequest`](#getnumberofcurrentplayersrequest) | `stats()->currentPlayers()` | `int` |
 | [`GetOwnedGamesRequest`](#getownedgamesrequest) | `players()->ownedGames()` | `list<OwnedGame>` |
-| [`GetPlayerAchievementsRequest`](#getplayerachievementsrequest) | `stats()->achievements()` | `PlayerAchievements` |
+| [`GetRecentlyPlayedGamesRequest`](#getrecentlyplayedgamesrequest) | `players()->recentlyPlayedGames()` | `RecentlyPlayedGames` |
+| [`GetSteamLevelRequest`](#getsteamlevelrequest) | `players()->steamLevel()` | `int` |
+| [`GetSdrConfigRequest`](#getsdrconfigrequest) | `apps()->sdrConfig()` | `SdrConfig` |
+| [`GetServersAtAddressRequest`](#getserversataddressrequest) | `apps()->serversAtAddress()` | `list<GameServer>` |
+| [`UpToDateCheckRequest`](#uptodatecheckrequest) | `apps()->upToDateCheck()` | `AppVersionCheck` |
+| [`GetNewsForAppRequest`](#getnewsforapprequest) | `news()->appNews()` | `AppNews` |
+| [`GetFriendListRequest`](#getfriendlistrequest) | `users()->friends()` | `list<Friend>` |
 | [`GetPlayerBansRequest`](#getplayerbansrequest) | `users()->bans()` | `list<PlayerBan>` |
 | [`GetPlayerSummariesRequest`](#getplayersummariesrequest) | `users()->summaries()` | `list<PlayerSummary>` |
-| [`GetRecentlyPlayedGamesRequest`](#getrecentlyplayedgamesrequest) | `players()->recentlyPlayedGames()` | `RecentlyPlayedGames` |
-| [`GetSchemaForGameRequest`](#getschemaforgamerequest) | `stats()->schema()` | `GameSchema` |
-| [`GetSdrConfigRequest`](#getsdrconfigrequest) | `apps()->sdrConfig()` | `SdrConfig` |
-| [`GetServerInfoRequest`](#getserverinforequest) | `webApi()->serverTime()` | `DateTimeImmutable` |
-| [`GetServersAtAddressRequest`](#getserversataddressrequest) | `apps()->serversAtAddress()` | `list<GameServer>` |
-| [`GetSteamLevelRequest`](#getsteamlevelrequest) | `players()->steamLevel()` | `int` |
-| [`GetSupportedApiListRequest`](#getsupportedapilistrequest) | `webApi()->supportedApis()` | `list<WebApiInterface>` |
 | [`GetUserGroupListRequest`](#getusergrouplistrequest) | `users()->groups()` | `list<UserGroup>` |
-| [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `stats()->userStats()` | `UserStats` |
 | [`ResolveVanityUrlRequest`](#resolvevanityurlrequest) | `users()->resolveVanityUrl()` | `SteamId` |
-| [`UpToDateCheckRequest`](#uptodatecheckrequest) | `apps()->upToDateCheck()` | `AppVersionCheck` |
+| [`GetGlobalAchievementPercentagesForAppRequest`](#getglobalachievementpercentagesforapprequest) | `stats()->globalAchievements()` | `list<GlobalAchievement>` |
+| [`GetNumberOfCurrentPlayersRequest`](#getnumberofcurrentplayersrequest) | `stats()->currentPlayers()` | `int` |
+| [`GetPlayerAchievementsRequest`](#getplayerachievementsrequest) | `stats()->achievements()` | `PlayerAchievements` |
+| [`GetSchemaForGameRequest`](#getschemaforgamerequest) | `stats()->schema()` | `GameSchema` |
+| [`GetUserStatsForGameRequest`](#getuserstatsforgamerequest) | `stats()->userStats()` | `UserStats` |
+| [`GetServerInfoRequest`](#getserverinforequest) | `webApi()->serverTime()` | `DateTimeImmutable` |
+| [`GetSupportedApiListRequest`](#getsupportedapilistrequest) | `webApi()->supportedApis()` | `list<WebApiInterface>` |
 
-## GetBadgesRequest
+## IPlayerService
+
+### GetBadgesRequest
 
 ```text frame="none"
 $connector->players()->badges(SteamId $steamId)
@@ -119,7 +121,7 @@ guess between them. The exception is reserved for the empty payload Steam sends 
 profile it withholds.
 </Aside>
 
-## GetCommunityBadgeProgressRequest
+### GetCommunityBadgeProgressRequest
 
 ```text frame="none"
 $connector->players()->communityBadgeProgress(SteamId $steamId)
@@ -146,56 +148,178 @@ answers with the same empty payload Steam sends for a hidden profile and for a S
 that belongs to no account — a valid filter would be indistinguishable from the failure
 that raises the exception.
 
-## GetFriendListRequest
+### GetOwnedGamesRequest
 
 ```text frame="none"
-$connector->users()->friends(SteamId $steamId, ?FriendRelationship $relationship = null)
+$connector->players()->ownedGames(
+    SteamId $steamId,
+    list<int> $appIdsFilter = [],
+    bool $includeAppInfo = false,
+    bool $includePlayedFreeGames = false,
+)
 
-new GetFriendListRequest($steamId, $relationship)
+new GetOwnedGamesRequest($steamId, $appIdsFilter, $includeAppInfo, $includePlayedFreeGames)
 ```
 
-<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
 
-The player's friends. Pass a `FriendRelationship` to filter; omit it for all
-relationships. A private friend list is refused with a `401`, not an empty payload.
+The games a player owns. `appIdsFilter` narrows the result to specific app IDs;
+`includeAppInfo` adds names and icons; `includePlayedFreeGames` includes free games
+the player has launched.
 
-```php
-use Fkrzski\SteamApiSdk\Enums\FriendRelationship;
-
-$friends = $connector->users()->friends($steamId, FriendRelationship::Friend);
+```php "includeAppInfo: true"
+$library = $connector->players()->ownedGames(
+    steamId: $steamId,
+    appIdsFilter: [381210],
+    includeAppInfo: true,
+);
 ```
 
-## GetGlobalAchievementPercentagesForAppRequest
+<Aside type="caution" title="name and imgIconUrl are opt-in">
+Without `includeAppInfo: true` both properties on every
+[`OwnedGame`](/php-steam-api-sdk/dto-reference#ownedgame) are `null` — Steam does not send them.
+</Aside>
+
+### GetRecentlyPlayedGamesRequest
 
 ```text frame="none"
-$connector->stats()->globalAchievements(int $gameId)
+$connector->players()->recentlyPlayedGames(SteamId $steamId, ?int $count = null)
 
-new GetGlobalAchievementPercentagesForAppRequest($gameId)
+new GetRecentlyPlayedGamesRequest($steamId, $count)
 ```
 
-<p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws StatsUnavailableException" variant="danger" size="small" /></p>
+<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
 
-How much of the playerbase has unlocked each achievement in a game, ordered from the most
-common down. Steam serves it anonymously, so the SDK strips the configured key from the
-query, a connector built without one can send it, and no key error can land here. Every `403` is about the game, and covers two
-causes — a game carrying no achievements, or a game ID Steam does not know — because both
-answer identically.
+What a player launched in the last two weeks. `count` caps how many games come back,
+while `totalCount` on the result stays the full figure — that is how you tell a truncated
+list from a complete one.
 
-```php
-$achievements = $connector->stats()->globalAchievements(381210);
+```php "count: 2"
+$recent = $connector->players()->recentlyPlayedGames(steamId: $steamId, count: 2);
 
-foreach ($achievements as $achievement) {
-    echo $achievement->apiName, ' — ', $achievement->percent, '%', PHP_EOL;
+foreach ($recent->games as $game) {
+    echo $game->name, ' — ', $game->playtimeTwoWeeks, ' min', PHP_EOL;
 }
 ```
 
-<Aside type="caution" title="The parameter is gameid, not appid">
-Steam spells this one `gameid`, the only endpoint in the SDK that does, and the SDK follows
-it: the argument is `$gameId` where every other app-scoped method takes `$appId`. The value
-is an ordinary app ID.
+<Aside type="caution" title="An idle player is not a failure">
+A player who launched nothing comes back as `totalCount: 0` with an empty `games` list.
+The exception is reserved for the payload Steam withholds, which it sends both for a
+hidden profile and for a SteamID64 that belongs to no account.
 </Aside>
 
-## GetNewsForAppRequest
+### GetSteamLevelRequest
+
+```text frame="none"
+$connector->players()->steamLevel(SteamId $steamId)
+
+new GetSteamLevelRequest($steamId)
+```
+
+<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+The player's Steam community level, as a plain `int` rather than a DTO. Hiding game
+details leaves it readable — only a profile Steam withholds altogether comes back empty,
+and that is what raises the exception.
+
+```php
+$level = $connector->players()->steamLevel($steamId);
+```
+
+<Aside type="caution" title="Level 0 also answers for an account that does not exist">
+Steam reports level `0` for a SteamID64 belonging to no account, exactly as it does for a
+brand-new one. Nothing in the payload separates the two, so neither does the SDK.
+</Aside>
+
+## ISteamApps
+
+### GetSdrConfigRequest
+
+```text frame="none"
+$connector->apps()->sdrConfig(int $appId)
+
+new GetSdrConfigRequest($appId)
+```
+
+<p><Badge text="ISteamApps" variant="note" size="small" />{' '}<Badge text="throws AppNotFoundException" variant="danger" size="small" /></p>
+
+The Steam Datagram Relay map a game connects through: every point of presence, where it
+stands, and the IPv4 addresses and ports its relays answer on. A game without a map of its
+own gets Valve's default one, and app ID `0` returns the whole network. Steam serves it
+anonymously, so the SDK strips the configured key from the query, and a connector built
+without one can send it.
+
+```php
+$config = $connector->apps()->sdrConfig(730);
+
+foreach ($config->pointsOfPresence['waw']->relays as $relay) {
+    echo $relay->ipv4, ':', $relay->minPort, '-', $relay->maxPort, PHP_EOL;
+}
+```
+
+<Aside type="caution" title="The shape is Valve's to change">
+[`GetSupportedAPIList`](#getsupportedapilistrequest) lists the method and its `appid`
+parameter, but Valve documents nothing of the answer. The DTOs are written against payloads
+captured from the live API.
+</Aside>
+
+### GetServersAtAddressRequest
+
+```text frame="none"
+$connector->apps()->serversAtAddress(string $address)
+
+new GetServersAtAddressRequest($address)
+```
+
+<p><Badge text="ISteamApps" variant="note" size="small" />{' '}<Badge text="throws InvalidServerAddressException" variant="danger" size="small" /></p>
+
+Every game server Steam knows at an IPv4 address, or only the one behind `ip:queryport`. An
+address with no servers returns an empty list. Steam serves it anonymously, so the SDK strips
+the configured key from the query, and a connector built without one can send it.
+
+```php
+foreach ($connector->apps()->serversAtAddress('108.181.62.21') as $server) {
+    echo $server->address, ' runs app ', $server->appId, PHP_EOL;
+}
+```
+
+<Aside type="caution" title="The port is the query port">
+The game port or the SourceTV port finds nothing, and an IPv6 address or a hostname raises the
+exception. Steam refuses to look up some addresses, `127.0.0.1` and `10.0.0.1` among them, with
+a "once per minute" message that surfaces as `SteamApiException`.
+</Aside>
+
+### UpToDateCheckRequest
+
+```text frame="none"
+$connector->apps()->upToDateCheck(int $appId, int $version)
+
+new UpToDateCheckRequest($appId, $version)
+```
+
+<p><Badge text="ISteamApps" variant="note" size="small" />{' '}<Badge text="throws AppVersionUnavailableException" variant="danger" size="small" /></p>
+
+Whether a game server's build is still the one Steam accepts, and which version to update
+to if not. Steam serves it anonymously, so the SDK strips the configured key from the query,
+and a connector built without one can send it.
+
+```php
+$check = $connector->apps()->upToDateCheck(440, $installedVersion);
+
+if (! $check->isUpToDate) {
+    echo 'Update to ', $check->requiredVersion, ': ', $check->message, PHP_EOL;
+}
+```
+
+<Aside type="caution" title="Only games with versioned servers answer">
+Steam cannot check a game that publishes no server version, such as Portal 2, and answers it
+exactly like an app ID it does not know, so both raise the exception. App ID `0` is not a
+Steam-wide query here: Steam answers `400`, which surfaces as `SteamApiException`.
+</Aside>
+
+## ISteamNews
+
+### GetNewsForAppRequest
 
 ```text frame="none"
 $connector->news()->appNews(
@@ -250,7 +374,144 @@ An unknown feed name is ignored, so a misspelt one returns every feed, while an 
 returns nothing. Several feeds match any of them; several tags must all match.
 </Aside>
 
-## GetNumberOfCurrentPlayersRequest
+## ISteamUser
+
+### GetFriendListRequest
+
+```text frame="none"
+$connector->users()->friends(SteamId $steamId, ?FriendRelationship $relationship = null)
+
+new GetFriendListRequest($steamId, $relationship)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+The player's friends. Pass a `FriendRelationship` to filter; omit it for all
+relationships. A private friend list is refused with a `401`, not an empty payload.
+
+```php
+use Fkrzski\SteamApiSdk\Enums\FriendRelationship;
+
+$friends = $connector->users()->friends($steamId, FriendRelationship::Friend);
+```
+
+### GetPlayerBansRequest
+
+```text frame="none"
+$connector->users()->bans(list<SteamId> $steamIds, int $concurrency = 5)
+
+new GetPlayerBansRequest($steamIds)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
+
+VAC, game, community and economy ban status. The request takes **1 to 100** players;
+`bans()` takes any number and [splits a longer list](/php-steam-api-sdk/guide#more-than-100-steam-ids).
+Unlike the other batch endpoint this one needs no public profile — bans come back for private
+profiles too.
+
+```php
+$bans = $connector->users()->bans([$steamId]);
+
+foreach ($bans as $ban) {
+    echo $ban->steamId, ' — VAC bans: ', $ban->numberOfVacBans, PHP_EOL;
+}
+```
+
+### GetPlayerSummariesRequest
+
+```text frame="none"
+$connector->users()->summaries(list<SteamId> $steamIds, int $concurrency = 5)
+
+new GetPlayerSummariesRequest($steamIds)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
+
+Public profile summaries. The request takes **1 to 100** players and checks both limits in
+the constructor, so a bad batch costs no quota; `summaries()` takes any number and
+[splits a longer list](/php-steam-api-sdk/guide#more-than-100-steam-ids).
+
+```php
+$summaries = $connector->users()->summaries([$steamId]);
+
+foreach ($summaries as $summary) {
+    echo $summary->personaName, ' — ', $summary->profileUrl, PHP_EOL;
+}
+```
+
+### GetUserGroupListRequest
+
+```text frame="none"
+$connector->users()->groups(SteamId $steamId)
+
+new GetUserGroupListRequest($steamId)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
+
+The Steam groups a player belongs to. Only group IDs come back — Steam exposes no
+group metadata on this endpoint.
+
+```php
+$groups = $connector->users()->groups($steamId);
+
+foreach ($groups as $group) {
+    echo $group->gid, PHP_EOL;
+}
+```
+
+### ResolveVanityUrlRequest
+
+```text frame="none"
+$connector->users()->resolveVanityUrl(string $vanityName)
+
+new ResolveVanityUrlRequest($vanityName)
+```
+
+<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws SteamUserNotFoundException" variant="danger" size="small" /></p>
+
+Resolves a vanity slug — the `<name>` in `steamcommunity.com/id/<name>` — to a
+`SteamId`. Working from a full URL? Run it through
+[`SteamId::extractVanityName()`](/php-steam-api-sdk/guide#the-steamid-value-object) first.
+
+```php
+$steamId = $connector->users()->resolveVanityUrl('gabelogannewell');
+```
+
+## ISteamUserStats
+
+### GetGlobalAchievementPercentagesForAppRequest
+
+```text frame="none"
+$connector->stats()->globalAchievements(int $gameId)
+
+new GetGlobalAchievementPercentagesForAppRequest($gameId)
+```
+
+<p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws StatsUnavailableException" variant="danger" size="small" /></p>
+
+How much of the playerbase has unlocked each achievement in a game, ordered from the most
+common down. Steam serves it anonymously, so the SDK strips the configured key from the
+query, a connector built without one can send it, and no key error can land here. Every `403` is about the game, and covers two
+causes — a game carrying no achievements, or a game ID Steam does not know — because both
+answer identically.
+
+```php
+$achievements = $connector->stats()->globalAchievements(381210);
+
+foreach ($achievements as $achievement) {
+    echo $achievement->apiName, ' — ', $achievement->percent, '%', PHP_EOL;
+}
+```
+
+<Aside type="caution" title="The parameter is gameid, not appid">
+Steam spells this one `gameid`, the only endpoint in the SDK that does, and the SDK follows
+it: the argument is `$gameId` where every other app-scoped method takes `$appId`. The value
+is an ordinary app ID.
+</Aside>
+
+### GetNumberOfCurrentPlayersRequest
 
 ```text frame="none"
 $connector->stats()->currentPlayers(int $appId)
@@ -273,39 +534,7 @@ Steam reads `appid: 0` as a query about the whole platform and returns everyone 
 across it. An app ID it does not know raises the exception instead.
 </Aside>
 
-## GetOwnedGamesRequest
-
-```text frame="none"
-$connector->players()->ownedGames(
-    SteamId $steamId,
-    list<int> $appIdsFilter = [],
-    bool $includeAppInfo = false,
-    bool $includePlayedFreeGames = false,
-)
-
-new GetOwnedGamesRequest($steamId, $appIdsFilter, $includeAppInfo, $includePlayedFreeGames)
-```
-
-<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
-
-The games a player owns. `appIdsFilter` narrows the result to specific app IDs;
-`includeAppInfo` adds names and icons; `includePlayedFreeGames` includes free games
-the player has launched.
-
-```php "includeAppInfo: true"
-$library = $connector->players()->ownedGames(
-    steamId: $steamId,
-    appIdsFilter: [381210],
-    includeAppInfo: true,
-);
-```
-
-<Aside type="caution" title="name and imgIconUrl are opt-in">
-Without `includeAppInfo: true` both properties on every
-[`OwnedGame`](/php-steam-api-sdk/dto-reference#ownedgame) are `null` — Steam does not send them.
-</Aside>
-
-## GetPlayerAchievementsRequest
+### GetPlayerAchievementsRequest
 
 ```text frame="none"
 $connector->stats()->achievements(SteamId $steamId, int $appId, ?Language $language = null)
@@ -340,80 +569,7 @@ ask for a language. `apiName` and `achieved` are always populated. A
 [default on `SteamConfig`](/php-steam-api-sdk/configuration#default-language) counts as asking.
 </Aside>
 
-## GetPlayerBansRequest
-
-```text frame="none"
-$connector->users()->bans(list<SteamId> $steamIds, int $concurrency = 5)
-
-new GetPlayerBansRequest($steamIds)
-```
-
-<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
-
-VAC, game, community and economy ban status. The request takes **1 to 100** players;
-`bans()` takes any number and [splits a longer list](/php-steam-api-sdk/guide#more-than-100-steam-ids).
-Unlike the other batch endpoint this one needs no public profile — bans come back for private
-profiles too.
-
-```php
-$bans = $connector->users()->bans([$steamId]);
-
-foreach ($bans as $ban) {
-    echo $ban->steamId, ' — VAC bans: ', $ban->numberOfVacBans, PHP_EOL;
-}
-```
-
-## GetPlayerSummariesRequest
-
-```text frame="none"
-$connector->users()->summaries(list<SteamId> $steamIds, int $concurrency = 5)
-
-new GetPlayerSummariesRequest($steamIds)
-```
-
-<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
-
-Public profile summaries. The request takes **1 to 100** players and checks both limits in
-the constructor, so a bad batch costs no quota; `summaries()` takes any number and
-[splits a longer list](/php-steam-api-sdk/guide#more-than-100-steam-ids).
-
-```php
-$summaries = $connector->users()->summaries([$steamId]);
-
-foreach ($summaries as $summary) {
-    echo $summary->personaName, ' — ', $summary->profileUrl, PHP_EOL;
-}
-```
-
-## GetRecentlyPlayedGamesRequest
-
-```text frame="none"
-$connector->players()->recentlyPlayedGames(SteamId $steamId, ?int $count = null)
-
-new GetRecentlyPlayedGamesRequest($steamId, $count)
-```
-
-<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
-
-What a player launched in the last two weeks. `count` caps how many games come back,
-while `totalCount` on the result stays the full figure — that is how you tell a truncated
-list from a complete one.
-
-```php "count: 2"
-$recent = $connector->players()->recentlyPlayedGames(steamId: $steamId, count: 2);
-
-foreach ($recent->games as $game) {
-    echo $game->name, ' — ', $game->playtimeTwoWeeks, ' min', PHP_EOL;
-}
-```
-
-<Aside type="caution" title="An idle player is not a failure">
-A player who launched nothing comes back as `totalCount: 0` with an empty `games` list.
-The exception is reserved for the payload Steam withholds, which it sends both for a
-hidden profile and for a SteamID64 that belongs to no account.
-</Aside>
-
-## GetSchemaForGameRequest
+### GetSchemaForGameRequest
 
 ```text frame="none"
 $connector->stats()->schema(int $appId, ?Language $language = null)
@@ -443,37 +599,30 @@ An app that exposes no stats and no achievements — a DLC, a tool, a runtime �
 Only an app ID Steam does not know raises the exception.
 </Aside>
 
-## GetSdrConfigRequest
+### GetUserStatsForGameRequest
 
 ```text frame="none"
-$connector->apps()->sdrConfig(int $appId)
+$connector->stats()->userStats(SteamId $steamId, int $appId, ?Language $language = null)
 
-new GetSdrConfigRequest($appId)
+new GetUserStatsForGameRequest($steamId, $appId, $language)
 ```
 
-<p><Badge text="ISteamApps" variant="note" size="small" />{' '}<Badge text="throws AppNotFoundException" variant="danger" size="small" /></p>
+<p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
 
-The Steam Datagram Relay map a game connects through: every point of presence, where it
-stands, and the IPv4 addresses and ports its relays answer on. A game without a map of its
-own gets Valve's default one, and app ID `0` returns the whole network. Steam serves it
-anonymously, so the SDK strips the configured key from the query, and a connector built
-without one can send it.
+A player's stats and achievement flags for one game. `language` localises achievement
+metadata; see the [`Language`](/php-steam-api-sdk/dto-reference#language) enum.
 
 ```php
-$config = $connector->apps()->sdrConfig(730);
+$stats = $connector->stats()->userStats(steamId: $steamId, appId: 381210);
 
-foreach ($config->pointsOfPresence['waw']->relays as $relay) {
-    echo $relay->ipv4, ':', $relay->minPort, '-', $relay->maxPort, PHP_EOL;
+foreach ($stats->stats as $stat) {
+    echo $stat->name, ' = ', $stat->value, PHP_EOL;
 }
 ```
 
-<Aside type="caution" title="The shape is Valve's to change">
-[`GetSupportedAPIList`](#getsupportedapilistrequest) lists the method and its `appid`
-parameter, but Valve documents nothing of the answer. The DTOs are written against payloads
-captured from the live API.
-</Aside>
+## ISteamWebAPIUtil
 
-## GetServerInfoRequest
+### GetServerInfoRequest
 
 ```text frame="none"
 $connector->webApi()->serverTime()
@@ -492,56 +641,7 @@ Pacific local time with no offset.
 $skew = $connector->webApi()->serverTime()->getTimestamp() - time();
 ```
 
-## GetServersAtAddressRequest
-
-```text frame="none"
-$connector->apps()->serversAtAddress(string $address)
-
-new GetServersAtAddressRequest($address)
-```
-
-<p><Badge text="ISteamApps" variant="note" size="small" />{' '}<Badge text="throws InvalidServerAddressException" variant="danger" size="small" /></p>
-
-Every game server Steam knows at an IPv4 address, or only the one behind `ip:queryport`. An
-address with no servers returns an empty list. Steam serves it anonymously, so the SDK strips
-the configured key from the query, and a connector built without one can send it.
-
-```php
-foreach ($connector->apps()->serversAtAddress('108.181.62.21') as $server) {
-    echo $server->address, ' runs app ', $server->appId, PHP_EOL;
-}
-```
-
-<Aside type="caution" title="The port is the query port">
-The game port or the SourceTV port finds nothing, and an IPv6 address or a hostname raises the
-exception. Steam refuses to look up some addresses, `127.0.0.1` and `10.0.0.1` among them, with
-a "once per minute" message that surfaces as `SteamApiException`.
-</Aside>
-
-## GetSteamLevelRequest
-
-```text frame="none"
-$connector->players()->steamLevel(SteamId $steamId)
-
-new GetSteamLevelRequest($steamId)
-```
-
-<p><Badge text="IPlayerService" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
-
-The player's Steam community level, as a plain `int` rather than a DTO. Hiding game
-details leaves it readable — only a profile Steam withholds altogether comes back empty,
-and that is what raises the exception.
-
-```php
-$level = $connector->players()->steamLevel($steamId);
-```
-
-<Aside type="caution" title="Level 0 also answers for an account that does not exist">
-Steam reports level `0` for a SteamID64 belonging to no account, exactly as it does for a
-brand-new one. Nothing in the payload separates the two, so neither does the SDK.
-</Aside>
-
-## GetSupportedApiListRequest
+### GetSupportedApiListRequest
 
 ```text frame="none"
 $connector->webApi()->supportedApis()
@@ -563,91 +663,3 @@ foreach ($connector->webApi()->supportedApis() as $interface) {
     }
 }
 ```
-
-## GetUserGroupListRequest
-
-```text frame="none"
-$connector->users()->groups(SteamId $steamId)
-
-new GetUserGroupListRequest($steamId)
-```
-
-<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
-
-The Steam groups a player belongs to. Only group IDs come back — Steam exposes no
-group metadata on this endpoint.
-
-```php
-$groups = $connector->users()->groups($steamId);
-
-foreach ($groups as $group) {
-    echo $group->gid, PHP_EOL;
-}
-```
-
-## GetUserStatsForGameRequest
-
-```text frame="none"
-$connector->stats()->userStats(SteamId $steamId, int $appId, ?Language $language = null)
-
-new GetUserStatsForGameRequest($steamId, $appId, $language)
-```
-
-<p><Badge text="ISteamUserStats" variant="note" size="small" />{' '}<Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
-
-A player's stats and achievement flags for one game. `language` localises achievement
-metadata; see the [`Language`](/php-steam-api-sdk/dto-reference#language) enum.
-
-```php
-$stats = $connector->stats()->userStats(steamId: $steamId, appId: 381210);
-
-foreach ($stats->stats as $stat) {
-    echo $stat->name, ' = ', $stat->value, PHP_EOL;
-}
-```
-
-## ResolveVanityUrlRequest
-
-```text frame="none"
-$connector->users()->resolveVanityUrl(string $vanityName)
-
-new ResolveVanityUrlRequest($vanityName)
-```
-
-<p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws SteamUserNotFoundException" variant="danger" size="small" /></p>
-
-Resolves a vanity slug — the `<name>` in `steamcommunity.com/id/<name>` — to a
-`SteamId`. Working from a full URL? Run it through
-[`SteamId::extractVanityName()`](/php-steam-api-sdk/guide#the-steamid-value-object) first.
-
-```php
-$steamId = $connector->users()->resolveVanityUrl('gabelogannewell');
-```
-
-## UpToDateCheckRequest
-
-```text frame="none"
-$connector->apps()->upToDateCheck(int $appId, int $version)
-
-new UpToDateCheckRequest($appId, $version)
-```
-
-<p><Badge text="ISteamApps" variant="note" size="small" />{' '}<Badge text="throws AppVersionUnavailableException" variant="danger" size="small" /></p>
-
-Whether a game server's build is still the one Steam accepts, and which version to update
-to if not. Steam serves it anonymously, so the SDK strips the configured key from the query,
-and a connector built without one can send it.
-
-```php
-$check = $connector->apps()->upToDateCheck(440, $installedVersion);
-
-if (! $check->isUpToDate) {
-    echo 'Update to ', $check->requiredVersion, ': ', $check->message, PHP_EOL;
-}
-```
-
-<Aside type="caution" title="Only games with versioned servers answer">
-Steam cannot check a game that publishes no server version, such as Portal 2, and answers it
-exactly like an app ID it does not know, so both raise the exception. App ID `0` is not a
-Steam-wide query here: Steam answers `400`, which surfaces as `SteamApiException`.
-</Aside>

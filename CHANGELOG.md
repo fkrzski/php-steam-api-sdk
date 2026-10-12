@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `$connector->users()->summaries()` and `bans()` take any number of Steam IDs and cut a list over 100 into requests of 100 that `pool()` sends `concurrency` at a time, 5 by default, each once. The first failure is thrown after the chunks in flight have answered, and no chunk goes out after it ([#121](https://github.com/fkrzski/php-steam-api-sdk/issues/121)).
+
 ## [0.9.0] - 2026-10-09
 
 ### Added

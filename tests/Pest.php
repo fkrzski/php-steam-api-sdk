@@ -115,6 +115,11 @@ function connectionFailure(string $message = 'cURL error 28: Operation timed out
     return new ConnectException($message, new PsrRequest('GET', 'https://api.steampowered.com'));
 }
 
+function dailyHits(SteamConnector $connector): int
+{
+    return $connector->getLimits()[0]->update($connector->rateLimitStore())->getHits();
+}
+
 function friendListRequest(): GetFriendListRequest
 {
     return new GetFriendListRequest(SteamId::fromSteamId64('76561198148125221'));

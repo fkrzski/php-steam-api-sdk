@@ -7,9 +7,9 @@ import { Aside, Badge, FileTree } from '@astrojs/starlight/components';
 
 Every endpoint has two entry points: a resource method on the connector, which sends and
 returns the DTO, and the request class behind it, which you send yourself. Both take the
-same arguments. Every argument that identifies a user is a
-[`SteamId`](/php-steam-api-sdk/guide#the-steamid-value-object); the shapes coming back are
-documented in [Data objects](/php-steam-api-sdk/dto-reference).
+same arguments, except the `concurrency` that `summaries()` and `bans()` add. Every argument
+that identifies a user is a [`SteamId`](/php-steam-api-sdk/guide#the-steamid-value-object); the
+shapes coming back are documented in [Data objects](/php-steam-api-sdk/dto-reference).
 
 Badges list what a request throws on its own. On top of that, any request can raise
 `SteamRateLimitException`, `SteamConnectionException` or `SteamApiException` from the
@@ -343,15 +343,17 @@ ask for a language. `apiName` and `achieved` are always populated. A
 ## GetPlayerBansRequest
 
 ```text frame="none"
-$connector->users()->bans(list<SteamId> $steamIds)
+$connector->users()->bans(list<SteamId> $steamIds, int $concurrency = 5)
 
 new GetPlayerBansRequest($steamIds)
 ```
 
 <p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
 
-VAC, game, community and economy ban status for **1 to 100** players. Unlike the other
-batch endpoint this one needs no public profile — bans come back for private profiles too.
+VAC, game, community and economy ban status. The request takes **1 to 100** players;
+`bans()` takes any number and [splits a longer list](/php-steam-api-sdk/guide#more-than-100-steam-ids).
+Unlike the other batch endpoint this one needs no public profile — bans come back for private
+profiles too.
 
 ```php
 $bans = $connector->users()->bans([$steamId]);
@@ -364,15 +366,16 @@ foreach ($bans as $ban) {
 ## GetPlayerSummariesRequest
 
 ```text frame="none"
-$connector->users()->summaries(list<SteamId> $steamIds)
+$connector->users()->summaries(list<SteamId> $steamIds, int $concurrency = 5)
 
 new GetPlayerSummariesRequest($steamIds)
 ```
 
 <p><Badge text="ISteamUser" variant="note" size="small" />{' '}<Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
 
-Public profile summaries for **1 to 100** players. Both limits are checked in the
-constructor, so a bad batch costs no quota.
+Public profile summaries. The request takes **1 to 100** players and checks both limits in
+the constructor, so a bad batch costs no quota; `summaries()` takes any number and
+[splits a longer list](/php-steam-api-sdk/guide#more-than-100-steam-ids).
 
 ```php
 $summaries = $connector->users()->summaries([$steamId]);

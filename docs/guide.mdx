@@ -82,9 +82,9 @@ $summaries = $response->dto();
 ```
 
 The connector uses Saloon's `AlwaysThrowOnErrors`, so a non-2xx response fails before the
-DTO is built — always as an SDK exception, never a Saloon one. The same holds when no
-response comes back at all, through `send()`, `sendAsync()` and `pool()` alike. A `200` whose
-payload reports a failure, one of the two `200` rows in the
+DTO is built — always as an [SDK exception](/php-steam-api-sdk/exceptions), never a Saloon
+one. The same holds when no response comes back at all, through `send()`, `sendAsync()` and
+`pool()` alike. A `200` whose payload reports a failure, one of the two `200` rows in the
 [mapping table](/php-steam-api-sdk/exceptions#how-statuses-are-mapped), fails the same way, so
 `send()` never hands back its response. Which call returns which DTO is in the
 [API reference](/php-steam-api-sdk/api-reference).

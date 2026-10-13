@@ -8,7 +8,7 @@ import { Aside } from '@astrojs/starlight/components';
 Every request returns readonly DTOs — immutable objects with typed, public properties.
 Timestamps are always `DateTimeImmutable`. A nullable property (`?`) means Steam omitted
 the field, never that decoding failed; where an absent field would be ambiguous the SDK
-raises a [domain exception](/php-steam-api-sdk/guide#exceptions) instead.
+raises a [domain exception](/php-steam-api-sdk/exceptions) instead.
 
 ## AppNews
 

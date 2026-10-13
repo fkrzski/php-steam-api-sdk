@@ -1,6 +1,6 @@
 ---
 title: Guide
-description: The SteamId value object, the resources that return readonly DTOs, pooled requests, the exception hierarchy, debugging hooks and testing.
+description: The SteamId value object, the resources that return readonly DTOs, pooled requests, the exception hierarchy and testing.
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -272,102 +272,6 @@ and `GetNewsForApp` answer an app ID Steam does not know exactly like an app wit
 report: a `403` for a game without achievements, `success: false` for one without versioned
 servers, and a `403` for an app whose news Steam does not publish. Every message names every
 cause rather than guessing.
-</Aside>
-
-## Debugging
-
-`debug()`, `debugRequest()` and `debugResponse()` are Saloon's. They register on the
-connector, so every call after them is dumped. A dump pasted into an issue or a log is where
-a key leaks, so the API key comes out masked as `key=***`:
-
-```php
-$connector->debug()->users()->summaries([$id]);
-```
-
-```text frame="terminal" title="php steam.php" "key=***"
-Saloon Request (GetPlayerSummariesRequest) -> array:6 [
-  "connector" => "Fkrzski\SteamApiSdk\SteamConnector"
-  "request" => "Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest"
-  "method" => "GET"
-  "uri" => "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=***&steamids=76561197960435530"
-  "headers" => array:1 [
-    "Host" => "api.steampowered.com"
-  ]
-  "body" => ""
-]
-```
-
-The default dumper is `symfony/var-dumper`, which the SDK suggests rather than requires:
-
-```bash
-composer require --dev symfony/var-dumper
-```
-
-<Aside type="caution" title="A missing dumper fails late">
-Without it, `debug()` itself succeeds and the first request then dies on
-`Class "Symfony\Component\VarDumper\VarDumper" not found`. Callables of your own passed to
-`debugRequest()` and `debugResponse()` need nothing.
-</Aside>
-
-A callable passed to `debugRequest()` gets the same masked PSR request, and only that request
-is masked. The `PendingRequest` beside it, the `Response` in `debugResponse()`, and
-`debugRequest()` called on a request object rather than the connector all still reach the key.
-
-### Request and response hooks
-
-`onRequest()` and `onResponse()` fire on every attempt, retries included, with a payload that
-carries no API key. Hooks run in the order they were registered:
-
-```php
-use Fkrzski\SteamApiSdk\Hooks\RequestSending;
-use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
-
-$connector
-    ->onRequest(fn (RequestSending $request) => $logger->debug($request->method, $request->query))
-    ->onResponse(fn (ResponseReceived $response) => $logger->info(sprintf(
-        '%s answered %d in %.3fs on attempt %d',
-        $response->method,
-        $response->status,
-        $response->duration,
-        $response->attempt,
-    )));
-```
-
-| Property | Type | Value |
-| --- | --- | --- |
-| `method` | `string` | `ISteamUser/GetPlayerSummaries/v2` |
-| `query` | `array<string, mixed>` | the query Steam receives, without `key` |
-| `attempt` | `int` | `1`, then `2` for the first retry; always `1` under `sendAsync()` and `pool()` |
-| `status` | `int` | `ResponseReceived` only: the HTTP status |
-| `duration` | `float` | `ResponseReceived` only: seconds from sending to the answer, `onRequest` hooks excluded |
-
-A `429` reaches `onResponse` before the rate limiter turns it into `SteamRateLimitException`.
-A request refused locally, for the quota or a missing key, fires neither hook, and an attempt
-Steam never answered fires `onRequest` alone. `middleware()` still covers headers, the body
-and anything else lower-level, key included.
-
-<Aside type="caution" title="A throwing hook fails the call">
-An exception thrown in a hook reaches the caller in place of Steam's result and ends the
-retries. Thrown in `onRequest`, it keeps the request from being sent at all.
-</Aside>
-
-### Failure hook
-
-`onFailure()` fires once per call with the exception the caller is about to get: after the
-retries are spent, and as the SDK exception rather than Saloon's.
-
-```php
-$connector->onFailure(fn (Throwable $e) => $logger->error($e->getMessage(), ['exception' => $e]));
-```
-
-It fires for a request refused locally, for the quota or a missing key, which neither hook above
-sees, and for an exception thrown by another hook or a middleware. Under `sendAsync()` and
-`pool()` it fires once for every request that fails, before its promise rejects, and so it does
-for every chunk that fails in a [list over 100 IDs](#more-than-100-steam-ids).
-
-<Aside type="caution" title="A throwing failure hook fails silently">
-An exception thrown in `onFailure` is dropped: the caller still gets the original, and the hooks
-registered after it still run. A broken logger leaves no trace.
 </Aside>
 
 ## Testing

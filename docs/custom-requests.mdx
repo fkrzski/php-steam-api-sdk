@@ -7,8 +7,8 @@ import { Aside } from '@astrojs/starlight/components';
 
 A method the SDK does not cover is one Saloon `Request` away. Sent through `SteamConnector`, it
 gets what the shipped requests get: the API key, the [rate limit](/php-steam-api-sdk/rate-limiting),
-retries, [hooks](/php-steam-api-sdk/hooks-and-debugging), `debug()` with the key masked, and SDK
-exceptions.
+retries, [hooks](/php-steam-api-sdk/hooks-and-debugging), `debug()` with the key masked, and
+[SDK exceptions](/php-steam-api-sdk/exceptions).
 
 ```php title="src/Steam/GetCmListRequest.php"
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
@@ -93,7 +93,7 @@ final class LocalisedRequest extends Request implements HasLanguage
 
 ## Failures
 
-A request with no mapping of its own fails as the [status table](/php-steam-api-sdk/guide#how-statuses-are-mapped)
+A request with no mapping of its own fails as the [status table](/php-steam-api-sdk/exceptions#how-statuses-are-mapped)
 says for any endpoint: a key error raises `InvalidApiKeyException`, any other `401` or `403`
 raises `ProfileNotPublicException`, and every other `4xx` or `5xx` raises `SteamApiException`. A
 `5xx` and a request Steam never answered are [retried](/php-steam-api-sdk/configuration#retries).

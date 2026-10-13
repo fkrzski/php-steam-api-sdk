@@ -112,9 +112,10 @@ $connector->pool(
 ```
 
 A failure reaches `exceptionHandler` as the SDK exception, a hidden profile Steam reports in a
-`200` included, and fires `onFailure()`. Each request goes out once, whatever `tries` says, and
-every answer counts against the [budget](/php-steam-api-sdk/rate-limiting). `sendAsync()` sends
-one request the same way and returns a promise that rejects with the same exceptions.
+`200` included, and fires [`onFailure()`](/php-steam-api-sdk/hooks-and-debugging#failure-hook).
+Each request goes out once, whatever `tries` says, and every answer counts against the
+[budget](/php-steam-api-sdk/rate-limiting). `sendAsync()` sends one request the same way and
+returns a promise that rejects with the same exceptions.
 
 ### More than 100 Steam IDs
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Saloon\Contracts\Sender;
 use Saloon\Http\BaseResource;
@@ -69,3 +70,27 @@ arch('exceptions extend the SDK root exception')
 arch('connector extends the Saloon connector')
     ->expect(SteamConnector::class)
     ->toExtend(Connector::class);
+
+arch('test factories are final readonly classes')
+    ->expect('Fkrzski\SteamApiSdk\Testing\Factories')
+    ->toBeClasses()
+    ->toBeFinal()
+    ->toBeReadonly()
+    ->toHaveSuffix('Factory');
+
+// One target per rule: Pest lets a used class through when expect() gets several.
+foreach ([
+    'Fkrzski\SteamApiSdk\Contracts',
+    'Fkrzski\SteamApiSdk\Dto',
+    'Fkrzski\SteamApiSdk\Enums',
+    'Fkrzski\SteamApiSdk\Exceptions',
+    'Fkrzski\SteamApiSdk\Hooks',
+    'Fkrzski\SteamApiSdk\Http',
+    'Fkrzski\SteamApiSdk\ValueObjects',
+    SteamConfig::class,
+    SteamConnector::class,
+] as $layer) {
+    arch("{$layer} never reaches into the testing helpers")
+        ->expect($layer)
+        ->not->toUse('Fkrzski\SteamApiSdk\Testing');
+}

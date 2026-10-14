@@ -4,10 +4,12 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use Fkrzski\SteamApiSdk\Testing\SteamFake;
 use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Saloon\Contracts\Sender;
 use Saloon\Http\BaseResource;
 use Saloon\Http\Connector;
+use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Request;
 
 arch('PHP best practices preset')
@@ -82,6 +84,18 @@ arch('test factories are final readonly classes')
 arch('the response builders are final')
     ->expect(SteamResponse::class)
     ->toBeFinal();
+
+arch('resource fakes are final readonly classes')
+    ->expect('Fkrzski\SteamApiSdk\Testing\Fakes')
+    ->toBeClasses()
+    ->toBeFinal()
+    ->toBeReadonly()
+    ->toHaveSuffix('Fake');
+
+arch('the fake is a final Saloon mock client')
+    ->expect(SteamFake::class)
+    ->toBeFinal()
+    ->toExtend(MockClient::class);
 
 // One target per rule: Pest lets a used class through when expect() gets several.
 foreach ([

@@ -141,6 +141,11 @@ function networkFailure(string $message = 'cURL error 28: Operation timed out af
     };
 }
 
+function steamId(): SteamId
+{
+    return SteamId::fromSteamId64('76561198000000000');
+}
+
 function fakedConnector(MockClient $mockClient, SteamConfig $config = new SteamConfig('test-key')): SteamConnector
 {
     return new SteamConnector($config)->withMockClient($mockClient);

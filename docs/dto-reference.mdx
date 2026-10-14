@@ -3,8 +3,6 @@ title: Data objects
 description: The readonly DTOs and enums the SDK decodes Steam responses into — every property with its type, plus the enum cases behind player state and visibility.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
 Every request returns readonly DTOs — immutable objects with typed, public properties.
 Timestamps are always `DateTimeImmutable`. A nullable property (`?`) means Steam omitted
 the field, never that decoding failed; where an absent field would be ambiguous the SDK

@@ -3,8 +3,6 @@ title: Rate limiting
 description: How the connector meters Steam's 100 000 daily requests per API key — the UTC reset, the cool-down after a 429, your own limits and shared stores.
 ---
 
-import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
-
 The Steam Web API allows **100 000 requests per API key per day**. The connector
 enforces this via [`saloonphp/rate-limit-plugin`](https://github.com/saloonphp/rate-limit-plugin)
 and throws `SteamRateLimitException` once the budget is spent — locally, before a

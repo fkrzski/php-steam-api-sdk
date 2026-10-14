@@ -3,8 +3,6 @@ title: Custom requests
 description: Send a Steam Web API method the SDK does not ship through the connector, with the key handling, rate limit, retries, hooks and exceptions it already applies.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
 A method the SDK does not cover is one Saloon `Request` away. Sent through `SteamConnector`, it
 gets what the shipped requests get: the API key, the [rate limit](/php-steam-api-sdk/rate-limiting),
 retries, [hooks](/php-steam-api-sdk/hooks-and-debugging), `debug()` with the key masked, and

@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Saloon\Contracts\Sender;
 use Saloon\Http\BaseResource;
 use Saloon\Http\Connector;
@@ -77,6 +78,10 @@ arch('test factories are final readonly classes')
     ->toBeFinal()
     ->toBeReadonly()
     ->toHaveSuffix('Factory');
+
+arch('the response builders are final')
+    ->expect(SteamResponse::class)
+    ->toBeFinal();
 
 // One target per rule: Pest lets a used class through when expect() gets several.
 foreach ([

@@ -1,0 +1,472 @@
+---
+title: Testing
+description: Fake the Steam Web API with SteamFake — build payloads from DTO factories, fake the failures Steam sends, and assert on the requests you send.
+---
+
+`Testing\SteamFake` is a Saloon [`MockClient`](https://docs.saloon.dev/testing/recording-responses)
+that fakes each endpoint through the same resource chain your code calls. Attach it with
+`withMockClient()`: no request leaves the machine, and the DTOs come from the payloads the
+factories build.
+
+## Faking responses
+
+<Tabs syncKey="php-test-runner">
+  <TabItem label="Pest">
+    ```php title="tests/PlayerSummariesTest.php"
+    use Fkrzski\SteamApiSdk\SteamConfig;
+    use Fkrzski\SteamApiSdk\SteamConnector;
+    use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
+    use Fkrzski\SteamApiSdk\Testing\SteamFake;
+    use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+
+    it('reads the persona name off a summary', function (): void {
+        $fake = new SteamFake()->users()->summaries(
+            PlayerSummaryFactory::new()->personaName('Gabe')->online(),
+        );
+
+        $connector = new SteamConnector(new SteamConfig('test-key'))->withMockClient($fake);
+
+        $summaries = $connector->users()->summaries([SteamId::fromSteamId64('76561198000000000')]);
+
+        expect($summaries[0]->personaName)->toBe('Gabe');
+    });
+    ```
+  </TabItem>
+  <TabItem label="PHPUnit">
+    ```php title="tests/PlayerSummariesTest.php"
+    use Fkrzski\SteamApiSdk\SteamConfig;
+    use Fkrzski\SteamApiSdk\SteamConnector;
+    use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
+    use Fkrzski\SteamApiSdk\Testing\SteamFake;
+    use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+
+    final class PlayerSummariesTest extends TestCase
+    {
+        public function test_it_reads_the_persona_name_off_a_summary(): void
+        {
+            $fake = new SteamFake()->users()->summaries(
+                PlayerSummaryFactory::new()->personaName('Gabe')->online(),
+            );
+
+            $connector = new SteamConnector(new SteamConfig('test-key'))->withMockClient($fake);
+
+            $summaries = $connector->users()->summaries([SteamId::fromSteamId64('76561198000000000')]);
+
+            $this->assertSame('Gabe', $summaries[0]->personaName);
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+Each method registers the response under the request class its endpoint sends and hands the
+fake back, so the chain moves resource by resource. Faking the same endpoint twice keeps the
+second.
+
+A method wrapping a collection takes as many factories as you want, and an empty call fakes an
+empty result. The rest take exactly what their envelope carries: one container factory, a
+plain number, a `SteamId` or a moment:
+
+```php
+$fake = new SteamFake()
+    ->users()->summaries()                           // no players matched
+    ->users()->friends($first, $second, $third)      // three friends
+    ->players()->badges(PlayerBadgesFactory::new())  // the badges envelope
+    ->players()->steamLevel(42)                      // a level, no factory
+    ->stats()->currentPlayers(12_345)                // a head count, no factory
+    ->webApi()->serverInfo(new DateTimeImmutable()); // Steam's clock, no factory
+```
+
+The fake swaps the HTTP client, not the connector, so a request that needs a key still raises
+`ApiKeyNotConfiguredException` on a config [without one](/php-steam-api-sdk/configuration#without-an-api-key).
+Give the test config any key: it never leaves the machine.
+
+`new SteamFake()` also takes a map of request class → response, for a
+[request of your own](/php-steam-api-sdk/custom-requests) or a `MockResponse` the chain does not
+build. `SteamResponse` holds the builder behind every method, and the map combines with a chain:
+
+```php
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerBansRequest;
+use Fkrzski\SteamApiSdk\Testing\SteamResponse;
+
+$fake = new SteamFake([
+    GetPlayerBansRequest::class => SteamResponse::playerBans(
+        PlayerBanFactory::new()->vacBanned(),
+    ),
+])->users()->summaries();
+```
+
+<Aside title="Why a builder per endpoint">
+No two endpoints agree on where the collection goes: `GetPlayerBans` puts it at the top level,
+`GetFriendList` under `friendslist.friends`, `GetOwnedGames` under `response.games` beside the
+`game_count` the SDK reads to decide whether the profile is public at all.
+</Aside>
+
+| Chain | Builder | Request |
+| --- | --- | --- |
+| `->users()->summaries()` | `SteamResponse::playerSummaries()` | `GetPlayerSummariesRequest` |
+| `->users()->bans()` | `SteamResponse::playerBans()` | `GetPlayerBansRequest` |
+| `->users()->friends()` | `SteamResponse::friendList()` | `GetFriendListRequest` |
+| `->users()->groups()` | `SteamResponse::userGroupList()` | `GetUserGroupListRequest` |
+| `->users()->resolveVanityUrl()` | `SteamResponse::vanityUrl()` | `ResolveVanityUrlRequest` |
+| `->players()->ownedGames()` | `SteamResponse::ownedGames()` | `GetOwnedGamesRequest` |
+| `->players()->recentlyPlayedGames()` | `SteamResponse::recentlyPlayedGames()` | `GetRecentlyPlayedGamesRequest` |
+| `->players()->steamLevel()` | `SteamResponse::steamLevel()` | `GetSteamLevelRequest` |
+| `->players()->badges()` | `SteamResponse::badges()` | `GetBadgesRequest` |
+| `->players()->communityBadgeProgress()` | `SteamResponse::communityBadgeProgress()` | `GetCommunityBadgeProgressRequest` |
+| `->stats()->userStats()` | `SteamResponse::userStats()` | `GetUserStatsForGameRequest` |
+| `->stats()->achievements()` | `SteamResponse::playerAchievements()` | `GetPlayerAchievementsRequest` |
+| `->stats()->currentPlayers()` | `SteamResponse::currentPlayers()` | `GetNumberOfCurrentPlayersRequest` |
+| `->stats()->globalAchievements()` | `SteamResponse::globalAchievements()` | `GetGlobalAchievementPercentagesForAppRequest` |
+| `->stats()->schema()` | `SteamResponse::gameSchema()` | `GetSchemaForGameRequest` |
+| `->apps()->upToDateCheck()` | `SteamResponse::upToDateCheck()` | `UpToDateCheckRequest` |
+| `->apps()->serversAtAddress()` | `SteamResponse::serversAtAddress()` | `GetServersAtAddressRequest` |
+| `->apps()->sdrConfig()` | `SteamResponse::sdrConfig()` | `GetSdrConfigRequest` |
+| `->news()->appNews()` | `SteamResponse::appNews()` | `GetNewsForAppRequest` |
+| `->news()->newsFeed()` | `SteamResponse::newsFeed()` | `GetNewsForAppRequest` |
+| `->webApi()->serverInfo()` | `SteamResponse::serverInfo()` | `GetServerInfoRequest` |
+| `->webApi()->supportedApiList()` | `SteamResponse::supportedApiList()` | `GetSupportedApiListRequest` |
+
+## DTO factories
+
+Every DTO the SDK returns has a factory for the payload Steam sends, under
+`Testing\Factories` and the interface whose endpoint returns it, as the requests are.
+`::new()` gives a complete, realistic record you can narrow:
+
+```php
+use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
+
+PlayerSummaryFactory::new()->toArray();   // the raw payload
+PlayerSummaryFactory::new()->make();      // the PlayerSummary DTO
+```
+
+Reach for `make()` when a test needs the DTO directly: seeding a repository, or exercising a
+method that takes a `PlayerSummary` with no HTTP in the picture.
+
+Named states cover the variations worth naming, and compose:
+
+```php
+PlayerSummaryFactory::new()->private();                      // hidden profile
+PlayerSummaryFactory::new()->friendsOnly();                  // friends-only profile
+PlayerSummaryFactory::new()->online()->inGame('730', 'CS2'); // online, in a game
+PlayerBanFactory::new()->vacBanned(2)->communityBanned();
+OwnedGameFactory::new()->withAppInfo()->neverPlayed();
+RecentlyPlayedGamesFactory::new()->nothingPlayed();
+BadgeFactory::new()->communityItem()->withoutApp();
+CommunityBadgeQuestFactory::new()->incomplete();
+PlayerAchievementFactory::new()->locked();
+UserStatsFactory::new()->empty();
+SchemaAchievementFactory::new()->hidden()->withoutDescription();
+GameSchemaFactory::new()->empty();
+AppVersionCheckFactory::new()->outOfDate(requiredVersion: 10828683);
+GameServerFactory::new()->insecure()->withoutSpectatorPort();
+SdrPointOfPresenceFactory::new()->withoutRelays();
+NewsItemFactory::new()->communityAnnouncement()->internalUrl()->withoutAuthor();
+WebApiMethodFactory::new()->post()->withoutDescription();
+WebApiParameterFactory::new()->optional()->emptyDescription();
+```
+
+`private()` withholds everything Steam does on a hidden profile, the creation date included,
+so the summary carries a null `timeCreated`. `friendsOnly()` withholds the same and reads back
+as `CommunityVisibility::FriendsOnly`.
+
+`empty()` on `GameSchemaFactory` builds what an app publishing no schema answers with: Steam
+drops every key, so the DTO comes back with a null `gameName` and two empty lists. `unnamed()`
+on `GameSchemaFactory` and `SchemaStatFactory` sends the empty name Steam really sends, which
+the DTO reads back as null.
+
+`withoutSpectatorPort()` sends the `0` Steam sends for a server without SourceTV and
+`withoutAuthor()` the `''` of a post without a byline; the DTO reads both as null.
+`withoutRelays()` drops the key the way Steam does. A Web API description goes missing both
+ways: `withoutDescription()` drops the key, as Steam does on most methods, `emptyDescription()`
+sends the `''` some parameters carry, and the DTO reads either as null.
+
+`state()` covers the rest, raw payload keys merged over the defaults:
+
+```php
+PlayerSummaryFactory::new()->state(['profileurl' => 'https://example.test/']);
+```
+
+The container factories take the item factories:
+
+```php
+UserStatsFactory::new()->stats(
+    UserStatFactory::new()->name('DBD_KillerSkulls')->value(1200),
+);
+
+PlayerAchievementsFactory::new()->achievements(
+    PlayerAchievementFactory::new(),
+    PlayerAchievementFactory::new()->locked(),
+);
+
+GameSchemaFactory::new()->stats(
+    SchemaStatFactory::new()->apiName('DBD_KillerSkulls'),
+)->achievements(
+    SchemaAchievementFactory::new()->apiName('ACH_ESCAPE'),
+);
+
+SdrConfigFactory::new()->pointsOfPresence(
+    SdrPointOfPresenceFactory::new()->code('waw')->latitude(52.23)->longitude(21.01)->relays(
+        SdrRelayFactory::new()->ipv4('155.133.240.10')->ports(27015, 27060),
+    ),
+);
+
+WebApiInterfaceFactory::new()->name('ISteamUser')->methods(
+    WebApiMethodFactory::new()->name('GetPlayerSummaries')->version(2)->parameters(
+        WebApiParameterFactory::new()->name('steamids'),
+    ),
+);
+```
+
+A point of presence carries its code into the key of `pops` rather than the payload, and
+`latitude()` and `longitude()` write `geo` in Valve's `[longitude, latitude]` order, so set
+them by name rather than through `state()`.
+
+`RecentlyPlayedGamesFactory::games()` syncs `total_count` to what it lists, so `totalCount()`
+comes after it to fake the window Steam counted more games in than it returned.
+`AppNewsFactory::items()` and `total()` work the same way, for page one of many:
+
+```php
+RecentlyPlayedGamesFactory::new()->games(
+    RecentlyPlayedGameFactory::new()->name('Dead by Daylight')->playedRecently(240),
+)->totalCount(12);
+
+AppNewsFactory::new()->items(
+    NewsItemFactory::new()->title('Patch notes'),
+)->total(250);
+```
+
+| Namespace under `Fkrzski\SteamApiSdk\Testing\Factories` | Factories |
+| --- | --- |
+| `ISteamUser` | `PlayerSummaryFactory`, `PlayerBanFactory`, `FriendFactory`, `UserGroupFactory` |
+| `IPlayerService` | `OwnedGameFactory`, `RecentlyPlayedGameFactory`, `RecentlyPlayedGamesFactory`, `BadgeFactory`, `PlayerBadgesFactory`, `CommunityBadgeQuestFactory` |
+| `ISteamUserStats` | `UserStatFactory`, `UserStatAchievementFactory`, `UserStatsFactory`, `PlayerAchievementFactory`, `PlayerAchievementsFactory`, `GlobalAchievementFactory`, `GameSchemaFactory`, `SchemaStatFactory`, `SchemaAchievementFactory` |
+| `ISteamApps` | `AppVersionCheckFactory`, `GameServerFactory`, `SdrConfigFactory`, `SdrPointOfPresenceFactory`, `SdrRelayFactory` |
+| `ISteamNews` | `AppNewsFactory`, `NewsItemFactory` |
+| `ISteamWebAPIUtil` | `WebApiInterfaceFactory`, `WebApiMethodFactory`, `WebApiParameterFactory` |
+
+## More than 100 Steam IDs
+
+`summaries()` and `bans()` cut a list [over 100 IDs](/php-steam-api-sdk/guide#more-than-100-steam-ids)
+into requests of 100. On the fake, each request gets the faked players it asks for, so 150 IDs
+against 150 faked players return each player once:
+
+```php
+$fake = new SteamFake()->users()->summaries(...array_map(
+    fn (SteamId $steamId): PlayerSummaryFactory => PlayerSummaryFactory::new()->steamId($steamId),
+    $steamIds,
+));
+
+$connector->withMockClient($fake)->users()->summaries($steamIds); // 150 summaries, 2 requests
+```
+
+A request that asks for none of the faked players gets all of them, so a test that never
+matched the IDs keeps working.
+
+## Faking paged news
+
+`->news()->newsFeed()` takes a whole feed rather than one page: the items newest first, each
+with its own `id()`. It answers every `GetNewsForAppRequest` with the page Steam would send for
+its `count`, 20 without one, and `endDate`, for code that pages through older news:
+
+```php
+$fake = new SteamFake()->news()->newsFeed(...$items);
+
+$page = $connector->news()->appNews(appId: 440, count: 20);
+$older = $connector->news()->appNews(appId: 440, count: 20, endDate: array_last($page->items)->publishedAt);
+```
+
+Steam counts `endDate` in, so the next page opens on the item the last one ended with.
+`feeds`, `tags` and `maxlength` are not applied, so pass only the items a filtered feed would
+hold. `SteamResponse::newsFeed()` returns the closure behind it, which the map takes too.
+
+## Faking failures
+
+Each endpoint names the refusals Steam answers it with beside it, so the test gets the
+exception the SDK raises for that endpoint:
+
+| Chain | Builder | Raises |
+| --- | --- | --- |
+| `->users()->friendsNotPublic()`, `->users()->groupsNotPublic()` | `SteamResponse::profileNotPublic()` | `ProfileNotPublicException` |
+| `->players()->ownedGamesNotPublic()`, and the same on the other four IPlayerService endpoints | `SteamResponse::playerServiceNotPublic()` | `ProfileNotPublicException` |
+| `->stats()->userStatsNotPublic()` | `SteamResponse::statsRefused()` | `ProfileNotPublicException` |
+| `->stats()->achievementsUnavailable()` | `SteamResponse::statsRefused()` | `StatsUnavailableException` |
+| `->stats()->currentPlayersAppNotFound()` | `SteamResponse::appNotFound()` | `AppNotFoundException` |
+| `->stats()->schemaAppNotFound()` | `SteamResponse::schemaAppNotFound()` | `AppNotFoundException` |
+| `->stats()->globalAchievementsUnavailable()` | `SteamResponse::globalAchievementsRefused()` | `StatsUnavailableException` |
+| `->users()->vanityUrlNotFound()` | `SteamResponse::vanityNotFound()` | `SteamUserNotFoundException` |
+| `->apps()->upToDateCheckUnavailable()` | `SteamResponse::appVersionUnavailable()` | `AppVersionUnavailableException` |
+| `->apps()->serversAtAddressInvalid()` | `SteamResponse::invalidServerAddress()` | `InvalidServerAddressException` |
+| `->apps()->serversAtAddressRefused()` | `SteamResponse::serversAtAddressRefused()` | `SteamApiException` |
+| `->apps()->sdrConfigAppNotFound()` | `SteamResponse::sdrConfigAppNotFound()` | `AppNotFoundException` |
+| `->news()->appNewsUnavailable()` | `SteamResponse::appNewsUnavailable()` | `AppNewsUnavailableException` |
+| `->webApi()->supportedApiListInvalidKey()` | `SteamResponse::supportedApiListInvalidKey()` | `InvalidApiKeyException` |
+| `->invalidApiKey()` | `SteamResponse::invalidApiKey()` | `InvalidApiKeyException` |
+| — | `SteamResponse::apiKeyUnauthorized()` | `InvalidApiKeyException` |
+| — | `SteamResponse::apiKeyMissing()` | `InvalidApiKeyException` |
+| `->connectionFailed()` | `SteamResponse::connectionFailed()` | `SteamConnectionException` |
+| `->tooManyRequests()` | `SteamResponse::tooManyRequests()` | `SteamRateLimitException` |
+
+<Tabs syncKey="php-test-runner">
+  <TabItem label="Pest">
+    ```php
+    use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+
+    it('surfaces a private friend list', function (): void {
+        $connector = new SteamConnector(new SteamConfig('test-key'))
+            ->withMockClient(new SteamFake()->users()->friendsNotPublic());
+
+        $connector->users()->friends($steamId);
+    })->throws(ProfileNotPublicException::class);
+    ```
+  </TabItem>
+  <TabItem label="PHPUnit">
+    ```php
+    use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+
+    $connector = new SteamConnector(new SteamConfig('test-key'))
+        ->withMockClient(new SteamFake()->users()->friendsNotPublic());
+
+    $this->expectException(ProfileNotPublicException::class);
+
+    $connector->users()->friends($steamId);
+    ```
+  </TabItem>
+</Tabs>
+
+`->invalidApiKey()`, `->connectionFailed()` and `->tooManyRequests()` sit on the fake itself
+and answer every request that has no response of its own, so a chain can fake one endpoint and
+let the rest fail. The key builders without a method fit any request class in the map.
+
+<Aside type="caution" title="A connector of your own">
+Saloon matches those three by the connector's class, so a subclass of `SteamConnector` gets
+`NoMockResponseFoundException` instead. Key the builder by your class in the map:
+`new SteamFake([MyConnector::class => SteamResponse::invalidApiKey()])`.
+</Aside>
+
+Three shapes because Steam genuinely answers three ways: `profileNotPublic()` is a `401`,
+`playerServiceNotPublic()` a **`200`** whose only tell is the missing key the endpoint reads
+(`game_count` for `ownedGames()`, `player_level` for `steamLevel()` and `badges()`), and
+`statsRefused()` a `400` with an empty JSON object, which the two ISteamUserStats endpoints
+read as different exceptions, because the cause is ambiguous and the SDK does not guess.
+
+The endpoints taking an app ID refuse it four more ways: `appNotFound()` is a `404` carrying
+`result: 42`, `schemaAppNotFound()` a bare `400`, `globalAchievementsRefused()` a `403` with an
+empty JSON object for a game with no achievements and an unknown one alike, and
+`sdrConfigAppNotFound()` a `500` carrying `Failed to get appinfo`, raised before the connector
+can retry it. `schemaAppNotFound()` returns byte for byte what `statsRefused()` does and keeps
+its own name because only the endpoint says which failure a test is faking.
+`appNewsUnavailable()` is the empty `403` again, which `GetNewsForApp` answers an unknown app
+and one whose news it does not publish with.
+
+`UpToDateCheck` and `GetServersAtAddress` refuse with a `200` and `success: false`.
+`appVersionUnavailable()` covers an unknown app and one without server versions alike, and
+`serversAtAddressRefused()` is the per-IP refusal the SDK raises as the root
+`SteamApiException`, so only the builder's name says which failure it is.
+
+A rejected key lands on `403` or `401`, whichever the endpoint picks: `invalidApiKey()` fakes
+the first, `apiKeyUnauthorized()` the second, which `GetCommunityBadgeProgress` answers with.
+`GetSupportedAPIList` answers a JSON `403` with an empty interface list instead of the HTML
+page, and `supportedApiListInvalidKey()` fakes that.
+
+`tooManyRequests()` raises `SteamRateLimitException` the way Steam's own `429` does, and starts
+the [cool-down](/php-steam-api-sdk/rate-limiting#after-a-429) with it: every request after it
+is refused locally, before the fake can answer, for `Retry-After` seconds when you pass them.
+`TooManySteamIdsException` comes from a request constructor given more than 100 IDs, and a
+spent local budget from the limiter before any response exists, so neither has a builder.
+
+## Rate limits in tests
+
+The default `MemoryStore` keeps its backing array static, so the budget and the lock after a
+faked `429` outlive the test, and the next one using the same key fails with
+`SteamRateLimitException`. `new SteamFake()` clears the store, so a test that builds its fake
+first starts with a fresh budget and no lock.
+
+A test on a plain `MockClient`, or one sending before it builds the fake, still needs the store
+cleared in its setup. A [store of your own](/php-steam-api-sdk/rate-limiting#sharing-the-budget-across-processes)
+is yours to reset:
+
+<Tabs syncKey="php-test-runner">
+  <TabItem label="Pest">
+    ```php title="tests/Pest.php"
+    use Saloon\RateLimitPlugin\Stores\MemoryStore;
+
+    beforeEach(fn () => MemoryStore::clear());
+    ```
+  </TabItem>
+  <TabItem label="PHPUnit">
+    ```php title="tests/TestCase.php"
+    use Saloon\RateLimitPlugin\Stores\MemoryStore;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        MemoryStore::clear();
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="One fake per test">
+The store is shared by every connector in the process, so a second `SteamFake` built halfway
+through a test resets the counters of the first one's connector too.
+</Aside>
+
+## Retries
+
+The fake keeps the [`tries`](/php-steam-api-sdk/configuration#retries) the connector's config
+sets, so a faked `5xx` is retried and every attempt is counted. `retryInterval` is `0` unless
+the test config sets one, and Saloon sleeps for real between tries when it does:
+
+```php
+use Saloon\Http\Faking\MockResponse;
+
+$fake = new SteamFake([
+    GetPlayerSummariesRequest::class => MockResponse::make(status: 503),
+]);
+
+$connector = new SteamConnector(new SteamConfig('test-key', tries: 3))->withMockClient($fake);
+
+try {
+    $connector->users()->summaries([$steamId]);
+} catch (SteamApiException) {
+    // raised once the third attempt fails too
+}
+
+$fake->assertSentCount(3);
+```
+
+`connectionFailed()` is retried the same way, but Saloon throws it before recording a
+response, so the recorded traffic and the assertions never see the attempt. Assert on the
+exception.
+
+## Asserting
+
+`SteamFake` is a `MockClient`, so Saloon's assertions run on it directly:
+
+```php
+$fake->assertSent(GetPlayerSummariesRequest::class);
+$fake->assertNotSent(GetPlayerBansRequest::class);
+$fake->assertSentCount(1);
+$fake->assertSentCount(1, GetPlayerSummariesRequest::class);
+$fake->assertNothingSent();
+
+$fake->assertSentInOrder([
+    ResolveVanityUrlRequest::class,
+    GetPlayerSummariesRequest::class,
+]);
+```
+
+`assertSent()` and `assertNotSent()` also take a closure, for the request's query, body or
+headers when the class alone isn't enough:
+
+```php
+$fake->assertSent(
+    fn (GetPlayerBansRequest $request): bool => $request->steamIds === $ids,
+);
+```
+
+`getRecordedResponses()` returns the Saloon `Response` objects in the order they came back,
+and `getLastRequest()` and `getLastResponse()` the last exchange, or `null` when nothing was
+sent.

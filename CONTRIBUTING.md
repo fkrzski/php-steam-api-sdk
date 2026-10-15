@@ -20,6 +20,15 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 * Please remember that we follow [SemVer](http://semver.org/).
 * Please record any user-facing change under `## [Unreleased]` in `CHANGELOG.md`, following the rules below.
 
+## Backward compatibility
+
+What SemVer covers is listed under [Versioning](https://docs.fkrzski.dev/php-steam-api-sdk#versioning) in the docs; a change to that surface updates the list too.
+
+* **New classes are `final`.** `SteamApiException` is the one class meant to be extended.
+* **Mark what the SDK builds `@internal`:** a new DTO's constructor and `fromArray()`, a hook payload's constructor and an exception's named constructors. `InternalApiTest` fails without it.
+* **A minor release** may add an endpoint, a DTO property, an exception leaf under the parent it narrows, a `SteamConfig` argument appended with a default, or raise the minimum PHP.
+* **A major release** is needed to remove or rename anything covered, add a required argument, raise another exception for a documented Steam answer, or move to a new Saloon or rate limit plugin major. Its changelog entry starts with `**BC break.**`.
+
 ## Changelog
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).

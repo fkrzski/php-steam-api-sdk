@@ -22,6 +22,7 @@ on [Dead by Stats](https://deadbystats.eu).
 - **Timeouts and retries** — set once on `SteamConfig`; only a `5xx` or no answer at all is retried, since every attempt spends quota.
 - **Hooks without the key** — `onRequest()`, `onResponse()` and `onFailure()` for logs and metrics, and `debug()` masks the key as `key=***`.
 - **Your own requests** — a method the SDK does not ship is one Saloon request away, sent with the key, the budget and SDK exceptions.
+- **Test fakes** — `SteamFake` fakes every endpoint through the resource chain, with a factory per DTO and the failures Steam really sends.
 - **Zero framework coupling** — plain Saloon over any `Sender` you hand it; a [Laravel bridge](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
 
 ## Requirements

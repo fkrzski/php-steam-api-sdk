@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
@@ -18,6 +19,7 @@ use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Saloon\Contracts\Sender;
 use Saloon\Data\FactoryCollection;
+use Saloon\Http\Faking\MockClient;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Response;
 use Saloon\Http\Senders\Factories\GuzzleMultipartBodyFactory;
@@ -137,4 +139,29 @@ function networkFailure(string $message = 'cURL error 28: Operation timed out af
             return new PsrRequest('GET', 'https://api.steampowered.com');
         }
     };
+}
+
+function steamId(): SteamId
+{
+    return SteamId::fromSteamId64('76561198000000000');
+}
+
+function fakedConnector(MockClient $mockClient, SteamConfig $config = new SteamConfig('test-key')): SteamConnector
+{
+    return new SteamConnector($config)->withMockClient($mockClient);
+}
+
+/**
+ * A feed of news items, newest first, with IDs counting up from `'1'` an hour apart.
+ *
+ * @return list<NewsItemFactory>
+ */
+function newsFeedItems(int $count): array
+{
+    return array_map(
+        static fn (int $id): NewsItemFactory => NewsItemFactory::new()
+            ->id((string) $id)
+            ->publishedAt(new DateTimeImmutable('2026-10-01 12:00:00 UTC')->sub(new DateInterval(sprintf('PT%dH', $id)))),
+        range(1, $count),
+    );
 }

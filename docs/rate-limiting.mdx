@@ -115,7 +115,8 @@ store holds counters, never credentials.
 
 The default `MemoryStore` keeps its backing array static, so the budget is process-wide.
 That is fine for a script, but every FPM or queue worker then gets a counter of its own
-and the real quota can be overrun several times over.
+and the real quota can be overrun several times over. In tests, a new `SteamFake`
+[clears it](/php-steam-api-sdk/testing#rate-limits-in-tests).
 
 Inject a shared store instead — any `Saloon\RateLimitPlugin\Contracts\RateLimitStore`
 is accepted:

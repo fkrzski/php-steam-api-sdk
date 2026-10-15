@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `$connector->users()->summaries()` and `bans()` take any number of Steam IDs and cut a list over 100 into requests of 100 that `pool()` sends `concurrency` at a time, 5 by default, each once. The first failure is thrown after the chunks in flight have answered, and no chunk goes out after it ([#121](https://github.com/fkrzski/php-steam-api-sdk/issues/121)).
+- `Testing\SteamFake`, a Saloon `MockClient` faking every endpoint through the resource chain, with `Testing\SteamResponse` for each envelope and failure Steam sends and a factory per DTO under `Testing\Factories`, moved from the Laravel bridge. A new fake clears `MemoryStore`, and faked `summaries()` and `bans()` answer each request with the players it asks for ([#120](https://github.com/fkrzski/php-steam-api-sdk/issues/120)).
 
 ## [0.9.0] - 2026-10-09
 

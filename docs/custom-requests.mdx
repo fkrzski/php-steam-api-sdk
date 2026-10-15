@@ -46,7 +46,7 @@ final class GetCmListRequest extends Request implements SendsNoApiKey
 $servers = $connector->send(new GetCmListRequest(0))->dto();
 ```
 
-`sendAsync()`, `pool()` and `MockClient` take it as they take the SDK's own requests.
+`sendAsync()`, `pool()` and a [`SteamFake`](/php-steam-api-sdk/testing#faking-responses) or `MockClient` take it as they take the SDK's own requests.
 
 ## The API key
 

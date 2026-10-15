@@ -8,6 +8,7 @@ use DateTimeImmutable;
 
 final readonly class Badge
 {
+    /** @internal */
     public function __construct(
         public int $badgeId,
         public ?int $appId,
@@ -20,6 +21,8 @@ final readonly class Badge
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     badgeid: int,
      *     appid?: int,

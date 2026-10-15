@@ -50,7 +50,7 @@ use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 use Saloon\Traits\Plugins\HasTimeout;
 use Throwable;
 
-class SteamConnector extends Connector
+final class SteamConnector extends Connector
 {
     use AlwaysThrowOnErrors;
     use HasRateLimits {
@@ -377,7 +377,7 @@ class SteamConnector extends Connector
      * The quota belongs to the API key, not to the connector class. The key is hashed
      * so it never lands in a shared store.
      */
-    protected function getLimiterPrefix(): ?string
+    protected function getLimiterPrefix(): string
     {
         if ($this->steamConfig->apiKey === null) {
             return 'SteamConnector:anonymous';
@@ -386,7 +386,7 @@ class SteamConnector extends Connector
         return sprintf('SteamConnector:%s', hash('sha256', $this->steamConfig->apiKey));
     }
 
-    protected function throwLimitException(Limit $limit): void
+    protected function throwLimitException(Limit $limit): never
     {
         throw SteamRateLimitException::fromLimit($limit);
     }

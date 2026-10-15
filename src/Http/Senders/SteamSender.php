@@ -19,6 +19,7 @@ use Saloon\Http\Response;
  */
 final readonly class SteamSender implements Sender
 {
+    /** @internal */
     public function __construct(
         private Sender $sender,
     ) {}

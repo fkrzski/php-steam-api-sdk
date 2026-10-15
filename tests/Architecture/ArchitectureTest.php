@@ -70,8 +70,9 @@ arch('exceptions extend the SDK root exception')
     ->toExtend(SteamApiException::class)
     ->ignoring(SteamApiException::class);
 
-arch('connector extends the Saloon connector')
+arch('connector is a final Saloon connector')
     ->expect(SteamConnector::class)
+    ->toBeFinal()
     ->toExtend(Connector::class);
 
 arch('test factories are final readonly classes')

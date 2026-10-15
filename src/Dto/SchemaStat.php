@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Dto;
 
 final readonly class SchemaStat
 {
+    /** @internal */
     public function __construct(
         public string $apiName,
         public ?string $name,
@@ -13,6 +14,8 @@ final readonly class SchemaStat
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{name: string, defaultvalue: int|float, displayName: string}  $payload
      */
     public static function fromArray(array $payload): self

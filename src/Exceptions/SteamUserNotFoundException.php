@@ -8,6 +8,7 @@ use Saloon\Http\Response;
 
 final class SteamUserNotFoundException extends SteamApiException
 {
+    /** @internal */
     public static function forVanity(string $vanityName, Response $response): self
     {
         return new self(sprintf('No Steam user found for vanity name "%s".', $vanityName), $response);

@@ -10,6 +10,7 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
 final readonly class Friend
 {
+    /** @internal */
     public function __construct(
         public SteamId $steamId,
         public FriendRelationship $relationship,
@@ -17,6 +18,8 @@ final readonly class Friend
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     steamid: string,
      *     relationship: string,

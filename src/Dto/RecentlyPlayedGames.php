@@ -7,6 +7,8 @@ namespace Fkrzski\SteamApiSdk\Dto;
 final readonly class RecentlyPlayedGames
 {
     /**
+     * @internal
+     *
      * @param  list<RecentlyPlayedGame>  $games
      */
     public function __construct(
@@ -15,6 +17,8 @@ final readonly class RecentlyPlayedGames
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{total_count: int, games?: list<array{
      *     appid: int,
      *     name: string,

@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Exceptions;
 
 final class InvalidTimeoutException extends SteamApiException
 {
+    /** @internal */
     public static function negative(string $option, float $value): self
     {
         return new self(sprintf(

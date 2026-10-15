@@ -8,6 +8,7 @@ use Saloon\Http\Response;
 
 final class StatsUnavailableException extends SteamApiException
 {
+    /** @internal */
     public static function forAppId(int $appId, Response $response): self
     {
         return new self(
@@ -16,6 +17,7 @@ final class StatsUnavailableException extends SteamApiException
         );
     }
 
+    /** @internal */
     public static function forGlobalAchievements(int $gameId, Response $response): self
     {
         return new self(

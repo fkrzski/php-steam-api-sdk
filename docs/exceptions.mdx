@@ -80,6 +80,8 @@ try {
 
 Whenever `response` is set, and on `SteamConnectionException`, the message opens with the Steam
 method called: `GetPlayerSummaries: Steam API request failed with HTTP 500.`
+Only that prefix is [kept between releases](/php-steam-api-sdk#versioning), so match on the
+class rather than the wording.
 
 A status the SDK gives no meaning of its own surfaces as the root `SteamApiException`.
 

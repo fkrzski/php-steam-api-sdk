@@ -9,6 +9,8 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 final readonly class PlayerAchievements
 {
     /**
+     * @internal
+     *
      * @param  list<PlayerAchievement>  $achievements
      */
     public function __construct(
@@ -18,6 +20,8 @@ final readonly class PlayerAchievements
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     steamID: string,
      *     gameName: string,

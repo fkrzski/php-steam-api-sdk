@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Dto;
 
 final readonly class SchemaAchievement
 {
+    /** @internal */
     public function __construct(
         public string $apiName,
         public string $name,
@@ -16,6 +17,8 @@ final readonly class SchemaAchievement
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     name: string,
      *     displayName: string,

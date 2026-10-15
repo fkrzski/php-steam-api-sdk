@@ -26,6 +26,8 @@ class SteamApiException extends RuntimeException
 
     /**
      * Not chained: Saloon carries Guzzle's exception, which in 7.x quotes the URI, key included.
+     *
+     * @internal
      */
     public static function fromRequestException(RequestException $exception): self
     {
@@ -35,6 +37,7 @@ class SteamApiException extends RuntimeException
         );
     }
 
+    /** @internal */
     public static function fromUnsuccessfulResponse(Response $response, string $reason): self
     {
         return new self(
@@ -45,6 +48,8 @@ class SteamApiException extends RuntimeException
 
     /**
      * Steam paths read /Interface/Method/vN/; only the path is read, so the key stays out.
+     *
+     * @internal
      */
     protected static function naming(PendingRequest $pendingRequest, string $message): string
     {

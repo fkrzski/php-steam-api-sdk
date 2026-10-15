@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Dto;
 
 final readonly class OwnedGame
 {
+    /** @internal */
     public function __construct(
         public int $appId,
         public int $playtimeForever,
@@ -16,6 +17,8 @@ final readonly class OwnedGame
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     appid: int,
      *     playtime_forever: int,

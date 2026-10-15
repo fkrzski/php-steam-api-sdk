@@ -9,6 +9,8 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 final readonly class UserStats
 {
     /**
+     * @internal
+     *
      * @param  list<UserStat>  $stats
      * @param  list<UserStatAchievement>  $achievements
      */
@@ -20,6 +22,8 @@ final readonly class UserStats
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     steamID: string,
      *     gameName: string,

@@ -7,6 +7,8 @@ namespace Fkrzski\SteamApiSdk\Hooks;
 final readonly class ResponseReceived
 {
     /**
+     * @internal
+     *
      * @param  array<string, mixed>  $query
      */
     public function __construct(

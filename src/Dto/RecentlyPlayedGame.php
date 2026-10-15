@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Dto;
 
 final readonly class RecentlyPlayedGame
 {
+    /** @internal */
     public function __construct(
         public int $appId,
         public string $name,
@@ -19,6 +20,8 @@ final readonly class RecentlyPlayedGame
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     appid: int,
      *     name: string,

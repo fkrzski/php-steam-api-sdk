@@ -7,6 +7,8 @@ namespace Fkrzski\SteamApiSdk\Dto;
 final readonly class WebApiInterface
 {
     /**
+     * @internal
+     *
      * @param  list<WebApiMethod>  $methods
      */
     public function __construct(
@@ -15,6 +17,8 @@ final readonly class WebApiInterface
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     name: string,
      *     methods: list<array{

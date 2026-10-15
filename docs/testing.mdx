@@ -338,12 +338,6 @@ exception the SDK raises for that endpoint:
 and answer every request that has no response of its own, so a chain can fake one endpoint and
 let the rest fail. The key builders without a method fit any request class in the map.
 
-<Aside type="caution" title="A connector of your own">
-Saloon matches those three by the connector's class, so a subclass of `SteamConnector` gets
-`NoMockResponseFoundException` instead. Key the builder by your class in the map:
-`new SteamFake([MyConnector::class => SteamResponse::invalidApiKey()])`.
-</Aside>
-
 Three shapes because Steam genuinely answers three ways: `profileNotPublic()` is a `401`,
 `playerServiceNotPublic()` a **`200`** whose only tell is the missing key the endpoint reads
 (`game_count` for `ownedGames()`, `player_level` for `steamLevel()` and `badges()`), and

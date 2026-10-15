@@ -8,6 +8,7 @@ use Saloon\Http\Response;
 
 final class AppVersionUnavailableException extends SteamApiException
 {
+    /** @internal */
     public static function forAppId(int $appId, Response $response): self
     {
         return new self(

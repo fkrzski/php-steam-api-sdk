@@ -7,6 +7,8 @@ namespace Fkrzski\SteamApiSdk\Dto;
 final readonly class GameSchema
 {
     /**
+     * @internal
+     *
      * @param  list<SchemaStat>  $stats
      * @param  list<SchemaAchievement>  $achievements
      */
@@ -21,6 +23,8 @@ final readonly class GameSchema
      * Steam drops every key for an app that publishes no schema, and sends `gameName`
      * as an empty string for some that do, so an absent name and a blank one are the
      * same thing here.
+     *
+     * @internal
      *
      * @param  array{
      *     gameName?: string,

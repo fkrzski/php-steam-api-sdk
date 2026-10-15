@@ -9,6 +9,7 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
 final readonly class PlayerBan
 {
+    /** @internal */
     public function __construct(
         public SteamId $steamId,
         public bool $isCommunityBanned,
@@ -20,6 +21,8 @@ final readonly class PlayerBan
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     SteamId: string,
      *     CommunityBanned: bool,

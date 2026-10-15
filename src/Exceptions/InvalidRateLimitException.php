@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Exceptions;
 
 final class InvalidRateLimitException extends SteamApiException
 {
+    /** @internal */
     public static function duplicateName(int|string $first, int|string $second, string $name): self
     {
         return new self(sprintf(
@@ -16,6 +17,7 @@ final class InvalidRateLimitException extends SteamApiException
         ));
     }
 
+    /** @internal */
     public static function tooShortCooldown(int $seconds): self
     {
         return new self(sprintf(

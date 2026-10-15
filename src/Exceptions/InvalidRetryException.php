@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Exceptions;
 
 final class InvalidRetryException extends SteamApiException
 {
+    /** @internal */
     public static function tooFewTries(int $tries): self
     {
         return new self(sprintf(
@@ -14,6 +15,7 @@ final class InvalidRetryException extends SteamApiException
         ));
     }
 
+    /** @internal */
     public static function negativeInterval(int $retryInterval): self
     {
         return new self(sprintf(

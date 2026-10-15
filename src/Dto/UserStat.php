@@ -6,12 +6,15 @@ namespace Fkrzski\SteamApiSdk\Dto;
 
 final readonly class UserStat
 {
+    /** @internal */
     public function __construct(
         public string $name,
         public int|float $value,
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{name: string, value: int|float}  $payload
      */
     public static function fromArray(array $payload): self

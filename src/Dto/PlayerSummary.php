@@ -12,6 +12,7 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
 final readonly class PlayerSummary
 {
+    /** @internal */
     public function __construct(
         public SteamId $steamId,
         public string $personaName,
@@ -37,6 +38,8 @@ final readonly class PlayerSummary
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     steamid: string,
      *     personaname: string,

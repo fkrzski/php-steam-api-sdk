@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Dto;
 
 final readonly class WebApiParameter
 {
+    /** @internal */
     public function __construct(
         public string $name,
         public string $type,
@@ -15,6 +16,8 @@ final readonly class WebApiParameter
 
     /**
      * Steam leaves the description out on some parameters and sends it empty on others.
+     *
+     * @internal
      *
      * @param  array{name: string, type: string, optional: bool, description?: string}  $payload
      */

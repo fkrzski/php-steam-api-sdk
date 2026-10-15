@@ -8,11 +8,13 @@ use Saloon\Http\Request;
 
 final class ApiKeyNotConfiguredException extends SteamApiException
 {
+    /** @internal */
     public static function blank(): self
     {
         return new self('Steam API key is blank. Pass a real key to SteamConfig, or null to reach only the endpoints Steam serves anonymously.');
     }
 
+    /** @internal */
     public static function forRequest(Request $request): self
     {
         return new self(sprintf(

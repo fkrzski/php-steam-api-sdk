@@ -7,6 +7,8 @@ namespace Fkrzski\SteamApiSdk\Dto;
 final readonly class WebApiMethod
 {
     /**
+     * @internal
+     *
      * @param  list<WebApiParameter>  $parameters
      */
     public function __construct(
@@ -18,6 +20,8 @@ final readonly class WebApiMethod
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     name: string,
      *     version: int,

@@ -8,6 +8,7 @@ use Saloon\Http\Response;
 
 final class InvalidServerAddressException extends SteamApiException
 {
+    /** @internal */
     public static function forAddress(string $address, Response $response): self
     {
         return new self(

@@ -9,6 +9,7 @@ use Saloon\Http\Response;
 
 final class ProfileNotPublicException extends SteamApiException
 {
+    /** @internal */
     public static function forSteamId(SteamId $steamId, Response $response): self
     {
         return new self(sprintf('Steam profile %s is not public.', $steamId), $response);
@@ -17,6 +18,8 @@ final class ProfileNotPublicException extends SteamApiException
     /**
      * Steam answers HTTP 200 with an empty `response` object both for a hidden profile
      * and for a SteamID64 that belongs to no account, so the cause cannot be recovered.
+     *
+     * @internal
      */
     public static function forPrivateOrMissing(SteamId $steamId, Response $response): self
     {
@@ -28,6 +31,8 @@ final class ProfileNotPublicException extends SteamApiException
 
     /**
      * Used where the profile is not known, such as status mapping on the connector.
+     *
+     * @internal
      */
     public static function fromResponse(Response $response): self
     {

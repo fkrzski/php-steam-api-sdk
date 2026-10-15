@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Dto;
 
 final readonly class SdrRelay
 {
+    /** @internal */
     public function __construct(
         public string $ipv4,
         public int $minPort,
@@ -13,6 +14,8 @@ final readonly class SdrRelay
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{ipv4: string, port_range: array{int, int}}  $payload
      */
     public static function fromArray(array $payload): self

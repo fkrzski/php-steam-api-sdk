@@ -13,6 +13,7 @@ final class SteamRateLimitException extends SteamApiException
         parent::__construct($message);
     }
 
+    /** @internal */
     public static function fromLimit(Limit $limit): self
     {
         return new self(

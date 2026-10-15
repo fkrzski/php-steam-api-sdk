@@ -7,6 +7,8 @@ namespace Fkrzski\SteamApiSdk\Dto;
 final readonly class AppNews
 {
     /**
+     * @internal
+     *
      * @param  list<NewsItem>  $items
      */
     public function __construct(
@@ -16,6 +18,8 @@ final readonly class AppNews
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{appid: int, newsitems: list<array{
      *     gid: string,
      *     title: string,

@@ -6,12 +6,15 @@ namespace Fkrzski\SteamApiSdk\Dto;
 
 final readonly class GlobalAchievement
 {
+    /** @internal */
     public function __construct(
         public string $apiName,
         public float $percent,
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{name: string, percent: string}  $payload
      */
     public static function fromArray(array $payload): self

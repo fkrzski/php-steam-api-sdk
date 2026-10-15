@@ -10,6 +10,8 @@ final class SteamConnectionException extends SteamApiException
 {
     /**
      * Guzzle 7 quotes the full URI, key included, and error trackers walk getPrevious().
+     *
+     * @internal
      */
     public static function fromFatalRequest(FatalRequestException $exception): self
     {

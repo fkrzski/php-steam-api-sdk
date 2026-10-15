@@ -7,6 +7,8 @@ namespace Fkrzski\SteamApiSdk\Dto;
 final readonly class SdrConfig
 {
     /**
+     * @internal
+     *
      * @param  array<string, SdrPointOfPresence>  $pointsOfPresence
      */
     public function __construct(
@@ -15,6 +17,8 @@ final readonly class SdrConfig
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     revision: int,
      *     pops: array<string, array{

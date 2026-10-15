@@ -7,6 +7,8 @@ namespace Fkrzski\SteamApiSdk\Dto;
 final readonly class SdrPointOfPresence
 {
     /**
+     * @internal
+     *
      * @param  list<string>  $aliases
      * @param  list<SdrRelay>  $relays
      */
@@ -21,6 +23,8 @@ final readonly class SdrPointOfPresence
 
     /**
      * Valve sends `geo` as [longitude, latitude].
+     *
+     * @internal
      *
      * @param  array{
      *     desc: string,

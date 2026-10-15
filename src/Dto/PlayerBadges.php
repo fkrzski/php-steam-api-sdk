@@ -7,6 +7,8 @@ namespace Fkrzski\SteamApiSdk\Dto;
 final readonly class PlayerBadges
 {
     /**
+     * @internal
+     *
      * @param  list<Badge>  $badges
      */
     public function __construct(
@@ -18,6 +20,8 @@ final readonly class PlayerBadges
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     badges?: list<array{
      *         badgeid: int,

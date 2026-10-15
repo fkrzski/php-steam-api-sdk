@@ -9,6 +9,8 @@ use DateTimeImmutable;
 final readonly class NewsItem
 {
     /**
+     * @internal
+     *
      * @param  list<string>  $tags
      */
     public function __construct(
@@ -27,6 +29,8 @@ final readonly class NewsItem
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     gid: string,
      *     title: string,

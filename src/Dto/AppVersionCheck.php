@@ -6,6 +6,7 @@ namespace Fkrzski\SteamApiSdk\Dto;
 
 final readonly class AppVersionCheck
 {
+    /** @internal */
     public function __construct(
         public bool $isUpToDate,
         public bool $isListable,
@@ -14,6 +15,8 @@ final readonly class AppVersionCheck
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     up_to_date: bool,
      *     version_is_listable: bool,

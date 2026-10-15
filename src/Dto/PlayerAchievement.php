@@ -8,6 +8,7 @@ use DateTimeImmutable;
 
 final readonly class PlayerAchievement
 {
+    /** @internal */
     public function __construct(
         public string $apiName,
         public bool $achieved,
@@ -17,6 +18,8 @@ final readonly class PlayerAchievement
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     apiname: string,
      *     achieved: int,

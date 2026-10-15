@@ -9,6 +9,7 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
 final readonly class GameServer
 {
+    /** @internal */
     public function __construct(
         public string $address,
         public SteamId $steamId,
@@ -22,6 +23,8 @@ final readonly class GameServer
     ) {}
 
     /**
+     * @internal
+     *
      * @param  array{
      *     addr: string,
      *     steamid: string,

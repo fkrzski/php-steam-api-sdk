@@ -247,7 +247,10 @@ test('requests go through again once the cool-down passes', function (): void {
     rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
     $refused = rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
 
-    time_sleep_until($refused->limit->getExpiryTimestamp() + 1);
+    // The plugin's clock, not time_sleep_until()'s: on Windows that one can wake a few ms short of the second.
+    while (new DateTimeImmutable()->getTimestamp() <= $refused->limit->getExpiryTimestamp()) {
+        usleep(10_000);
+    }
 
     expect($connector->send(friendListRequest())->status())->toBe(200)
         ->and($sent)->toHaveCount(2);

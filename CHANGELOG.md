@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BC break.** `SteamConnector` is final. A subclass moves its overrides to `SteamConfig`: `rateLimits`, `rateLimitStore`, `sender` or `tooManyRequestsCooldown` ([#123](https://github.com/fkrzski/php-steam-api-sdk/issues/123)).
 - DTO constructors and `fromArray()`, the `RequestSending`, `ResponseReceived` and `SteamSender` constructors, and the exceptions' named constructors are `@internal`, outside SemVer from 1.0.0. Tests build DTOs with the `Testing` factories, and PHPStan with bleeding edge reports a call from outside the SDK ([#123](https://github.com/fkrzski/php-steam-api-sdk/issues/123)).
 
+### Fixed
+
+- A request sent without the key (`SendsNoApiKey`) is limited apart from a configured key, as a connector without one would limit it: it no longer spends the daily budget or is refused while the key is spent or locked, and a `429` on it locks only requests without the key, under `SteamConnector:anonymous`. `rateLimits` count it apart as well ([#138](https://github.com/fkrzski/php-steam-api-sdk/issues/138)).
+
 ## [0.9.0] - 2026-10-09
 
 ### Added

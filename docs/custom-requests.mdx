@@ -60,7 +60,9 @@ The connector puts the configured key on every request, and refuses one locally 
 | `implements SendsNoApiKey` | stripped from the query | sent |
 
 Mark a method Steam serves anonymously `SendsNoApiKey`, so the key stays off a URL that does not
-need it. `SendsOptionalApiKey` is for one that answers both ways but differently, as
+need it, and the request off the key's budget and cool-down
+([limited apart](/php-steam-api-sdk/rate-limiting#requests-sent-without-the-key)).
+`SendsOptionalApiKey` is for one that answers both ways but differently, as
 [`GetSupportedAPIList`](/php-steam-api-sdk/api-reference#getsupportedapilistrequest) does.
 
 ## Language

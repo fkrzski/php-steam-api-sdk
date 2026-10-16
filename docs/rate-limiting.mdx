@@ -24,7 +24,8 @@ counts down to the next midnight UTC. Valve documents no reset time; UTC is an a
 Every answer Steam sends counts — a `4xx`, `5xx` or `429` as much as a `200` — through
 `send()`, `sendAsync()` and `pool()` alike. A request that got no answer counts nothing,
 though Steam may still have billed one that timed out. Steam bills the budget to the key, so
-by default a connector without one counts nothing locally.
+by default a connector without one counts nothing locally, and neither does a
+[request sent without the key](#requests-sent-without-the-key).
 
 ## After a 429
 
@@ -41,7 +42,8 @@ $connector = new SteamConnector(new SteamConfig(
 
 A `Retry-After` from Steam still wins. The cool-down applies with a key or without and
 whatever `rateLimits` holds, `[]` included, and it lives in the store next to the budget, per
-key. A value under 1 throws `InvalidRateLimitException` as the config is built.
+key, with requests sent without the key locked apart. A value under 1 throws
+`InvalidRateLimitException` as the config is built.
 
 <Aside type="caution" title="A pool cannot recall what it sent">
 Requests a `pool()` already has in flight when a `429` arrives still reach Steam. Only the
@@ -72,9 +74,10 @@ The first line keeps a daily budget that resets at 00:00 UTC, like the default. 
 nothing locally, and a `429` from Steam still throws either way.
 
 The limits apply without an API key too, and still count per key, so connectors sharing a
-store don't drain each other. `->sleep()` waits for the window to pass instead of throwing,
-blocking the process meanwhile, in `pool()` as well. Two limits with one name throw
-`InvalidRateLimitException` as the config is built; give one of them a `->name()`.
+store don't drain each other; requests sent without the key
+[count them apart](#requests-sent-without-the-key). `->sleep()` waits for the window to pass
+instead of throwing, blocking the process meanwhile, in `pool()` as well. Two limits with one
+name throw `InvalidRateLimitException` as the config is built; give one of them a `->name()`.
 
 <Aside type="caution" title="A window counted to a moment freezes with the config">
 `setExpiryTimestamp()`, `everySeconds()` fed with `time()`, `untilMidnightTonight()` and
@@ -96,6 +99,8 @@ if ($connector->hasReachedRateLimit(0.9)) {
 
 The argument is the share of a limit already spent, so `0.9` answers once 90 000 of the
 100 000 are gone; without it a limit has to be spent whole. Both see the lock after a `429` too.
+They read the key's counters; for requests sent without it, ask a connector built without a key
+on the same store.
 
 `$connector->useRateLimitPlugin(false)` turns the limiter off altogether: nothing is counted
 or refused locally, and a `429` surfaces as `SteamApiException` with code `429` rather than
@@ -110,6 +115,18 @@ several keys without them draining each other's quota.
 The limiter key is `SteamConnector:` plus a **SHA-256 hash** of the API key, so a shared
 store holds counters, never credentials.
 </Aside>
+
+## Requests sent without the key
+
+Steam serves some methods anonymously, `stats()->currentPlayers()` among them, so the connector
+sends them without the key, like any request marked
+[`SendsNoApiKey`](/php-steam-api-sdk/custom-requests#the-api-key). Steam bills them to no key,
+so the connector limits them as a connector built without one would: they never touch the daily
+budget, go through while the key is spent or locked, and a `429` on one of them locks only
+requests without the key, under `SteamConnector:anonymous`.
+
+`rateLimits` count them apart too, so a window per second lets that many through with the key
+and as many again without it.
 
 ## Sharing the budget across processes
 

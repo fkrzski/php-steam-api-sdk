@@ -210,7 +210,7 @@ final class SteamConnector extends Connector
                 }
             }, order: PipeOrder::FIRST);
 
-        $this->bootRateLimiter($pendingRequest);
+        $this->limiterFor($pendingRequest->getRequest())->bootRateLimiter($pendingRequest);
     }
 
     /**
@@ -439,6 +439,23 @@ final class SteamConnector extends Connector
         }
 
         return $exception;
+    }
+
+    /**
+     * Steam bills a request sent without the key to no key, so a connector built without one limits it.
+     * The plugin's closures keep that limiter per request, which a flag on this connector would lose in pool().
+     */
+    private function limiterFor(Request $request): self
+    {
+        if (! $request instanceof SendsNoApiKey || ! $this->rateLimitingEnabled) {
+            return $this;
+        }
+
+        return new self(new SteamConfig(
+            rateLimitStore: $this->steamConfig->rateLimitStore,
+            rateLimits: $this->steamConfig->rateLimits,
+            tooManyRequestsCooldown: $this->steamConfig->tooManyRequestsCooldown,
+        ));
     }
 
     private function sending(PendingRequest $pendingRequest, int $attempt): RequestSending

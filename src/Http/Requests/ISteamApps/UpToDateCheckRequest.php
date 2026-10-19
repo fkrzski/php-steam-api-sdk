@@ -70,9 +70,6 @@ final class UpToDateCheckRequest extends Request implements SendsNoApiKey
         return AppVersionCheck::fromArray($body['response']);
     }
 
-    /**
-     * @return array<string, int>
-     */
     protected function defaultQuery(): array
     {
         return [

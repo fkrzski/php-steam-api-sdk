@@ -48,9 +48,6 @@ final class GetNumberOfCurrentPlayersRequest extends Request implements SendsNoA
         return $body['response']['player_count'];
     }
 
-    /**
-     * @return array<string, int>
-     */
     protected function defaultQuery(): array
     {
         return [

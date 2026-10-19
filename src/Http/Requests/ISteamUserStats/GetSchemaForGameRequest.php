@@ -68,9 +68,6 @@ final class GetSchemaForGameRequest extends Request implements HasLanguage
         return GameSchema::fromArray($body['game']);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     protected function defaultQuery(): array
     {
         $query = [

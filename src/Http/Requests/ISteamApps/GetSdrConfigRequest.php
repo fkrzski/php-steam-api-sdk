@@ -59,9 +59,6 @@ final class GetSdrConfigRequest extends Request implements SendsNoApiKey
         return SdrConfig::fromArray($body);
     }
 
-    /**
-     * @return array<string, int>
-     */
     protected function defaultQuery(): array
     {
         return [

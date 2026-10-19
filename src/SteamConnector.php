@@ -318,9 +318,6 @@ final class SteamConnector extends Connector
         };
     }
 
-    /**
-     * @return array<string, string>
-     */
     protected function defaultQuery(): array
     {
         if ($this->steamConfig->apiKey === null) {
@@ -344,8 +341,6 @@ final class SteamConnector extends Connector
      * The day is taken to turn at 00:00 UTC, which Valve does not document;
      * untilMidnightTonight() would follow date.timezone instead. Limits set on the
      * config replace all of this, with a key or without.
-     *
-     * @return array<Limit>
      */
     protected function resolveLimits(): array
     {

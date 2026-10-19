@@ -57,9 +57,6 @@ final class ResolveVanityUrlRequest extends Request
         return SteamId::fromSteamId64($body['response']['steamid']);
     }
 
-    /**
-     * @return array<string, string>
-     */
     protected function defaultQuery(): array
     {
         return [

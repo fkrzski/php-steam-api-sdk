@@ -61,9 +61,6 @@ final class GetPlayerAchievementsRequest extends Request implements HasLanguage
         return PlayerAchievements::fromArray($body['playerstats']);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     protected function defaultQuery(): array
     {
         $query = [

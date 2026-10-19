@@ -67,9 +67,6 @@ final class GetPlayerBansRequest extends Request
         return array_map(PlayerBan::fromArray(...), $players);
     }
 
-    /**
-     * @return array<string, string>
-     */
     protected function defaultQuery(): array
     {
         return [

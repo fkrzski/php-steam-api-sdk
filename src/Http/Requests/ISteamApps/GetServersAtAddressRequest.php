@@ -89,9 +89,6 @@ final class GetServersAtAddressRequest extends Request implements SendsNoApiKey
         return array_map(GameServer::fromArray(...), $body['response']['servers']);
     }
 
-    /**
-     * @return array<string, string>
-     */
     protected function defaultQuery(): array
     {
         return [

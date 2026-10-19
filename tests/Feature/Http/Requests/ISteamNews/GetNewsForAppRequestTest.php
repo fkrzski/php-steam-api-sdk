@@ -23,14 +23,14 @@ function newsForAppMock(string $fixture): MockClient
 
 function sendNewsForAppFixture(
     string $fixture,
-    int $appId = 440,
+    GetNewsForAppRequest $request = new GetNewsForAppRequest(440, count: 3),
     SteamConfig $config = new SteamConfig('test-key'),
 ): AppNews {
     $connector = new SteamConnector($config);
     $connector->withMockClient(newsForAppMock($fixture));
 
     /** @var AppNews $news */
-    $news = $connector->send(new GetNewsForAppRequest($appId))->dto();
+    $news = $connector->send($request)->dto();
 
     return $news;
 }
@@ -106,7 +106,7 @@ test('an item from an outside feed carries its own markup, no author and no tags
 });
 
 test('a positive max length flattens the body into an excerpt', function (): void {
-    [$announcement, $blogPost] = sendNewsForAppFixture('excerpt')->items;
+    [$announcement, $blogPost] = sendNewsForAppFixture('excerpt', new GetNewsForAppRequest(440, count: 3, maxLength: 100))->items;
 
     expect($announcement->contents)->toBe('{STEAM_CLAN_LOC_IMAGE}/554111/d651bb0462a39f27ab9058916f4fc4a3212c6f13.png (Image credit: Concept - ...')
         ->and($blogPost->contents)->not->toContain('<img')
@@ -116,7 +116,7 @@ test('a positive max length flattens the body into an excerpt', function (): voi
 
 test('the end date is inclusive, so the next page starts on the last item', function (): void {
     $lastOfPage = sendNewsForAppFixture('default')->items[2];
-    $nextPage = sendNewsForAppFixture('end-date');
+    $nextPage = sendNewsForAppFixture('end-date', new GetNewsForAppRequest(440, count: 3, endDate: $lastOfPage->publishedAt));
 
     expect($nextPage->items[0]->id)->toBe($lastOfPage->id)
         ->and($nextPage->items[0]->publishedAt)->toEqual($lastOfPage->publishedAt)
@@ -124,7 +124,7 @@ test('the end date is inclusive, so the next page starts on the last item', func
 });
 
 test('an unknown feed name filters nothing out', function (): void {
-    $news = sendNewsForAppFixture('unknown-feed');
+    $news = sendNewsForAppFixture('unknown-feed', new GetNewsForAppRequest(440, count: 3, feeds: ['nonexistent_feed']));
 
     expect($news->total)->toBe(3939)
         ->and(array_map(static fn (NewsItem $item): string => $item->feedName, $news->items))
@@ -132,21 +132,21 @@ test('an unknown feed name filters nothing out', function (): void {
 });
 
 test('an unknown tag filters everything out', function (): void {
-    $news = sendNewsForAppFixture('unknown-tag');
+    $news = sendNewsForAppFixture('unknown-tag', new GetNewsForAppRequest(440, count: 3, tags: ['nonexistent_tag']));
 
     expect($news->items)->toBe([])
         ->and($news->total)->toBe(0);
 });
 
 test('a DLC gets the news of its parent game', function (): void {
-    $news = sendNewsForAppFixture('parent-app', 2778580);
+    $news = sendNewsForAppFixture('parent-app', new GetNewsForAppRequest(2778580));
 
     expect($news->appId)->toBe(2778580)
         ->and($news->items[0]->appId)->toBe(1245620);
 });
 
 test('an app without news returns no items', function (): void {
-    $news = sendNewsForAppFixture('no-news', 3000000);
+    $news = sendNewsForAppFixture('no-news', new GetNewsForAppRequest(3000000));
 
     expect($news->appId)->toBe(3000000)
         ->and($news->items)->toBe([])
@@ -154,7 +154,7 @@ test('an app without news returns no items', function (): void {
 });
 
 test('Steam withholding the news throws AppNewsUnavailableException', function (int $appId): void {
-    expect(fn (): AppNews => sendNewsForAppFixture('unavailable', $appId))->toThrow(
+    expect(fn (): AppNews => sendNewsForAppFixture('unavailable', new GetNewsForAppRequest($appId)))->toThrow(
         AppNewsUnavailableException::class,
         sprintf('Steam returned no news for app %d: no app has that ID, or Steam does not publish its news.', $appId),
     );

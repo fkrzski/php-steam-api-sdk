@@ -74,9 +74,6 @@ final class GetRecentlyPlayedGamesRequest extends Request
         return RecentlyPlayedGames::fromArray($body['response']);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     protected function defaultQuery(): array
     {
         $query = ['steamid' => $this->steamId->value];

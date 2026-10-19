@@ -77,8 +77,6 @@ final class GetNewsForAppRequest extends Request implements SendsNoApiKey
 
     /**
      * Steam silently ignores `feeds[0]=…`, so the filters go out comma-joined.
-     *
-     * @return array<string, int|string>
      */
     protected function defaultQuery(): array
     {

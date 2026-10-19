@@ -12,13 +12,8 @@ use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([SteamConnector::class]);
-
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
 
 /**
  * The hasRequestFailed() example from docs/custom-requests.mdx, as written there.

@@ -61,9 +61,6 @@ final class GetGlobalAchievementPercentagesForAppRequest extends Request impleme
         return array_map(GlobalAchievement::fromArray(...), $body['achievementpercentages']['achievements']);
     }
 
-    /**
-     * @return array<string, int>
-     */
     protected function defaultQuery(): array
     {
         return [

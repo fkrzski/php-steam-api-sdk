@@ -59,9 +59,6 @@ final class GetSteamLevelRequest extends Request
         return $body['response']['player_level'];
     }
 
-    /**
-     * @return array<string, string>
-     */
     protected function defaultQuery(): array
     {
         return [

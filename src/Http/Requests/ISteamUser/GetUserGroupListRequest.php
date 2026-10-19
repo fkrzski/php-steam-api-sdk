@@ -36,9 +36,6 @@ final class GetUserGroupListRequest extends Request
         return array_map(UserGroup::fromArray(...), $body['response']['groups'] ?? []);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     protected function defaultQuery(): array
     {
         return ['steamid' => $this->steamId->value];

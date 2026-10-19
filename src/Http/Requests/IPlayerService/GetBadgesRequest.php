@@ -72,9 +72,6 @@ final class GetBadgesRequest extends Request
         return PlayerBadges::fromArray($body['response']);
     }
 
-    /**
-     * @return array<string, string>
-     */
     protected function defaultQuery(): array
     {
         return [

@@ -44,9 +44,6 @@ final class GetFriendListRequest extends Request
         return array_map(Friend::fromArray(...), $body['friendslist']['friends'] ?? []);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     protected function defaultQuery(): array
     {
         $query = ['steamid' => $this->steamId->value];

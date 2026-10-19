@@ -385,7 +385,7 @@ is yours to reset:
     ```php title="tests/Pest.php"
     use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
-    beforeEach(fn () => MemoryStore::clear());
+    pest()->beforeEach(fn () => MemoryStore::clear());
     ```
   </TabItem>
   <TabItem label="PHPUnit">

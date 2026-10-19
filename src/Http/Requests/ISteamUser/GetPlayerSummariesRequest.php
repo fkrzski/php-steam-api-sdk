@@ -78,9 +78,6 @@ final class GetPlayerSummariesRequest extends Request
         return array_map(PlayerSummary::fromArray(...), $players);
     }
 
-    /**
-     * @return array<string, string>
-     */
     protected function defaultQuery(): array
     {
         return [

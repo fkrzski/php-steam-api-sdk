@@ -78,9 +78,6 @@ final class GetOwnedGamesRequest extends Request
         return array_map(OwnedGame::fromArray(...), $body['response']['games'] ?? []);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     protected function defaultQuery(): array
     {
         $query = ['steamid' => $this->steamId->value];

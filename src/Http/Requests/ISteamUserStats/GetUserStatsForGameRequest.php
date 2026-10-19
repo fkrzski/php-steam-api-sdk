@@ -57,9 +57,6 @@ final class GetUserStatsForGameRequest extends Request
         return UserStats::fromArray($body['playerstats']);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     protected function defaultQuery(): array
     {
         return [

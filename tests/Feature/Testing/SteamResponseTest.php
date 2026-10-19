@@ -72,17 +72,8 @@ use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers(SteamResponse::class);
-
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
-
-afterEach(function (): void {
-    MemoryStore::clear();
-});
 
 function fakedId(): SteamId
 {
@@ -956,14 +947,15 @@ test('retries a connection failure without recording any attempt', function (): 
 
 test('raises a rate limit from a 429 and holds the key for the cool-down or Retry-After', function (?int $retryAfter, int $seconds): void {
     $connector = fakedConnector(new MockClient([
-        GetNumberOfCurrentPlayersRequest::class => SteamResponse::tooManyRequests($retryAfter),
+        GetPlayerSummariesRequest::class => SteamResponse::tooManyRequests($retryAfter),
     ]));
 
     $before = time();
 
-    expect(fn (): int => $connector->stats()->currentPlayers(appId: 440))
+    expect(fn (): array => $connector->users()->summaries([fakedId()]))
         ->toThrow(function (SteamRateLimitException $exception) use ($before, $seconds): void {
-            expect($exception->limit->getExpiryTimestamp())
+            expect($exception->limit->getName())->toBe('SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:too_many_attempts_limit')
+                ->and($exception->limit->getExpiryTimestamp())
                 ->toBeGreaterThanOrEqual($before + $seconds)
                 ->toBeLessThanOrEqual(time() + $seconds);
         });

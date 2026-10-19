@@ -60,9 +60,6 @@ final class GetCommunityBadgeProgressRequest extends Request
         return array_map(CommunityBadgeQuest::fromArray(...), $body['response']['quests']);
     }
 
-    /**
-     * @return array<string, string>
-     */
     protected function defaultQuery(): array
     {
         return [

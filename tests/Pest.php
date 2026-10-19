@@ -25,8 +25,11 @@ use Saloon\Http\Response;
 use Saloon\Http\Senders\Factories\GuzzleMultipartBodyFactory;
 use Saloon\Http\Senders\GuzzleSender;
 use Saloon\MockConfig;
+use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 MockConfig::throwOnMissingFixtures();
+
+pest()->beforeEach(fn () => MemoryStore::clear());
 
 /**
  * @return list<SteamId>

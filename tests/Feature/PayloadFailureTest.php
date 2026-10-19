@@ -22,7 +22,6 @@ use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([
     GetBadgesRequest::class,
@@ -34,10 +33,6 @@ covers([
     UpToDateCheckRequest::class,
     ResolveVanityUrlRequest::class,
 ]);
-
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
 
 function payloadFailureConnector(MockClient $mockClient, int $tries = 1): SteamConnector
 {

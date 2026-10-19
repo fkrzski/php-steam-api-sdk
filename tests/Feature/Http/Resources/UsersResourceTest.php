@@ -29,17 +29,8 @@ use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Response;
 use Saloon\Http\Senders\Factories\GuzzleMultipartBodyFactory;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers(UsersResource::class);
-
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
-
-afterEach(function (): void {
-    MemoryStore::clear();
-});
 
 function usersResourceSteamId(): SteamId
 {

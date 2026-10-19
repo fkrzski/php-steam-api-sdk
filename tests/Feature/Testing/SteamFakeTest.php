@@ -56,17 +56,8 @@ use Fkrzski\SteamApiSdk\Testing\SteamFake;
 use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers(SteamFake::class, UsersFake::class, PlayersFake::class, StatsFake::class, AppsFake::class, NewsFake::class, WebApiFake::class);
-
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
-
-afterEach(function (): void {
-    MemoryStore::clear();
-});
 
 dataset('player lists', [
     'summaries' => [

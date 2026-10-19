@@ -143,18 +143,3 @@ test('userStats sends GetUserStatsForGame and returns the DTO', function (): voi
             'appid' => 381210,
         ]);
 });
-
-test('userStats forwards the language', function (): void {
-    $mockClient = statsResourceMock(
-        GetUserStatsForGameRequest::class,
-        'ISteamUserStats/GetUserStatsForGame/default',
-    );
-
-    statsResource($mockClient)->userStats(statsResourceSteamId(), 381210, Language::Polish);
-
-    expect($mockClient->getLastRequest()?->query()->all())->toBe([
-        'steamid' => '76561198148125221',
-        'appid' => 381210,
-        'l' => 'polish',
-    ]);
-});

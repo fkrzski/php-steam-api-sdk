@@ -8,13 +8,8 @@ use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Response;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([SteamConnector::class]);
-
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
 
 dataset('answering 200s', [
     'MockClient' => [static fn (int $count): SteamConnector => new SteamConnector(new SteamConfig('any'))->withMockClient(new MockClient(

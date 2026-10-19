@@ -16,14 +16,6 @@ use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([SteamSender::class, SteamConnector::class]);
 
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
-
-afterEach(function (): void {
-    MemoryStore::clear();
-});
-
 function sendingThrough(Sender $sender, string $apiKey = 'any', int $tries = 1): SteamConnector
 {
     return new SteamConnector(new SteamConfig($apiKey, tries: $tries, sender: $sender));

@@ -18,17 +18,8 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([SteamConnector::class, RequestSending::class, ResponseReceived::class]);
-
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
-
-afterEach(function (): void {
-    MemoryStore::clear();
-});
 
 /**
  * @param  list<RequestSending>  $sent

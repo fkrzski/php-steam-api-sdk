@@ -24,10 +24,6 @@ use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([SteamRateLimitException::class, SteamConnector::class, ApiKeyNotConfiguredException::class]);
 
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
-
 test('connector exposes Steam daily limit of 100k requests', function (): void {
     $connector = new SteamConnector(new SteamConfig('test-key'));
 

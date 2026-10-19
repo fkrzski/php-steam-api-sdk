@@ -12,17 +12,8 @@ use Fkrzski\SteamApiSdk\SteamConnector;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([SteamConnector::class, SteamApiException::class, SteamSender::class]);
-
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
-
-afterEach(function (): void {
-    MemoryStore::clear();
-});
 
 function retrying(int $tries = 3): SteamConfig
 {

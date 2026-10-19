@@ -72,17 +72,8 @@ use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers(SteamResponse::class);
-
-beforeEach(function (): void {
-    MemoryStore::clear();
-});
-
-afterEach(function (): void {
-    MemoryStore::clear();
-});
 
 function fakedId(): SteamId
 {

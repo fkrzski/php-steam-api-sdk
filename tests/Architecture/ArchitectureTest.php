@@ -48,7 +48,8 @@ arch('contracts are interfaces')
 
 arch('enums are backed enums')
     ->expect('Fkrzski\SteamApiSdk\Enums')
-    ->toBeEnums();
+    ->toBeEnums()
+    ->toImplement(BackedEnum::class);
 
 arch('requests extend the Saloon Request base class')
     ->expect('Fkrzski\SteamApiSdk\Http\Requests')

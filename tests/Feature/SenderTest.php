@@ -11,54 +11,9 @@ use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Psr\Http\Message\RequestInterface;
-use Saloon\Contracts\Sender;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([SteamSender::class, SteamConnector::class]);
-
-function sendingThrough(Sender $sender, string $apiKey = 'any', int $tries = 1): SteamConnector
-{
-    return new SteamConnector(new SteamConfig($apiKey, tries: $tries, sender: $sender));
-}
-
-function noFriends(): PsrResponse
-{
-    return new PsrResponse(200, ['Content-Type' => 'application/json'], '{"friendslist":{"friends":[]}}');
-}
-
-function failureFrom(Closure $call): Throwable
-{
-    try {
-        $call();
-    } catch (Throwable $throwable) {
-        return $throwable;
-    }
-
-    throw new LogicException('Expected the call to fail.');
-}
-
-/**
- * @return array<string, array{Closure(SteamConnector): mixed}>
- */
-function everyWayToSend(): array
-{
-    return [
-        'send' => [static fn (SteamConnector $connector): mixed => $connector->send(friendListRequest())],
-        'sendAsync' => [static fn (SteamConnector $connector): mixed => $connector->sendAsync(friendListRequest())->wait()],
-        'pool' => [static function (SteamConnector $connector): never {
-            $reasons = [];
-
-            $connector->pool(
-                [friendListRequest()],
-                exceptionHandler: static function (Throwable $reason) use (&$reasons): void {
-                    $reasons[] = $reason;
-                },
-            )->send()->wait();
-
-            throw $reasons[0] ?? new LogicException('Expected the pool to fail.');
-        }],
-    ];
-}
 
 test('the connector wraps its own Guzzle sender in SteamSender', function (): void {
     $connector = new SteamConnector(new SteamConfig('any'));

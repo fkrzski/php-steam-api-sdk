@@ -24,6 +24,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\StatsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use Fkrzski\SteamApiSdk\Http\Resources\WebApiResource;
+use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -57,6 +58,9 @@ final class SteamConnector extends Connector
         bootHasRateLimits as private bootRateLimiter;
     }
     use HasTimeout;
+
+    #[Override]
+    protected ?string $response = SteamApiResponse::class;
 
     /**
      * @var list<callable(RequestSending): void>
@@ -395,7 +399,11 @@ final class SteamConnector extends Connector
     private function runResponsePipeline(mixed $outcome): mixed
     {
         if ($outcome instanceof Response) {
-            return $outcome->getPendingRequest()->executeResponsePipeline($outcome);
+            $failedTransfer = SteamApiResponse::failedTransfer($outcome);
+
+            return $failedTransfer instanceof FatalRequestException
+                ? Create::rejectionFor($failedTransfer)
+                : $outcome->getPendingRequest()->executeResponsePipeline($outcome);
         }
 
         $response = match (true) {

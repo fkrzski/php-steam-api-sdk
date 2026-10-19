@@ -11,6 +11,7 @@ use Saloon\Http\BaseResource;
 use Saloon\Http\Connector;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Request;
+use Saloon\Http\Response;
 
 arch('PHP best practices preset')
     ->preset()
@@ -64,6 +65,11 @@ arch('senders are final and implement the Saloon sender contract')
     ->expect('Fkrzski\SteamApiSdk\Http\Senders')
     ->toBeFinal()
     ->toImplement(Sender::class);
+
+arch('responses are final Saloon responses')
+    ->expect('Fkrzski\SteamApiSdk\Http\Responses')
+    ->toBeFinal()
+    ->toExtend(Response::class);
 
 arch('exceptions extend the SDK root exception')
     ->expect('Fkrzski\SteamApiSdk\Exceptions')

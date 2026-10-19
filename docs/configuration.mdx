@@ -193,5 +193,6 @@ A sender built on another client has to:
 - send `$pendingRequest->createPsrRequest()` as built, the API key in its query;
 - return a `Response` from `$pendingRequest->getResponseClass()::fromPsrResponse()` for every
   status, and under `sendAsync()` resolve it or reject with `$response->toException()`;
-- report a request that got no answer as `FatalRequestException` or a PSR-18
-  `NetworkExceptionInterface`. Anything else reaches the caller as it is, without a retry.
+- report a request that got no answer, including a body cut off after a non-error status, as
+  `FatalRequestException` or a PSR-18 `NetworkExceptionInterface`. Anything else reaches the
+  caller as it is, without a retry.

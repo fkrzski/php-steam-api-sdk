@@ -117,9 +117,16 @@ test('a blank game name reads the same as an absent one', function (): void {
 });
 
 test('the language reaches the payload', function (): void {
-    $schema = sendSchemaFixture('localized');
+    $connector = new SteamConnector(new SteamConfig('test-key'));
+    $connector->withMockClient($mockClient = new MockClient([
+        GetSchemaForGameRequest::class => MockResponse::fixture('ISteamUserStats/GetSchemaForGame/localized'),
+    ]));
 
-    expect($schema->achievements[0]->name)->toBe('Wielka Ofiara')
+    /** @var GameSchema $schema */
+    $schema = $connector->send(new GetSchemaForGameRequest(381210, Language::Polish))->dto();
+
+    expect($mockClient->getLastPendingRequest()?->query()->all())->toMatchArray(['l' => 'polish'])
+        ->and($schema->achievements[0]->name)->toBe('Wielka Ofiara')
         ->and($schema->achievements[0]->description)->toBe('Złóż w ofierze wszystkich czterech ocalałych; dokonaj tego podczas jednego meczu.');
 });
 

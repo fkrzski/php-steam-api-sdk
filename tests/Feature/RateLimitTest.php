@@ -153,15 +153,19 @@ test('Steam throttling anonymous traffic still raises SteamRateLimitException', 
 ]);
 
 test('a keyless request goes through while the key is paused', function (Closure $pause): void {
-    $connector = fakedConnector(new MockClient([
+    $connector = fakedConnector($mockClient = new MockClient([
         ResolveVanityUrlRequest::class => MockResponse::make([], 429, ['Retry-After' => '120']),
         GetNumberOfCurrentPlayersRequest::class => MockResponse::fixture('ISteamUserStats/GetNumberOfCurrentPlayers/default'),
     ]));
 
     $pause($connector);
 
-    expect($connector->send(new GetNumberOfCurrentPlayersRequest(381210))->status())->toBe(200)
-        ->and(fn (): Response => $connector->send(new ResolveVanityUrlRequest('nick')))->toThrow(SteamRateLimitException::class);
+    expect($connector->send(new GetNumberOfCurrentPlayersRequest(381210))->status())->toBe(200);
+
+    $answered = count($mockClient->getRecordedResponses());
+
+    expect(fn (): Response => $connector->send(new ResolveVanityUrlRequest('nick')))->toThrow(SteamRateLimitException::class)
+        ->and($mockClient->getRecordedResponses())->toHaveCount($answered);
 })->with([
     'after a 429' => [static function (SteamConnector $connector): void {
         rateLimitOf(fn (): Response => $connector->send(new ResolveVanityUrlRequest('nick')));

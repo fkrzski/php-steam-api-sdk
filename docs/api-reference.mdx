@@ -600,15 +600,15 @@ Only an app ID Steam does not know raises the exception.
 ### GetUserStatsForGameRequest
 
 ```text frame="none"
-$connector->stats()->userStats(SteamId $steamId, int $appId, ?Language $language = null)
+$connector->stats()->userStats(SteamId $steamId, int $appId)
 
-new GetUserStatsForGameRequest($steamId, $appId, $language)
+new GetUserStatsForGameRequest($steamId, $appId)
 ```
 
 <p><Badge text="throws ProfileNotPublicException" variant="danger" size="small" /></p>
 
-A player's stats and achievement flags for one game. `language` localises achievement
-metadata; see the [`Language`](/php-steam-api-sdk/dto-reference#language) enum.
+A player's stats and achievement flags for one game, by API name. Their display names come
+from the [schema](#getschemaforgamerequest).
 
 ```php
 $stats = $connector->stats()->userStats(steamId: $steamId, appId: 381210);

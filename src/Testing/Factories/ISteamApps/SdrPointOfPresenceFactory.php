@@ -9,8 +9,7 @@ use Fkrzski\SteamApiSdk\Dto\SdrPointOfPresence;
 /**
  * Builds the payload Steam returns for one entry of `pops` on `GetSDRConfig`.
  *
- * The code is the key Steam files the entry under, so it stays out of the
- * payload. Defaults describe Amsterdam with a single relay.
+ * The code is the key Steam files the entry under, so it stays out of the payload.
  */
 final readonly class SdrPointOfPresenceFactory
 {

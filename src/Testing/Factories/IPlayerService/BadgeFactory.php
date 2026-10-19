@@ -10,9 +10,7 @@ use Fkrzski\SteamApiSdk\Dto\Badge;
 /**
  * Builds the payload Steam returns for one entry of `GetBadges`.
  *
- * Defaults describe a badge earned in a game. The two shapes worth naming are
- * the community item id, which Steam sends as a string, and a badge tied to no
- * app — see {@see self::communityItem()} and {@see self::withoutApp()}.
+ * Defaults describe a badge earned in a game.
  */
 final readonly class BadgeFactory
 {

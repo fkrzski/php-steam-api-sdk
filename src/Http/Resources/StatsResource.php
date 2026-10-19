@@ -50,9 +50,9 @@ final class StatsResource extends BaseResource
         return $request->createDtoFromResponse($this->connector->send($request));
     }
 
-    public function userStats(SteamId $steamId, int $appId, ?Language $language = null): UserStats
+    public function userStats(SteamId $steamId, int $appId): UserStats
     {
-        $request = new GetUserStatsForGameRequest($steamId, $appId, $language);
+        $request = new GetUserStatsForGameRequest($steamId, $appId);
 
         return $request->createDtoFromResponse($this->connector->send($request));
     }

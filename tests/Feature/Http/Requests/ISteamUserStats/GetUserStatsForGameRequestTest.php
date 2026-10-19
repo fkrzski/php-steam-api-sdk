@@ -42,16 +42,16 @@ test('query includes steamid and appid', function (): void {
     ]);
 });
 
-test('query includes language when provided', function (): void {
-    $request = new GetUserStatsForGameRequest(userStatsSteamId(), 381210, Language::Polish);
+test('a configured language never reaches GetUserStatsForGame', function (): void {
+    $connector = new SteamConnector(new SteamConfig('test-key', language: Language::Polish));
 
-    expect($request->query()->all())->toMatchArray(['l' => 'polish']);
-});
+    $query = $connector->createPendingRequest(new GetUserStatsForGameRequest(userStatsSteamId(), 381210))->query()->all();
 
-test('query omits language when null', function (): void {
-    $request = new GetUserStatsForGameRequest(userStatsSteamId(), 381210);
-
-    expect($request->query()->all())->not->toHaveKey('l');
+    expect($query)->toBe([
+        'key' => 'test-key',
+        'steamid' => '76561198148125221',
+        'appid' => 381210,
+    ]);
 });
 
 test('fixture response parses into UserStats DTO', function (): void {

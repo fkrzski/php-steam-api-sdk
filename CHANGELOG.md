@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **BC break.** `SteamConnector` is final. A subclass moves its overrides to `SteamConfig`: `rateLimits`, `rateLimitStore`, `sender` or `tooManyRequestsCooldown` ([#123](https://github.com/fkrzski/php-steam-api-sdk/issues/123)).
+- **BC break.** `$connector->stats()->userStats()` and `GetUserStatsForGameRequest` take no `language`, and the request sends no `l`, not even one set on `SteamConfig`. Steam answers the same payload with it and without, so callers drop the argument ([#145](https://github.com/fkrzski/php-steam-api-sdk/issues/145)).
 - DTO constructors and `fromArray()`, the `RequestSending`, `ResponseReceived` and `SteamSender` constructors, and the exceptions' named constructors are `@internal`, outside SemVer from 1.0.0. Tests build DTOs with the `Testing` factories, and PHPStan with bleeding edge reports a call from outside the SDK ([#123](https://github.com/fkrzski/php-steam-api-sdk/issues/123)).
 
 ### Fixed

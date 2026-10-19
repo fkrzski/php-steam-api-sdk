@@ -82,8 +82,10 @@ otherwise travel to Steam as `key=` and come back refused a round trip later.
 
 ## Default language
 
-Steam localises the achievement and stat names it sends back through the `l` query
-parameter. Set it once on the config rather than on every call:
+Steam localises the achievement and stat names of
+[`GetPlayerAchievements`](/php-steam-api-sdk/api-reference#getplayerachievementsrequest) and
+[`GetSchemaForGame`](/php-steam-api-sdk/api-reference#getschemaforgamerequest) through the `l`
+query parameter. Set it once on the config rather than on every call:
 
 ```php title="steam.php" "language: Language::Polish"
 use Fkrzski\SteamApiSdk\Enums\Language;

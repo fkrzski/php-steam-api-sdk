@@ -125,9 +125,16 @@ public function getRequestException(Response $response, ?Throwable $senderExcept
 `hasRequestFailed()` flags a failure Steam reports in a `200` payload. It raises
 `SteamApiException` with code `200`, or what `getRequestException()` returns, and is never retried:
 
-```php
-public function hasRequestFailed(Response $response): bool
+```php {3-5}
+public function hasRequestFailed(Response $response): ?bool
 {
+    if ($response->status() !== 200) {
+        return null;
+    }
+
     return $response->json('response.result') !== 1;
 }
 ```
+
+Any answer but `null` replaces Saloon's own `4xx` and `5xx` check, so the guard keeps a key error
+mapped and a `5xx` retried.

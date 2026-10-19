@@ -8,6 +8,7 @@ use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\Create;
@@ -17,10 +18,12 @@ use GuzzleHttp\Psr7\Request as PsrRequest;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Saloon\Contracts\Sender;
 use Saloon\Data\FactoryCollection;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\PendingRequest;
+use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\Http\Senders\Factories\GuzzleMultipartBodyFactory;
 use Saloon\Http\Senders\GuzzleSender;
@@ -66,14 +69,14 @@ function connectorAnswering(array $queue, SteamConfig $config = new SteamConfig(
 /**
  * Unlike GuzzleSender, it resolves every status and hands a failure on exactly as queued.
  *
- * @param  list<PsrResponse|Throwable|Closure(RequestInterface): (PsrResponse|Throwable)>  $queue
+ * @param  list<PsrResponse|Throwable|array{PsrResponse, Throwable}|Closure(RequestInterface): (PsrResponse|Throwable)>  $queue
  */
 function senderAnswering(array $queue): Sender
 {
     return new class($queue) implements Sender
     {
         /**
-         * @param  list<PsrResponse|Throwable|Closure(RequestInterface): (PsrResponse|Throwable)>  $queue
+         * @param  list<PsrResponse|Throwable|array{PsrResponse, Throwable}|Closure(RequestInterface): (PsrResponse|Throwable)>  $queue
          */
         public function __construct(private array $queue) {}
 
@@ -107,10 +110,11 @@ function senderAnswering(array $queue): Sender
             $psrRequest = $pendingRequest->createPsrRequest();
             $answer = array_shift($this->queue) ?? throw new RuntimeException('The sender queue is empty.');
             $answer = $answer instanceof Closure ? $answer($psrRequest) : $answer;
+            [$psrResponse, $senderException] = is_array($answer) ? $answer : [$answer, null];
 
-            return $answer instanceof Throwable
-                ? $answer
-                : $pendingRequest->getResponseClass()::fromPsrResponse($answer, $pendingRequest, $psrRequest);
+            return $psrResponse instanceof Throwable
+                ? $psrResponse
+                : $pendingRequest->getResponseClass()::fromPsrResponse($psrResponse, $pendingRequest, $psrRequest, $senderException);
         }
     };
 }
@@ -118,6 +122,25 @@ function senderAnswering(array $queue): Sender
 function connectionFailure(string $message = 'cURL error 28: Operation timed out after 5000 milliseconds'): ConnectException
 {
     return new ConnectException($message, new PsrRequest('GET', 'https://api.steampowered.com'));
+}
+
+/**
+ * Guzzle 7's cURL 18 or 56 once the headers are in; Guzzle 8's RequestException takes no response.
+ */
+function transferFailure(PsrResponse $response, string $message = 'cURL error 56: Recv failure: Connection reset by peer'): RequestException
+{
+    return new class($message, $response) extends RequestException
+    {
+        public function __construct(string $message, private readonly ResponseInterface $received)
+        {
+            parent::__construct($message, new PsrRequest('GET', 'https://api.steampowered.com'));
+        }
+
+        public function getResponse(): ResponseInterface
+        {
+            return $this->received;
+        }
+    };
 }
 
 function dailyHits(SteamConnector $connector): int
@@ -147,18 +170,18 @@ function failureFrom(Closure $call): Throwable
 }
 
 /**
- * @return array<string, array{Closure(SteamConnector): mixed}>
+ * @return array<string, array{Closure(SteamConnector, ?Request=): mixed}>
  */
 function everyWayToSend(): array
 {
     return [
-        'send' => [static fn (SteamConnector $connector): mixed => $connector->send(friendListRequest())],
-        'sendAsync' => [static fn (SteamConnector $connector): mixed => $connector->sendAsync(friendListRequest())->wait()],
-        'pool' => [static function (SteamConnector $connector): never {
+        'send' => [static fn (SteamConnector $connector, ?Request $request = null): mixed => $connector->send($request ?? friendListRequest())],
+        'sendAsync' => [static fn (SteamConnector $connector, ?Request $request = null): mixed => $connector->sendAsync($request ?? friendListRequest())->wait()],
+        'pool' => [static function (SteamConnector $connector, ?Request $request = null): never {
             $reasons = [];
 
             $connector->pool(
-                [friendListRequest()],
+                [$request ?? friendListRequest()],
                 exceptionHandler: static function (Throwable $reason) use (&$reasons): void {
                     $reasons[] = $reason;
                 },

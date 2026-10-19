@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Senders;
 
+use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
@@ -32,10 +33,14 @@ final readonly class SteamSender implements Sender
     public function send(PendingRequest $pendingRequest): Response
     {
         try {
-            return $this->sender->send($pendingRequest);
+            $response = $this->sender->send($pendingRequest);
         } catch (NetworkExceptionInterface $networkException) {
             throw new FatalRequestException($networkException, $pendingRequest);
         }
+
+        $failedTransfer = SteamApiResponse::failedTransfer($response);
+
+        return $failedTransfer instanceof FatalRequestException ? throw $failedTransfer : $response;
     }
 
     public function sendAsync(PendingRequest $pendingRequest): PromiseInterface

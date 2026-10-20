@@ -19,6 +19,10 @@ test('SteamConfig stores api key', function (): void {
     expect($config->apiKey)->toBe('test-key');
 });
 
+test('SteamConfig stores the api key without the whitespace around it', function (): void {
+    expect((new SteamConfig(apiKey: " test-key\n"))->apiKey)->toBe('test-key');
+});
+
 test('SteamConfig is readonly', function (): void {
     $reflection = new ReflectionClass(SteamConfig::class);
 

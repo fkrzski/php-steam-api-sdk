@@ -16,12 +16,14 @@ use SensitiveParameter;
 
 final readonly class SteamConfig
 {
+    public ?string $apiKey;
+
     /**
      * @param  array<Limit>|null  $rateLimits
      */
     public function __construct(
         #[SensitiveParameter]
-        public ?string $apiKey = null,
+        ?string $apiKey = null,
         public ?RateLimitStore $rateLimitStore = null,
         public ?Language $language = null,
         public ?float $connectTimeout = null,
@@ -33,7 +35,9 @@ final readonly class SteamConfig
         public ?Sender $sender = null,
         public int $tooManyRequestsCooldown = 60,
     ) {
-        if ($apiKey !== null && trim($apiKey) === '') {
+        $this->apiKey = $apiKey === null ? null : trim($apiKey);
+
+        if ($this->apiKey === '') {
             throw ApiKeyNotConfiguredException::blank();
         }
 

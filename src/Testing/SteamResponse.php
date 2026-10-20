@@ -543,8 +543,8 @@ final class SteamResponse
 
     /**
      * Steam throttling the key, raised as `SteamRateLimitException`. The lock it leaves
-     * refuses later requests for `Retry-After` seconds, or `tooManyRequestsCooldown`
-     * without one.
+     * refuses later requests sent the same way for `Retry-After` seconds, or
+     * `tooManyRequestsCooldown` without one.
      */
     public static function tooManyRequests(?int $retryAfter = null): MockResponse
     {

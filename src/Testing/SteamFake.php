@@ -63,7 +63,7 @@ final class SteamFake extends MockClient
     }
 
     /**
-     * Answers every request that has no response of its own with a rejected key.
+     * Answers every request that has no response of its own with a rejected key, which Steam sends only to requests carrying one.
      */
     public function invalidApiKey(): self
     {
@@ -83,7 +83,7 @@ final class SteamFake extends MockClient
     }
 
     /**
-     * Throttles every request that has no response of its own, as Steam does with a 429.
+     * Throttles every request that has no response of its own, locking out the later ones sent the same way, with the key or without.
      */
     public function tooManyRequests(?int $retryAfter = null): self
     {

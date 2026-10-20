@@ -363,12 +363,19 @@ and one whose news it does not publish with.
 
 A rejected key lands on `403` or `401`, whichever the endpoint picks: `invalidApiKey()` fakes
 the first, `apiKeyUnauthorized()` the second, which `GetCommunityBadgeProgress` answers with.
+`invalidApiKey()` is for requests that send the key, the only ones Steam rejects a key on. A
+request sent without it still gets the faked `403`: `GetNewsForApp` and
+`GetGlobalAchievementPercentagesForApp` raise their own refusal from it, the rest
+`InvalidApiKeyException`.
 `GetSupportedAPIList` answers a JSON `403` with an empty interface list instead of the HTML
 page, and `supportedApiListInvalidKey()` fakes that.
 
 `tooManyRequests()` raises `SteamRateLimitException` the way Steam's own `429` does, and starts
-the [cool-down](/php-steam-api-sdk/rate-limiting#after-a-429) with it: every request after it
-is refused locally, before the fake can answer, for `Retry-After` seconds when you pass them.
+the [cool-down](/php-steam-api-sdk/rate-limiting#after-a-429) with it: every later request sent
+the same way is refused locally, before the fake can answer, for `Retry-After` seconds when you
+pass them. A `429` on a keyed request leaves requests
+[sent without the key](/php-steam-api-sdk/rate-limiting#requests-sent-without-the-key) alone, and
+the other way round.
 `TooManySteamIdsException` comes from a request constructor given more than 100 IDs, and a
 spent local budget from the limiter before any response exists, so neither has a builder.
 

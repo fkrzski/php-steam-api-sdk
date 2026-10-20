@@ -339,10 +339,8 @@ final class SteamResponse
     }
 
     /**
-     * `GetUserStatsForGame` and `GetPlayerAchievements` both answer 400 with an empty
-     * JSON object, which the first raises as `ProfileNotPublicException` and the
-     * second as `StatsUnavailableException` — the cause is ambiguous, so the two
-     * requests read the same body differently.
+     * A hidden profile `GetUserStatsForGame` answers with 400 and an empty JSON object,
+     * raised as `ProfileNotPublicException`.
      */
     public static function statsRefused(): MockResponse
     {
@@ -357,6 +355,20 @@ final class SteamResponse
     public static function appNotFound(): MockResponse
     {
         return MockResponse::make(['response' => ['result' => 42]], 404);
+    }
+
+    /**
+     * `GetPlayerAchievements` answers 400 with this body for an app without stats and for
+     * a hidden profile alike, raising `StatsUnavailableException` either way.
+     */
+    public static function playerAchievementsRefused(): MockResponse
+    {
+        return MockResponse::make([
+            'playerstats' => [
+                'error' => 'Requested app has no stats',
+                'success' => false,
+            ],
+        ], 400);
     }
 
     /**

@@ -292,7 +292,7 @@ exception the SDK raises for that endpoint:
 | `->users()->friendsNotPublic()`, `->users()->groupsNotPublic()` | `SteamResponse::profileNotPublic()` | `ProfileNotPublicException` |
 | `->players()->ownedGamesNotPublic()`, and the same on the other four IPlayerService endpoints | `SteamResponse::playerServiceNotPublic()` | `ProfileNotPublicException` |
 | `->stats()->userStatsNotPublic()` | `SteamResponse::statsRefused()` | `ProfileNotPublicException` |
-| `->stats()->achievementsUnavailable()` | `SteamResponse::statsRefused()` | `StatsUnavailableException` |
+| `->stats()->achievementsUnavailable()` | `SteamResponse::playerAchievementsRefused()` | `StatsUnavailableException` |
 | `->stats()->currentPlayersAppNotFound()` | `SteamResponse::appNotFound()` | `AppNotFoundException` |
 | `->stats()->schemaAppNotFound()` | `SteamResponse::schemaAppNotFound()` | `AppNotFoundException` |
 | `->stats()->globalAchievementsUnavailable()` | `SteamResponse::globalAchievementsRefused()` | `StatsUnavailableException` |
@@ -340,11 +340,12 @@ exception the SDK raises for that endpoint:
 and answer every request that has no response of its own, so a chain can fake one endpoint and
 let the rest fail. The key builders without a method fit any request class in the map.
 
-Three shapes because Steam genuinely answers three ways: `profileNotPublic()` is a `401`,
-`playerServiceNotPublic()` a **`200`** whose only tell is the missing key the endpoint reads
-(`game_count` for `ownedGames()`, `player_level` for `steamLevel()` and `badges()`), and
-`statsRefused()` a `400` with an empty JSON object, which the two ISteamUserStats endpoints
-read as different exceptions, because the cause is ambiguous and the SDK does not guess.
+A hidden profile looks different on every endpoint. `profileNotPublic()` is a `401`.
+`playerServiceNotPublic()` is a **`200`** whose only tell is the missing key the endpoint reads
+(`game_count` for `ownedGames()`, `player_level` for `steamLevel()` and `badges()`).
+`statsRefused()` is a `400` with an empty JSON object. `playerAchievementsRefused()` is the `400`
+carrying `Requested app has no stats`, which Steam sends for a hidden profile too, so the SDK
+raises `StatsUnavailableException` rather than guess.
 
 The endpoints taking an app ID refuse it four more ways: `appNotFound()` is a `404` carrying
 `result: 42`, `schemaAppNotFound()` a bare `400`, `globalAchievementsRefused()` a `403` with an

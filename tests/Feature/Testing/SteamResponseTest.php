@@ -343,6 +343,16 @@ test('refuses stats with a 400 carrying an empty json object', function (): void
         ->and(bodyOf(SteamResponse::statsRefused()))->toBe('{}');
 });
 
+test('sends the refusal steam was captured sending', function (Closure $builder, string $fixture): void {
+    /** @var object{statusCode: int, data: mixed} $captured */
+    $captured = json_decode((string) file_get_contents(__DIR__."/../../Fixtures/Saloon/{$fixture}.json"), flags: JSON_THROW_ON_ERROR);
+
+    expect($builder()->status())->toBe($captured->statusCode)
+        ->and((string) $builder()->body())->toBe(json_encode($captured->data, JSON_THROW_ON_ERROR));
+})->with([
+    'player achievements' => [SteamResponse::playerAchievementsRefused(...), 'ISteamUserStats/GetPlayerAchievements/stats-unavailable'],
+]);
+
 test('reports an unknown app with a 404 carrying result 42', function (): void {
     expect(SteamResponse::appNotFound()->status())->toBe(404)
         ->and(bodyOf(SteamResponse::appNotFound()))->toBe(['response' => ['result' => 42]]);
@@ -801,7 +811,7 @@ test('raises a not public profile from refused user stats', function (): void {
 });
 
 test('raises unavailable stats from refused player achievements', function (): void {
-    $connector = fakedConnector(new MockClient([GetPlayerAchievementsRequest::class => SteamResponse::statsRefused()]));
+    $connector = fakedConnector(new MockClient([GetPlayerAchievementsRequest::class => SteamResponse::playerAchievementsRefused()]));
 
     expect(fn (): PlayerAchievements => $connector->stats()->achievements(fakedId(), appId: 381210))
         ->toThrow(StatsUnavailableException::class);

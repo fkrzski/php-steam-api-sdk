@@ -77,7 +77,8 @@ $connector->users()->summaries([$steamId]);   // ApiKeyNotConfiguredException
 
 <Aside type="caution" title="A blank key is not the same as no key">
 `new SteamConfig(apiKey: '')` throws where `null` is accepted. A blank string would
-otherwise travel to Steam as `key=` and come back refused a round trip later.
+otherwise travel to Steam as `key=` and come back refused a round trip later. The key is
+trimmed, so one read from a secret file with a trailing newline goes out as the key alone.
 </Aside>
 
 ## Default language
@@ -119,9 +120,11 @@ $connector = new SteamConnector(new SteamConfig(
 ));
 ```
 
-`0` waits indefinitely, and a negative value throws `InvalidTimeoutException` as the config
-is built. A request that runs out of either raises `SteamConnectionException`, like any
-other request Steam never answered.
+`0` waits indefinitely, except `connectTimeout: 0` on Guzzle 7, which falls back to libcurl's
+300 seconds. A negative, infinite or `NAN` value, or a positive one under `0.001`, throws
+`InvalidTimeoutException` as the config is built: Guzzle counts in whole milliseconds. A request
+that runs out of either raises `SteamConnectionException`, like any other request Steam never
+answered.
 
 ## Retries
 

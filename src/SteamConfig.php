@@ -79,6 +79,11 @@ final readonly class SteamConfig
         if ($seconds > 0 && $seconds < 0.001) {
             throw InvalidTimeoutException::underOneMillisecond($option, $seconds);
         }
+
+        // Guzzle casts the milliseconds to int, which PHP cannot do past PHP_INT_MAX.
+        if ($seconds >= PHP_INT_MAX / 1000) {
+            throw InvalidTimeoutException::tooLarge($option, $seconds);
+        }
     }
 
     /**

@@ -68,7 +68,7 @@ final readonly class UsersFake
 
     public function friendsNotPublic(): SteamFake
     {
-        $this->fake->addResponse(SteamResponse::profileNotPublic(), GetFriendListRequest::class);
+        $this->fake->addResponse(SteamResponse::friendListNotPublic(), GetFriendListRequest::class);
 
         return $this->fake;
     }
@@ -82,7 +82,7 @@ final readonly class UsersFake
 
     public function groupsNotPublic(): SteamFake
     {
-        $this->fake->addResponse(SteamResponse::profileNotPublic(), GetUserGroupListRequest::class);
+        $this->fake->addResponse(SteamResponse::userGroupListNotPublic(), GetUserGroupListRequest::class);
 
         return $this->fake;
     }

@@ -1,0 +1,7 @@
+{
+    "statusCode": 401,
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    "data": {}
+}

@@ -37,10 +37,8 @@ use Saloon\Http\PendingRequest;
 /**
  * Wraps the factory payloads in the envelope each Steam endpoint answers with.
  *
- * Every endpoint nests its collection differently — `GetPlayerBans` puts it at the
- * top level, `GetFriendList` under `friendslist.friends`, the rest under `response`
- * — and the failure shapes diverge just as far, so both live here rather than in
- * every test that fakes a call.
+ * Every endpoint nests its payload its own way and refuses in its own shape, so both
+ * live here rather than in every test that fakes a call.
  */
 final class SteamResponse
 {
@@ -319,12 +317,26 @@ final class SteamResponse
     }
 
     /**
-     * A profile that refuses the request outright, raising `ProfileNotPublicException`
-     * from `GetFriendList`, `GetUserGroupList` and `GetPlayerSummaries`.
+     * A hidden friend list, which the connector raises from the bare 401 as
+     * `ProfileNotPublicException`.
      */
-    public static function profileNotPublic(): MockResponse
+    public static function friendListNotPublic(): MockResponse
     {
-        return MockResponse::make(['message' => 'Access is denied.'], 401);
+        return MockResponse::make('{}', 401);
+    }
+
+    /**
+     * A hidden group list, which the connector raises from the 403 as
+     * `ProfileNotPublicException`.
+     */
+    public static function userGroupListNotPublic(): MockResponse
+    {
+        return MockResponse::make([
+            'response' => [
+                'success' => false,
+                'error' => 'Private profile',
+            ],
+        ], 403);
     }
 
     /**
@@ -348,16 +360,6 @@ final class SteamResponse
     }
 
     /**
-     * An app ID Steam does not know, which `GetNumberOfCurrentPlayers` raises as
-     * `AppNotFoundException`. The request reads the status alone; `result: 42` is
-     * here because that is what Steam sends with it.
-     */
-    public static function appNotFound(): MockResponse
-    {
-        return MockResponse::make(['response' => ['result' => 42]], 404);
-    }
-
-    /**
      * `GetPlayerAchievements` answers 400 with this body for an app without stats and for
      * a hidden profile alike, raising `StatsUnavailableException` either way.
      */
@@ -369,6 +371,16 @@ final class SteamResponse
                 'success' => false,
             ],
         ], 400);
+    }
+
+    /**
+     * An app ID Steam does not know, which `GetNumberOfCurrentPlayers` raises as
+     * `AppNotFoundException`. The request reads the status alone; `result: 42` is
+     * here because that is what Steam sends with it.
+     */
+    public static function appNotFound(): MockResponse
+    {
+        return MockResponse::make(['response' => ['result' => 42]], 404);
     }
 
     /**

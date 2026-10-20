@@ -328,11 +328,6 @@ test('answers an empty supported api list with no interfaces', function (): void
     expect(bodyOf(SteamResponse::supportedApiList()))->toBe(['apilist' => ['interfaces' => []]]);
 });
 
-test('refuses a request outright with a 401', function (): void {
-    expect(SteamResponse::profileNotPublic()->status())->toBe(401)
-        ->and(bodyOf(SteamResponse::profileNotPublic()))->toBe(['message' => 'Access is denied.']);
-});
-
 test('hides a player service result behind a 200 with an empty response', function (): void {
     expect(SteamResponse::playerServiceNotPublic()->status())->toBe(200)
         ->and(bodyOf(SteamResponse::playerServiceNotPublic()))->toBe(['response' => []]);
@@ -350,6 +345,8 @@ test('sends the refusal steam was captured sending', function (Closure $builder,
     expect($builder()->status())->toBe($captured->statusCode)
         ->and((string) $builder()->body())->toBe(json_encode($captured->data, JSON_THROW_ON_ERROR));
 })->with([
+    'friend list' => [SteamResponse::friendListNotPublic(...), 'ISteamUser/GetFriendList/private'],
+    'group list' => [SteamResponse::userGroupListNotPublic(...), 'ISteamUser/GetUserGroupList/private'],
     'player achievements' => [SteamResponse::playerAchievementsRefused(...), 'ISteamUserStats/GetPlayerAchievements/stats-unavailable'],
 ]);
 
@@ -755,14 +752,14 @@ test('feeds the supported api list back through the connector', function (): voi
 // Failures — these pin the contract with the SDK's exception mapping
 
 test('raises a not public profile from a refused friend list', function (): void {
-    $connector = fakedConnector(new MockClient([GetFriendListRequest::class => SteamResponse::profileNotPublic()]));
+    $connector = fakedConnector(new MockClient([GetFriendListRequest::class => SteamResponse::friendListNotPublic()]));
 
     expect(fn (): array => $connector->users()->friends(fakedId()))
         ->toThrow(ProfileNotPublicException::class);
 });
 
 test('raises a not public profile from a refused group list', function (): void {
-    $connector = fakedConnector(new MockClient([GetUserGroupListRequest::class => SteamResponse::profileNotPublic()]));
+    $connector = fakedConnector(new MockClient([GetUserGroupListRequest::class => SteamResponse::userGroupListNotPublic()]));
 
     expect(fn (): array => $connector->users()->groups(fakedId()))
         ->toThrow(ProfileNotPublicException::class);

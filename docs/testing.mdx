@@ -289,7 +289,8 @@ exception the SDK raises for that endpoint:
 
 | Chain | Builder | Raises |
 | --- | --- | --- |
-| `->users()->friendsNotPublic()`, `->users()->groupsNotPublic()` | `SteamResponse::profileNotPublic()` | `ProfileNotPublicException` |
+| `->users()->friendsNotPublic()` | `SteamResponse::friendListNotPublic()` | `ProfileNotPublicException` |
+| `->users()->groupsNotPublic()` | `SteamResponse::userGroupListNotPublic()` | `ProfileNotPublicException` |
 | `->players()->ownedGamesNotPublic()`, and the same on the other four IPlayerService endpoints | `SteamResponse::playerServiceNotPublic()` | `ProfileNotPublicException` |
 | `->stats()->userStatsNotPublic()` | `SteamResponse::statsRefused()` | `ProfileNotPublicException` |
 | `->stats()->achievementsUnavailable()` | `SteamResponse::playerAchievementsRefused()` | `StatsUnavailableException` |
@@ -340,7 +341,8 @@ exception the SDK raises for that endpoint:
 and answer every request that has no response of its own, so a chain can fake one endpoint and
 let the rest fail. The key builders without a method fit any request class in the map.
 
-A hidden profile looks different on every endpoint. `profileNotPublic()` is a `401`.
+A hidden profile looks different on every endpoint. `friendListNotPublic()` is a `401` with an
+empty JSON object, and `userGroupListNotPublic()` a `403` carrying `Private profile`.
 `playerServiceNotPublic()` is a **`200`** whose only tell is the missing key the endpoint reads
 (`game_count` for `ownedGames()`, `player_level` for `steamLevel()` and `badges()`).
 `statsRefused()` is a `400` with an empty JSON object. `playerAchievementsRefused()` is the `400`

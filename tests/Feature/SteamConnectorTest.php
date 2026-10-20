@@ -20,6 +20,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\WebApiResource;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
+use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Http\Faking\Fixture;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
@@ -41,6 +42,15 @@ test('default query carries api key', function (): void {
     $connector = new SteamConnector(new SteamConfig('secret-key'));
 
     expect($connector->query()->all())->toBe(['key' => 'secret-key']);
+});
+
+test('a key read with a trailing newline goes out without it', function (): void {
+    $history = [];
+    $connector = connectorAnswering([new PsrResponse(200, [], '{"friendslist":{"friends":[]}}')], new SteamConfig("secret-key\n"), $history);
+
+    $connector->send(friendListRequest());
+
+    expect($history[0]['request']->getUri()->getQuery())->toBe('key=secret-key&steamid=76561198148125221');
 });
 
 test('resource accessors expose one resource per Steam interface', function (): void {

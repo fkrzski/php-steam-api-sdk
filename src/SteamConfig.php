@@ -16,12 +16,14 @@ use SensitiveParameter;
 
 final readonly class SteamConfig
 {
+    public ?string $apiKey;
+
     /**
      * @param  array<Limit>|null  $rateLimits
      */
     public function __construct(
         #[SensitiveParameter]
-        public ?string $apiKey = null,
+        ?string $apiKey = null,
         public ?RateLimitStore $rateLimitStore = null,
         public ?Language $language = null,
         public ?float $connectTimeout = null,
@@ -33,17 +35,14 @@ final readonly class SteamConfig
         public ?Sender $sender = null,
         public int $tooManyRequestsCooldown = 60,
     ) {
-        if ($apiKey !== null && trim($apiKey) === '') {
+        $this->apiKey = $apiKey === null ? null : trim($apiKey);
+
+        if ($this->apiKey === '') {
             throw ApiKeyNotConfiguredException::blank();
         }
 
-        if ($connectTimeout !== null && $connectTimeout < 0) {
-            throw InvalidTimeoutException::negative('connectTimeout', $connectTimeout);
-        }
-
-        if ($requestTimeout !== null && $requestTimeout < 0) {
-            throw InvalidTimeoutException::negative('requestTimeout', $requestTimeout);
-        }
+        $this->assertTimeout('connectTimeout', $connectTimeout);
+        $this->assertTimeout('requestTimeout', $requestTimeout);
 
         if ($tries < 1) {
             throw InvalidRetryException::tooFewTries($tries);
@@ -59,6 +58,26 @@ final readonly class SteamConfig
 
         if ($tooManyRequestsCooldown < 1) {
             throw InvalidRateLimitException::tooShortCooldown($tooManyRequestsCooldown);
+        }
+    }
+
+    private function assertTimeout(string $option, ?float $seconds): void
+    {
+        if ($seconds === null) {
+            return;
+        }
+
+        if (! is_finite($seconds)) {
+            throw InvalidTimeoutException::notFinite($option, $seconds);
+        }
+
+        if ($seconds < 0) {
+            throw InvalidTimeoutException::negative($option, $seconds);
+        }
+
+        // Guzzle counts in whole milliseconds and refuses a positive value that rounds to none.
+        if ($seconds > 0 && $seconds < 0.001) {
+            throw InvalidTimeoutException::underOneMillisecond($option, $seconds);
         }
     }
 

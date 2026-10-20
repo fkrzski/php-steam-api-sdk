@@ -19,6 +19,10 @@ test('SteamConfig stores api key', function (): void {
     expect($config->apiKey)->toBe('test-key');
 });
 
+test('SteamConfig stores the api key without the whitespace around it', function (): void {
+    expect((new SteamConfig(apiKey: " test-key\n"))->apiKey)->toBe('test-key');
+});
+
 test('SteamConfig is readonly', function (): void {
     $reflection = new ReflectionClass(SteamConfig::class);
 
@@ -74,13 +78,48 @@ test('SteamConfig accepts a zero timeout', function (): void {
         ->and($config->requestTimeout)->toBe(0.0);
 });
 
-test('SteamConfig rejects a negative timeout', function (string $option): void {
+test('SteamConfig accepts a one-millisecond timeout', function (): void {
+    $config = new SteamConfig(connectTimeout: 0.001, requestTimeout: 0.001);
+
+    expect($config->connectTimeout)->toBe(0.001)
+        ->and($config->requestTimeout)->toBe(0.001);
+});
+
+dataset('timeout hints', [
+    'connectTimeout' => ['connectTimeout', 'Pass seconds, 0 for no limit on Guzzle 8 and 300 s on Guzzle 7, or null for the default.'],
+    'requestTimeout' => ['requestTimeout', 'Pass seconds, 0 for no limit, or null for the default.'],
+]);
+
+test('SteamConfig rejects a negative timeout', function (string $option, string $hint): void {
     expect(fn (): SteamConfig => new SteamConfig(...[$option => -0.5]))
-        ->toThrow(
-            InvalidTimeoutException::class,
-            sprintf('SteamConfig::$%s cannot be negative, got -0.5. Pass seconds, 0 for no limit, or null for the default.', $option),
-        );
-})->with(['connectTimeout', 'requestTimeout']);
+        ->toThrow(function (InvalidTimeoutException $invalidTimeoutException) use ($option, $hint): void {
+            expect($invalidTimeoutException->getMessage())
+                ->toBe(sprintf('SteamConfig::$%s cannot be negative, got -0.5. %s', $option, $hint));
+        });
+})->with('timeout hints');
+
+test('SteamConfig rejects a timeout that is not finite', function (string $option, string $hint, float $seconds, string $shown): void {
+    expect(fn (): SteamConfig => new SteamConfig(...[$option => $seconds]))
+        ->toThrow(function (InvalidTimeoutException $invalidTimeoutException) use ($option, $hint, $shown): void {
+            expect($invalidTimeoutException->getMessage())
+                ->toBe(sprintf('SteamConfig::$%s must be finite, got %s. %s', $option, $shown, $hint));
+        });
+})->with('timeout hints')->with([
+    'NAN' => [NAN, 'NAN'],
+    'INF' => [INF, 'INF'],
+    '-INF' => [-INF, '-INF'],
+]);
+
+test('SteamConfig rejects a timeout under a millisecond', function (string $option, string $hint, float $seconds, string $shown): void {
+    expect(fn (): SteamConfig => new SteamConfig(...[$option => $seconds]))
+        ->toThrow(function (InvalidTimeoutException $invalidTimeoutException) use ($option, $hint, $shown): void {
+            expect($invalidTimeoutException->getMessage())
+                ->toBe(sprintf('SteamConfig::$%s must be 0 or at least 0.001, got %s. %s', $option, $shown, $hint));
+        });
+})->with('timeout hints')->with([
+    'half a millisecond' => [0.0005, '0.0005'],
+    'just under one' => [0.000_999, '0.000999'],
+]);
 
 test('SteamConfig sends every request once until retries are configured', function (): void {
     $config = new SteamConfig;

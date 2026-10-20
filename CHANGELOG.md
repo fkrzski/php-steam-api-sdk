@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A request sent without the key (`SendsNoApiKey`) is limited apart from a configured key, as a connector without one would limit it: it no longer spends the daily budget or is refused while the key is spent or locked, and a `429` on it locks only requests without the key, under `SteamConnector:anonymous`. `rateLimits` count it apart as well ([#138](https://github.com/fkrzski/php-steam-api-sdk/issues/138)).
 - A read timeout or a reset after Steam sent a non-error status raises `SteamConnectionException` under `send()`, `sendAsync()` and `pool()`, and `send()` retries it. It used to pass as an answer: an empty list, `ProfileNotPublicException`, `SteamUserNotFoundException` or a raw `JsonException` ([#140](https://github.com/fkrzski/php-steam-api-sdk/issues/140)).
+- `SteamConfig` throws `InvalidTimeoutException` for a `NAN`, infinite or sub-millisecond timeout, which Guzzle refused on every send with a raw `InvalidArgumentException`. ([#141](https://github.com/fkrzski/php-steam-api-sdk/issues/141)).
+- `SteamConfig` stores the API key trimmed, so a key read with a trailing newline is no longer refused by Steam ([#141](https://github.com/fkrzski/php-steam-api-sdk/issues/141)).
+- `SteamConnectionException` masks the key in its URL-encoded form as well, which Guzzle 7 quotes in full ([#141](https://github.com/fkrzski/php-steam-api-sdk/issues/141)).
 
 ## [0.9.0] - 2026-10-09
 

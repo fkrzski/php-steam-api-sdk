@@ -74,6 +74,26 @@ test('a connection failure masks the key in the URI Guzzle quoted', function ():
         ->and($thrown->getPrevious())->toBeNull();
 });
 
+test('a connection failure masks the key as the URI encodes it', function (): void {
+    $connector = connectorAnswering([timeoutQuotingUri()], new SteamConfig('secret key+/'));
+
+    $thrown = failureOf(fn (): mixed => $connector->send(friendListRequest()));
+
+    expect($thrown->getMessage())->toEndWith('for https://api.steampowered.com/ISteamUser/GetFriendList/v1/?key=***&steamid=76561198148125221')
+        ->and(chainMessages($thrown))->not->toContain('secret');
+});
+
+test('a connection failure masks the key as it was configured', function (): void {
+    $connector = connectorAnswering(
+        [static fn (RequestInterface $request): ConnectException => new ConnectException(sprintf('cURL error 6: Could not resolve host for %s', urldecode((string) $request->getUri())), $request)],
+        new SteamConfig('secret key+/'),
+    );
+
+    $thrown = failureOf(fn (): mixed => $connector->send(friendListRequest()));
+
+    expect($thrown->getMessage())->toEndWith('for https://api.steampowered.com/ISteamUser/GetFriendList/v1/?key=***&steamid=76561198148125221');
+});
+
 test('no message in the chain of a connection failure carries the key', function (Closure $call): void {
     expect(chainMessages(failureOf($call)))->not->toContain('secret-key');
 })->with([

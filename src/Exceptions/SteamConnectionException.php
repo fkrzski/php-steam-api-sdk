@@ -20,7 +20,7 @@ final class SteamConnectionException extends SteamApiException
 
         return new self(self::naming($exception->getPendingRequest(), sprintf(
             'Could not reach the Steam Web API: %s',
-            is_string($key) ? str_replace($key, '***', $reason) : $reason,
+            is_string($key) ? str_replace([urlencode($key), $key], '***', $reason) : $reason,
         )));
     }
 }

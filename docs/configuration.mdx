@@ -121,10 +121,10 @@ $connector = new SteamConnector(new SteamConfig(
 ```
 
 `0` waits indefinitely, except `connectTimeout: 0` on Guzzle 7, which falls back to libcurl's
-300 seconds. A negative, infinite or `NAN` value, or a positive one under `0.001`, throws
-`InvalidTimeoutException` as the config is built: Guzzle counts in whole milliseconds. A request
-that runs out of either raises `SteamConnectionException`, like any other request Steam never
-answered.
+300 seconds. A negative, infinite or `NAN` value, a positive one under `0.001`, or one of
+`PHP_INT_MAX / 1000` or more throws `InvalidTimeoutException` as the config is built: Guzzle
+counts in whole milliseconds, held in an `int`. A request that runs out of either raises
+`SteamConnectionException`, like any other request Steam never answered.
 
 ## Retries
 

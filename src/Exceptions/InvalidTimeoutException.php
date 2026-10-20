@@ -40,6 +40,17 @@ final class InvalidTimeoutException extends SteamApiException
         ));
     }
 
+    /** @internal */
+    public static function tooLarge(string $option, float $value): self
+    {
+        return new self(sprintf(
+            'SteamConfig::$%s must be under PHP_INT_MAX / 1000, got %s. %s',
+            $option,
+            $value,
+            self::hint($option),
+        ));
+    }
+
     private static function hint(string $option): string
     {
         return $option === 'connectTimeout'

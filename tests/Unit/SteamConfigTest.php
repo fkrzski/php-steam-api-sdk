@@ -121,6 +121,25 @@ test('SteamConfig rejects a timeout under a millisecond', function (string $opti
     'just under one' => [0.000_999, '0.000999'],
 ]);
 
+test('SteamConfig accepts the largest timeout that fits in milliseconds', function (): void {
+    $config = new SteamConfig(connectTimeout: 9_223_372_036_854_774.0, requestTimeout: 9_223_372_036_854_774.0);
+
+    expect($config->connectTimeout)->toBe(9_223_372_036_854_774.0)
+        ->and($config->requestTimeout)->toBe(9_223_372_036_854_774.0);
+});
+
+test('SteamConfig rejects a timeout past PHP_INT_MAX milliseconds', function (string $option, string $hint, float $seconds, string $shown): void {
+    expect(fn (): SteamConfig => new SteamConfig(...[$option => $seconds]))
+        ->toThrow(function (InvalidTimeoutException $invalidTimeoutException) use ($option, $hint, $shown): void {
+            expect($invalidTimeoutException->getMessage())
+                ->toBe(sprintf('SteamConfig::$%s must be under PHP_INT_MAX / 1000, got %s. %s', $option, $shown, $hint));
+        });
+})->with('timeout hints')->with([
+    'the bound itself' => [9_223_372_036_854_776.0, '9.2233720368548E+15'],
+    '1e16' => [1e16, '1.0E+16'],
+    '1e300' => [1e300, '1.0E+300'],
+]);
+
 test('SteamConfig sends every request once until retries are configured', function (): void {
     $config = new SteamConfig;
 

@@ -299,22 +299,29 @@ test('overrides the friend steam id', function (): void {
 
 test('builds a user group payload', function (): void {
     expect(UserGroupFactory::new()->toArray())->toBe([
-        'gid' => '103582791429521412',
+        'gid' => '4218398',
     ]);
 });
 
 test('maps a user group payload onto the dto', function (): void {
-    expect(UserGroupFactory::new()->make()->gid)->toBe('103582791429521412');
+    expect(UserGroupFactory::new()->make()->gid)->toBe('4218398');
+});
+
+test('defaults to a 32-bit group id, which no primary clan id equals', function (): void {
+    $gid = UserGroupFactory::new()->make()->gid;
+
+    expect((int) $gid)->toBeLessThan(2 ** 32)
+        ->and($gid)->not->toBe(PlayerSummaryFactory::new()->make()->primaryClanId);
 });
 
 test('overrides the group id', function (): void {
-    expect(UserGroupFactory::new()->gid('103582791429521413')->make()->gid)
-        ->toBe('103582791429521413');
+    expect(UserGroupFactory::new()->gid('25358940')->make()->gid)
+        ->toBe('25358940');
 });
 
 test('keeps the keys a group state override leaves alone', function (): void {
     expect(UserGroupFactory::new()->state([])->toArray())->toBe([
-        'gid' => '103582791429521412',
+        'gid' => '4218398',
     ]);
 });
 

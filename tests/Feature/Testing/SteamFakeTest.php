@@ -124,7 +124,7 @@ test('fakes every users endpoint through the chain', function (): void {
         ->users()->summaries(PlayerSummaryFactory::new(), PlayerSummaryFactory::new()->personaName('Gabe'))
         ->users()->bans(PlayerBanFactory::new(), PlayerBanFactory::new()->vacBanned(2))
         ->users()->friends(FriendFactory::new(), FriendFactory::new())
-        ->users()->groups(UserGroupFactory::new(), UserGroupFactory::new()->gid('103582791429521413'))
+        ->users()->groups(UserGroupFactory::new(), UserGroupFactory::new()->gid('25358940'))
         ->users()->resolveVanityUrl(steamId());
     $connector = fakedConnector($fake);
 
@@ -138,7 +138,7 @@ test('fakes every users endpoint through the chain', function (): void {
         ->and($bans[1]->numberOfVacBans)->toBe(2)
         ->and($connector->users()->friends(steamId()))->toHaveCount(2)
         ->and($groups)->toHaveCount(2)
-        ->and($groups[1]->gid)->toBe('103582791429521413')
+        ->and($groups[1]->gid)->toBe('25358940')
         ->and($connector->users()->resolveVanityUrl('gabelogannewell')->value)->toBe('76561198000000000');
 
     $fake->assertSentCount(5);

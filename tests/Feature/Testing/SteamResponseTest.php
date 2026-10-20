@@ -481,10 +481,10 @@ test('feeds a friend list back through the connector', function (): void {
 
 test('feeds a group list back through the connector', function (): void {
     $connector = fakedConnector(new MockClient([
-        GetUserGroupListRequest::class => SteamResponse::userGroupList(UserGroupFactory::new()->gid('103582791429521413')),
+        GetUserGroupListRequest::class => SteamResponse::userGroupList(UserGroupFactory::new()->gid('25358940')),
     ]));
 
-    expect($connector->users()->groups(fakedId())[0]->gid)->toBe('103582791429521413');
+    expect($connector->users()->groups(fakedId())[0]->gid)->toBe('25358940');
 });
 
 test('feeds owned games back through the connector', function (): void {

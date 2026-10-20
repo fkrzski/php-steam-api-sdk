@@ -32,10 +32,6 @@ final readonly class StatsFake
         return $this->fake;
     }
 
-    /**
-     * The same refusal {@see self::achievementsUnavailable()} fakes, which this endpoint
-     * reads as a hidden profile.
-     */
     public function userStatsNotPublic(): SteamFake
     {
         $this->fake->addResponse(SteamResponse::statsRefused(), GetUserStatsForGameRequest::class);
@@ -50,13 +46,9 @@ final readonly class StatsFake
         return $this->fake;
     }
 
-    /**
-     * The same refusal {@see self::userStatsNotPublic()} fakes, which this endpoint
-     * reads as stats it cannot hand out.
-     */
     public function achievementsUnavailable(): SteamFake
     {
-        $this->fake->addResponse(SteamResponse::statsRefused(), GetPlayerAchievementsRequest::class);
+        $this->fake->addResponse(SteamResponse::playerAchievementsRefused(), GetPlayerAchievementsRequest::class);
 
         return $this->fake;
     }

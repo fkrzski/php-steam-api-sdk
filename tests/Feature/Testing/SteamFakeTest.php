@@ -124,7 +124,7 @@ test('fakes every users endpoint through the chain', function (): void {
         ->users()->summaries(PlayerSummaryFactory::new(), PlayerSummaryFactory::new()->personaName('Gabe'))
         ->users()->bans(PlayerBanFactory::new(), PlayerBanFactory::new()->vacBanned(2))
         ->users()->friends(FriendFactory::new(), FriendFactory::new())
-        ->users()->groups(UserGroupFactory::new(), UserGroupFactory::new()->gid('103582791429521413'))
+        ->users()->groups(UserGroupFactory::new(), UserGroupFactory::new()->gid('25358940'))
         ->users()->resolveVanityUrl(steamId());
     $connector = fakedConnector($fake);
 
@@ -138,7 +138,7 @@ test('fakes every users endpoint through the chain', function (): void {
         ->and($bans[1]->numberOfVacBans)->toBe(2)
         ->and($connector->users()->friends(steamId()))->toHaveCount(2)
         ->and($groups)->toHaveCount(2)
-        ->and($groups[1]->gid)->toBe('103582791429521413')
+        ->and($groups[1]->gid)->toBe('25358940')
         ->and($connector->users()->resolveVanityUrl('gabelogannewell')->value)->toBe('76561198000000000');
 
     $fake->assertSentCount(5);
@@ -277,6 +277,48 @@ test('answers each chunk past 100 Steam IDs with the players it asks for', funct
         ->toEqualCanonicalizing(array_map(static fn (SteamId $steamId): string => $steamId->value, $steamIds));
 
     $mock->assertSentCount(2);
+})->with('player lists');
+
+test('answers a chunk asking for none of the faked players without the ones another chunk got', function (Closure $fake, Closure $call): void {
+    $steamIds = makeSteamIds(150);
+    $mock = $fake(new SteamFake, $steamIds[3], $steamIds[50]);
+
+    expect($call(fakedConnector($mock), ...$steamIds))->toBe([$steamIds[3]->value, $steamIds[50]->value]);
+
+    $mock->assertSentCount(2);
+})->with('player lists');
+
+test('answers a chunk asking for the faked players another chunk got unasked with none', function (Closure $fake, Closure $call): void {
+    $steamIds = makeSteamIds(150);
+    $mock = $fake(new SteamFake, $steamIds[120], $steamIds[130]);
+
+    expect($call(fakedConnector($mock), ...$steamIds))->toBe([$steamIds[120]->value, $steamIds[130]->value]);
+
+    $mock->assertSentCount(2);
+})->with('player lists');
+
+test('answers a second call asking for none of the faked players with none', function (Closure $fake, Closure $call): void {
+    [$first, $second, $unknown] = makeSteamIds(3);
+    $connector = fakedConnector($fake(new SteamFake, $first, $second));
+
+    expect($call($connector, $unknown))->toBe([$first->value, $second->value])
+        ->and($call($connector, $unknown))->toBe([]);
+})->with('player lists');
+
+test('answers a second call asking for none with the faked players no call has had', function (Closure $fake, Closure $call): void {
+    [$asked, $other, $unknown] = makeSteamIds(3);
+    $connector = fakedConnector($fake(new SteamFake, $asked, $other));
+
+    expect($call($connector, $asked))->toBe([$asked->value])
+        ->and($call($connector, $unknown))->toBe([$other->value]);
+})->with('player lists');
+
+test('answers every call with the faked players it asks for', function (Closure $fake, Closure $call): void {
+    [$asked, $other] = makeSteamIds(2);
+    $connector = fakedConnector($fake(new SteamFake, $asked, $other));
+
+    expect($call($connector, $asked))->toBe([$asked->value])
+        ->and($call($connector, $asked))->toBe([$asked->value]);
 })->with('player lists');
 
 test('answers only the faked players a request asks for', function (Closure $fake, Closure $call): void {

@@ -37,10 +37,8 @@ use Saloon\Http\PendingRequest;
 /**
  * Wraps the factory payloads in the envelope each Steam endpoint answers with.
  *
- * Every endpoint nests its collection differently — `GetPlayerBans` puts it at the
- * top level, `GetFriendList` under `friendslist.friends`, the rest under `response`
- * — and the failure shapes diverge just as far, so both live here rather than in
- * every test that fakes a call.
+ * Every endpoint nests its payload its own way and refuses in its own shape, so both
+ * live here rather than in every test that fakes a call.
  */
 final class SteamResponse
 {
@@ -319,12 +317,26 @@ final class SteamResponse
     }
 
     /**
-     * A profile that refuses the request outright, raising `ProfileNotPublicException`
-     * from `GetFriendList`, `GetUserGroupList` and `GetPlayerSummaries`.
+     * A hidden friend list, which the connector raises from the bare 401 as
+     * `ProfileNotPublicException`.
      */
-    public static function profileNotPublic(): MockResponse
+    public static function friendListNotPublic(): MockResponse
     {
-        return MockResponse::make(['message' => 'Access is denied.'], 401);
+        return MockResponse::make('{}', 401);
+    }
+
+    /**
+     * A hidden group list, which the connector raises from the 403 as
+     * `ProfileNotPublicException`.
+     */
+    public static function userGroupListNotPublic(): MockResponse
+    {
+        return MockResponse::make([
+            'response' => [
+                'success' => false,
+                'error' => 'Private profile',
+            ],
+        ], 403);
     }
 
     /**
@@ -339,14 +351,26 @@ final class SteamResponse
     }
 
     /**
-     * `GetUserStatsForGame` and `GetPlayerAchievements` both answer 400 with an empty
-     * JSON object, which the first raises as `ProfileNotPublicException` and the
-     * second as `StatsUnavailableException` — the cause is ambiguous, so the two
-     * requests read the same body differently.
+     * A hidden profile `GetUserStatsForGame` answers with 400 and an empty JSON object,
+     * raised as `ProfileNotPublicException`.
      */
     public static function statsRefused(): MockResponse
     {
         return MockResponse::make('{}', 400);
+    }
+
+    /**
+     * `GetPlayerAchievements` answers 400 with this body for an app without stats and for
+     * a hidden profile alike, raising `StatsUnavailableException` either way.
+     */
+    public static function playerAchievementsRefused(): MockResponse
+    {
+        return MockResponse::make([
+            'playerstats' => [
+                'error' => 'Requested app has no stats',
+                'success' => false,
+            ],
+        ], 400);
     }
 
     /**
@@ -531,8 +555,8 @@ final class SteamResponse
 
     /**
      * Steam throttling the key, raised as `SteamRateLimitException`. The lock it leaves
-     * refuses later requests for `Retry-After` seconds, or `tooManyRequestsCooldown`
-     * without one.
+     * refuses later requests sent the same way for `Retry-After` seconds, or
+     * `tooManyRequestsCooldown` without one.
      */
     public static function tooManyRequests(?int $retryAfter = null): MockResponse
     {

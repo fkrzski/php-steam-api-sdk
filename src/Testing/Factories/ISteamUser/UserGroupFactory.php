@@ -19,7 +19,7 @@ final readonly class UserGroupFactory
     public static function new(): self
     {
         return new self([
-            'gid' => '103582791429521412',
+            'gid' => '4218398',
         ]);
     }
 

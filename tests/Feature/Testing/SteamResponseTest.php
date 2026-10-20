@@ -328,11 +328,6 @@ test('answers an empty supported api list with no interfaces', function (): void
     expect(bodyOf(SteamResponse::supportedApiList()))->toBe(['apilist' => ['interfaces' => []]]);
 });
 
-test('refuses a request outright with a 401', function (): void {
-    expect(SteamResponse::profileNotPublic()->status())->toBe(401)
-        ->and(bodyOf(SteamResponse::profileNotPublic()))->toBe(['message' => 'Access is denied.']);
-});
-
 test('hides a player service result behind a 200 with an empty response', function (): void {
     expect(SteamResponse::playerServiceNotPublic()->status())->toBe(200)
         ->and(bodyOf(SteamResponse::playerServiceNotPublic()))->toBe(['response' => []]);
@@ -342,6 +337,18 @@ test('refuses stats with a 400 carrying an empty json object', function (): void
     expect(SteamResponse::statsRefused()->status())->toBe(400)
         ->and(bodyOf(SteamResponse::statsRefused()))->toBe('{}');
 });
+
+test('sends the refusal steam was captured sending', function (Closure $builder, string $fixture): void {
+    /** @var object{statusCode: int, data: mixed} $captured */
+    $captured = json_decode((string) file_get_contents(__DIR__."/../../Fixtures/Saloon/{$fixture}.json"), flags: JSON_THROW_ON_ERROR);
+
+    expect($builder()->status())->toBe($captured->statusCode)
+        ->and((string) $builder()->body())->toBe(json_encode($captured->data, JSON_THROW_ON_ERROR));
+})->with([
+    'friend list' => [SteamResponse::friendListNotPublic(...), 'ISteamUser/GetFriendList/private'],
+    'group list' => [SteamResponse::userGroupListNotPublic(...), 'ISteamUser/GetUserGroupList/private'],
+    'player achievements' => [SteamResponse::playerAchievementsRefused(...), 'ISteamUserStats/GetPlayerAchievements/stats-unavailable'],
+]);
 
 test('reports an unknown app with a 404 carrying result 42', function (): void {
     expect(SteamResponse::appNotFound()->status())->toBe(404)
@@ -471,10 +478,10 @@ test('feeds a friend list back through the connector', function (): void {
 
 test('feeds a group list back through the connector', function (): void {
     $connector = fakedConnector(new MockClient([
-        GetUserGroupListRequest::class => SteamResponse::userGroupList(UserGroupFactory::new()->gid('103582791429521413')),
+        GetUserGroupListRequest::class => SteamResponse::userGroupList(UserGroupFactory::new()->gid('25358940')),
     ]));
 
-    expect($connector->users()->groups(fakedId())[0]->gid)->toBe('103582791429521413');
+    expect($connector->users()->groups(fakedId())[0]->gid)->toBe('25358940');
 });
 
 test('feeds owned games back through the connector', function (): void {
@@ -745,14 +752,14 @@ test('feeds the supported api list back through the connector', function (): voi
 // Failures — these pin the contract with the SDK's exception mapping
 
 test('raises a not public profile from a refused friend list', function (): void {
-    $connector = fakedConnector(new MockClient([GetFriendListRequest::class => SteamResponse::profileNotPublic()]));
+    $connector = fakedConnector(new MockClient([GetFriendListRequest::class => SteamResponse::friendListNotPublic()]));
 
     expect(fn (): array => $connector->users()->friends(fakedId()))
         ->toThrow(ProfileNotPublicException::class);
 });
 
 test('raises a not public profile from a refused group list', function (): void {
-    $connector = fakedConnector(new MockClient([GetUserGroupListRequest::class => SteamResponse::profileNotPublic()]));
+    $connector = fakedConnector(new MockClient([GetUserGroupListRequest::class => SteamResponse::userGroupListNotPublic()]));
 
     expect(fn (): array => $connector->users()->groups(fakedId()))
         ->toThrow(ProfileNotPublicException::class);
@@ -801,7 +808,7 @@ test('raises a not public profile from refused user stats', function (): void {
 });
 
 test('raises unavailable stats from refused player achievements', function (): void {
-    $connector = fakedConnector(new MockClient([GetPlayerAchievementsRequest::class => SteamResponse::statsRefused()]));
+    $connector = fakedConnector(new MockClient([GetPlayerAchievementsRequest::class => SteamResponse::playerAchievementsRefused()]));
 
     expect(fn (): PlayerAchievements => $connector->stats()->achievements(fakedId(), appId: 381210))
         ->toThrow(StatsUnavailableException::class);

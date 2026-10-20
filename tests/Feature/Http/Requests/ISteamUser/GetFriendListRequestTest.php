@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\Friend;
 use Fkrzski\SteamApiSdk\Enums\FriendRelationship;
+use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
@@ -71,7 +72,7 @@ test('fixture response parses into Friend DTOs', function (): void {
         ->and($dtos[0]->friendSince->getTimestamp())->toBe(1750068880);
 });
 
-test('empty or private fixture returns empty list', function (): void {
+test('empty fixture returns empty list', function (): void {
     $mock = new MockClient([
         GetFriendListRequest::class => MockResponse::fixture('ISteamUser/GetFriendList/empty'),
     ]);
@@ -83,3 +84,14 @@ test('empty or private fixture returns empty list', function (): void {
 
     expect($dtos)->toBeEmpty();
 });
+
+test('private profile throws ProfileNotPublicException', function (): void {
+    $mock = new MockClient([
+        GetFriendListRequest::class => MockResponse::fixture('ISteamUser/GetFriendList/private'),
+    ]);
+
+    $connector = friendListConnector();
+    $connector->withMockClient($mock);
+
+    $connector->send(new GetFriendListRequest(friendTestSteamId()))->dto();
+})->throws(ProfileNotPublicException::class, 'Steam profile is not public.');

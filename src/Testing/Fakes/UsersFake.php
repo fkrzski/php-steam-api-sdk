@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Testing\Fakes;
 
+use Closure;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerBansRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
@@ -29,14 +30,14 @@ final readonly class UsersFake
     ) {}
 
     /**
-     * Each request gets the players it asks for, or all of them when it asks for none.
+     * Each request gets the players it asks for, or, asking for none, the ones no request has had yet.
      */
     public function summaries(PlayerSummaryFactory ...$players): SteamFake
     {
+        $askedFor = $this->askedFor('steamid', $players);
+
         $this->fake->addResponse(
-            static fn (PendingRequest $pendingRequest): MockResponse => SteamResponse::playerSummaries(
-                ...self::askedFor($pendingRequest, 'steamid', $players),
-            ),
+            static fn (PendingRequest $pendingRequest): MockResponse => SteamResponse::playerSummaries(...$askedFor($pendingRequest)),
             GetPlayerSummariesRequest::class,
         );
 
@@ -44,14 +45,14 @@ final readonly class UsersFake
     }
 
     /**
-     * Each request gets the bans it asks for, or all of them when it asks for none.
+     * Each request gets the bans it asks for, or, asking for none, the ones no request has had yet.
      */
     public function bans(PlayerBanFactory ...$bans): SteamFake
     {
+        $askedFor = $this->askedFor('SteamId', $bans);
+
         $this->fake->addResponse(
-            static fn (PendingRequest $pendingRequest): MockResponse => SteamResponse::playerBans(
-                ...self::askedFor($pendingRequest, 'SteamId', $bans),
-            ),
+            static fn (PendingRequest $pendingRequest): MockResponse => SteamResponse::playerBans(...$askedFor($pendingRequest)),
             GetPlayerBansRequest::class,
         );
 
@@ -101,24 +102,40 @@ final readonly class UsersFake
     }
 
     /**
-     * Summaries and bans past 100 IDs go out in chunks, and each chunk asks for its own.
+     * Summaries and bans past 100 IDs go out in chunks, so a player one chunk got unasked must not come back in another.
      *
      * @template TFactory of PlayerSummaryFactory|PlayerBanFactory
      *
      * @param  array<TFactory>  $players
-     * @return array<TFactory>
+     * @return Closure(PendingRequest): array<TFactory>
      */
-    private static function askedFor(PendingRequest $pendingRequest, string $key, array $players): array
+    private function askedFor(string $key, array $players): Closure
     {
-        /** @var GetPlayerSummariesRequest|GetPlayerBansRequest $request */
-        $request = $pendingRequest->getRequest();
+        $unclaimed = $players;
+        $handedOut = [];
 
-        return array_filter(
-            $players,
-            static fn (PlayerSummaryFactory|PlayerBanFactory $player): bool => array_any(
-                $request->steamIds,
-                static fn (SteamId $steamId): bool => $steamId->value === $player->toArray()[$key],
-            ),
-        ) ?: $players;
+        return static function (PendingRequest $pendingRequest) use ($key, $players, &$unclaimed, &$handedOut): array {
+            /** @var GetPlayerSummariesRequest|GetPlayerBansRequest $request */
+            $request = $pendingRequest->getRequest();
+
+            $asked = array_filter(
+                $players,
+                static fn (PlayerSummaryFactory|PlayerBanFactory $player): bool => array_any(
+                    $request->steamIds,
+                    static fn (SteamId $steamId): bool => $steamId->value === $player->toArray()[$key],
+                ),
+            );
+
+            if ($asked === []) {
+                $asked = $unclaimed;
+                $handedOut += $unclaimed;
+            } else {
+                $asked = array_diff_key($asked, $handedOut);
+            }
+
+            $unclaimed = array_diff_key($unclaimed, $asked);
+
+            return $asked;
+        };
     }
 }

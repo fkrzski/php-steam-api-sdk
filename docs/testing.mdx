@@ -260,8 +260,10 @@ $fake = new SteamFake()->users()->summaries(...array_map(
 $connector->withMockClient($fake)->users()->summaries($steamIds); // 150 summaries, 2 requests
 ```
 
-A request that asks for none of the faked players gets all of them, so a test that never
-matched the IDs keeps working.
+A request that asks for none of the faked players gets the ones no request has had yet, so a
+test that never matched the IDs keeps working. A player handed out that way doesn't come back,
+even to a request asking for it, so a call over 100 IDs never repeats one, and once each has
+come back, a call matching nobody gets `[]`.
 
 ## Faking paged news
 

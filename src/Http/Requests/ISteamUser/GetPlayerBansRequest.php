@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\PlayerBan;
 use Fkrzski\SteamApiSdk\Exceptions\TooManySteamIdsException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
@@ -13,7 +14,7 @@ use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-final class GetPlayerBansRequest extends Request
+final class GetPlayerBansRequest extends Request implements HasRequiredPaths
 {
     public const int MAX_STEAM_IDS = 100;
 
@@ -40,6 +41,11 @@ final class GetPlayerBansRequest extends Request
     public function resolveEndpoint(): string
     {
         return '/ISteamUser/GetPlayerBans/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['players'];
     }
 
     /**

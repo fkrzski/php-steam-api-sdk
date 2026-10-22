@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\IPlayerService;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\PlayerBadges;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
@@ -13,7 +14,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetBadgesRequest extends Request
+final class GetBadgesRequest extends Request implements HasRequiredPaths
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -25,6 +26,11 @@ final class GetBadgesRequest extends Request
     public function resolveEndpoint(): string
     {
         return '/IPlayerService/GetBadges/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['response'];
     }
 
     /**

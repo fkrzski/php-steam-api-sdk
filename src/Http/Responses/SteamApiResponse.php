@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Responses;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Exceptions\UnreadableResponseException;
 use GuzzleHttp\Exception\RequestException;
 use Override;
@@ -81,7 +82,16 @@ final class SteamApiResponse extends Response
             return null;
         }
 
-        return $this->decodes() ? null : UnreadableResponseException::notJson($this);
+        if (! $this->decodes()) {
+            return UnreadableResponseException::notJson($this);
+        }
+
+        $request = $this->getRequest();
+        $missing = $request instanceof HasRequiredPaths
+            ? array_find($request->requiredPaths($this), fn (string $path): bool => $this->json($path) === null)
+            : null;
+
+        return $missing === null ? null : UnreadableResponseException::missing($this, $missing);
     }
 
     /**

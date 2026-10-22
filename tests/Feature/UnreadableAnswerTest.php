@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
+use Fkrzski\SteamApiSdk\Exceptions\InvalidServerAddressException;
+use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\UnreadableResponseException;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetBadgesRequest;
@@ -14,6 +16,7 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetSdrConfigRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetServersAtAddressRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\UpToDateCheckRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerBansRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetUserGroupListRequest;
@@ -38,7 +41,32 @@ use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-covers([SteamApiResponse::class, UnreadableResponseException::class, SteamConnector::class]);
+covers([
+    SteamApiResponse::class,
+    UnreadableResponseException::class,
+    SteamConnector::class,
+    GetOwnedGamesRequest::class,
+    GetRecentlyPlayedGamesRequest::class,
+    GetSteamLevelRequest::class,
+    GetBadgesRequest::class,
+    GetCommunityBadgeProgressRequest::class,
+    GetPlayerSummariesRequest::class,
+    GetPlayerBansRequest::class,
+    GetFriendListRequest::class,
+    GetUserGroupListRequest::class,
+    ResolveVanityUrlRequest::class,
+    GetPlayerAchievementsRequest::class,
+    GetNumberOfCurrentPlayersRequest::class,
+    GetGlobalAchievementPercentagesForAppRequest::class,
+    GetSchemaForGameRequest::class,
+    GetUserStatsForGameRequest::class,
+    GetSdrConfigRequest::class,
+    GetServersAtAddressRequest::class,
+    UpToDateCheckRequest::class,
+    GetNewsForAppRequest::class,
+    GetServerInfoRequest::class,
+    GetSupportedApiListRequest::class,
+]);
 
 /**
  * @param  list<Throwable>  $failures
@@ -201,3 +229,74 @@ test('an error status keeps its own exception whatever the body', function (Mock
     'a key error in HTML' => [SteamResponse::apiKeyMissing(), InvalidApiKeyException::class, 400],
     'an HTML 5xx' => [MockResponse::make('<html>Server Error</html>', 503), SteamApiException::class, 503],
 ]);
+
+dataset('answers missing a required path', [
+    'GetOwnedGames, no envelope' => [new GetOwnedGamesRequest(steamId()), 'GetOwnedGames', '{}', 'response'],
+    'GetOwnedGames, a proxy error' => [new GetOwnedGamesRequest(steamId()), 'GetOwnedGames', '{"error":"Service Unavailable"}', 'response'],
+    'GetRecentlyPlayedGames' => [new GetRecentlyPlayedGamesRequest(steamId()), 'GetRecentlyPlayedGames', '{}', 'response'],
+    'GetSteamLevel' => [new GetSteamLevelRequest(steamId()), 'GetSteamLevel', '{}', 'response'],
+    'GetBadges' => [new GetBadgesRequest(steamId()), 'GetBadges', '{}', 'response'],
+    'GetCommunityBadgeProgress' => [new GetCommunityBadgeProgressRequest(steamId()), 'GetCommunityBadgeProgress', '{}', 'response'],
+    'GetPlayerSummaries, no envelope' => [new GetPlayerSummariesRequest([steamId()]), 'GetPlayerSummaries', '{}', 'response.players'],
+    'GetPlayerSummaries, no players' => [new GetPlayerSummariesRequest([steamId()]), 'GetPlayerSummaries', '{"response":{}}', 'response.players'],
+    'GetPlayerBans' => [new GetPlayerBansRequest([steamId()]), 'GetPlayerBans', '{}', 'players'],
+    'GetFriendList, anything but an empty object' => [friendListRequest(), 'GetFriendList', '{"error":"Service Unavailable"}', 'friendslist'],
+    'GetUserGroupList' => [new GetUserGroupListRequest(steamId()), 'GetUserGroupList', '{}', 'response'],
+    'ResolveVanityURL, no envelope' => [new ResolveVanityUrlRequest('gabelogannewell'), 'ResolveVanityURL', '{}', 'response.success'],
+    'ResolveVanityURL, no success' => [new ResolveVanityUrlRequest('gabelogannewell'), 'ResolveVanityURL', '{"response":{"steamid":"76561197960287930"}}', 'response.success'],
+    'GetPlayerAchievements' => [new GetPlayerAchievementsRequest(steamId(), 440), 'GetPlayerAchievements', '{}', 'playerstats'],
+    'GetNumberOfCurrentPlayers, no count' => [new GetNumberOfCurrentPlayersRequest(440), 'GetNumberOfCurrentPlayers', '{"response":{"result":1}}', 'response.player_count'],
+    'GetNumberOfCurrentPlayers, a null count' => [new GetNumberOfCurrentPlayersRequest(440), 'GetNumberOfCurrentPlayers', '{"response":{"player_count":null,"result":1}}', 'response.player_count'],
+    'GetGlobalAchievementPercentagesForApp' => [new GetGlobalAchievementPercentagesForAppRequest(440), 'GetGlobalAchievementPercentagesForApp', '{"achievementpercentages":{}}', 'achievementpercentages.achievements'],
+    'GetSchemaForGame' => [new GetSchemaForGameRequest(440), 'GetSchemaForGame', '{}', 'game'],
+    'GetUserStatsForGame' => [new GetUserStatsForGameRequest(steamId(), 440), 'GetUserStatsForGame', '{}', 'playerstats'],
+    'GetSDRConfig, no revision' => [new GetSdrConfigRequest(440), 'GetSDRConfig', '{"pops":{},"success":true}', 'revision'],
+    'GetSDRConfig, no points of presence' => [new GetSdrConfigRequest(440), 'GetSDRConfig', '{"revision":1790374330,"success":true}', 'pops'],
+    'GetServersAtAddress, no success' => [new GetServersAtAddressRequest('1.2.3.4'), 'GetServersAtAddress', '{"response":{"servers":[]}}', 'response.success'],
+    'GetServersAtAddress, a success without servers' => [new GetServersAtAddressRequest('1.2.3.4'), 'GetServersAtAddress', '{"response":{"success":true}}', 'response.servers'],
+    'GetServersAtAddress, a refusal without a message' => [new GetServersAtAddressRequest('1.2.3.4'), 'GetServersAtAddress', '{"response":{"success":false}}', 'response.message'],
+    'UpToDateCheck' => [new UpToDateCheckRequest(440, 1), 'UpToDateCheck', '{"response":{"up_to_date":true}}', 'response.success'],
+    'GetNewsForApp' => [new GetNewsForAppRequest(440), 'GetNewsForApp', '{}', 'appnews'],
+    'GetServerInfo' => [new GetServerInfoRequest, 'GetServerInfo', '{"servertimestring":"Thu Oct  8 12:59:38 2026"}', 'servertime'],
+    'GetSupportedAPIList' => [new GetSupportedApiListRequest, 'GetSupportedAPIList', '{"apilist":{}}', 'apilist.interfaces'],
+]);
+
+test('a 2xx answer missing a path its method reads fails the call', function (Request $request, string $method, string $body, string $path): void {
+    $mockClient = new MockClient([MockResponse::make($body)]);
+
+    $exception = unreadableFailureOf(static fn (): Response => fakedConnector($mockClient)->send($request));
+
+    expect($exception->getMessage())->toBe(sprintf('%s: Steam API answered HTTP 200 without %s.', $method, $path))
+        ->and($exception->getCode())->toBe(200)
+        ->and($exception->response)->toBe($mockClient->getLastResponse());
+})->with('answers missing a required path');
+
+test('an answer missing a path reaches onFailure once', function (Closure $send): void {
+    $failures = [];
+    $connector = connectorRecordingFailures(fakedConnector(new MockClient([MockResponse::make('{"response":{"servers":[]}}')])), $failures);
+
+    $exception = unreadableFailureOf(static fn (): mixed => $send($connector, new GetServersAtAddressRequest('1.2.3.4')));
+
+    expect($exception->getMessage())->toBe('GetServersAtAddress: Steam API answered HTTP 200 without response.success.')
+        ->and($failures)->toBe([$exception]);
+})->with(everyWayToSend());
+
+test('a path that is present but empty still reads', function (Closure $call, mixed $expected): void {
+    expect($call())->toEqual($expected);
+})->with([
+    'an empty object for a friend list' => [static fn (): array => fakedConnector(new MockClient([MockResponse::make('{}')]))->users()->friends(steamId()), []],
+    'an empty game schema' => [static fn (): int => count(fakedConnector(new MockClient([MockResponse::make('{"game":{}}')]))->stats()->schema(440)->achievements), 0],
+    'an address with no servers' => [static fn (): array => fakedConnector(new MockClient([MockResponse::fixture('ISteamApps/GetServersAtAddress/empty')]))->apps()->serversAtAddress('1.2.3.4'), []],
+]);
+
+test('an empty envelope still reads as a hidden profile', function (string $body): void {
+    $exception = failureFrom(static fn (): array => fakedConnector(new MockClient([MockResponse::make($body)]))->players()->ownedGames(steamId()));
+
+    expect($exception::class)->toBe(ProfileNotPublicException::class);
+})->with(['{"response":[]}', '{"response":{}}']);
+
+test('a refusal Steam explains still raises its own exception', function (): void {
+    $exception = failureFrom(static fn (): array => fakedConnector(new MockClient([SteamResponse::invalidServerAddress()]))->apps()->serversAtAddress('not-an-ip'));
+
+    expect($exception::class)->toBe(InvalidServerAddressException::class);
+});

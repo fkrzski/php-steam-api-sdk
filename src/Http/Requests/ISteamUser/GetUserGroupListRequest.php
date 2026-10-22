@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\UserGroup;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
@@ -11,7 +12,7 @@ use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-final class GetUserGroupListRequest extends Request
+final class GetUserGroupListRequest extends Request implements HasRequiredPaths
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -23,6 +24,11 @@ final class GetUserGroupListRequest extends Request
     public function resolveEndpoint(): string
     {
         return '/ISteamUser/GetUserGroupList/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['response'];
     }
 
     /**

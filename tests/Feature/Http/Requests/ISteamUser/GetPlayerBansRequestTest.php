@@ -5,12 +5,14 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Dto\PlayerBan;
 use Fkrzski\SteamApiSdk\Enums\EconomyBan;
 use Fkrzski\SteamApiSdk\Exceptions\TooManySteamIdsException;
+use Fkrzski\SteamApiSdk\Exceptions\UnreadableResponseException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerBansRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
+use Saloon\Http\Response;
 
 covers([GetPlayerBansRequest::class, PlayerBan::class]);
 
@@ -114,7 +116,7 @@ test('empty players list yields no DTOs', function (): void {
     expect(sendBansFixture('empty'))->toBe([]);
 });
 
-test('response without a players key yields no DTOs', function (): void {
+test('response without a players key is unreadable', function (): void {
     $mock = new MockClient([
         GetPlayerBansRequest::class => MockResponse::make(['unexpected' => true]),
     ]);
@@ -122,5 +124,8 @@ test('response without a players key yields no DTOs', function (): void {
     $connector = bansConnector();
     $connector->withMockClient($mock);
 
-    expect($connector->send(new GetPlayerBansRequest(makeSteamIds(1)))->dto())->toBe([]);
+    $exception = failureFrom(static fn (): Response => $connector->send(new GetPlayerBansRequest(makeSteamIds(1))));
+
+    expect($exception::class)->toBe(UnreadableResponseException::class)
+        ->and($exception->getMessage())->toBe('GetPlayerBans: Steam API answered HTTP 200 without players.');
 });

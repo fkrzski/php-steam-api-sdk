@@ -16,4 +16,13 @@ final class UnreadableResponseException extends SteamApiException
             $response,
         );
     }
+
+    /** @internal */
+    public static function missing(Response $response, string $path): self
+    {
+        return new self(
+            sprintf('Steam API answered HTTP %d without %s.', $response->status(), $path),
+            $response,
+        );
+    }
 }

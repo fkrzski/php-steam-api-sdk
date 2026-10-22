@@ -82,7 +82,7 @@ dataset('sending one request', [
 test('onRequest gets the Steam method, the query without the key and the attempt', function (): void {
     $sent = [];
     $received = [];
-    $connector = hooked(connectorAnswering([emptyAnswer()], new SteamConfig('secret-key', language: Language::Polish)), $sent, $received);
+    $connector = hooked(connectorAnswering([new PsrResponse(200, [], '{"game":{}}')], new SteamConfig('secret-key', language: Language::Polish)), $sent, $received);
 
     $connector->send(new GetSchemaForGameRequest(440));
 
@@ -337,7 +337,7 @@ test('a failure raised before sending reaches onFailure', function (Closure $con
 
 test('a failure Steam reports in a 200 payload reaches onFailure', function (Closure $send): void {
     $failures = [];
-    $connector = recordingFailures(connectorAnswering([emptyAnswer()]), $failures);
+    $connector = recordingFailures(connectorAnswering([new PsrResponse(200, [], '{"response":{}}')]), $failures);
 
     $caught = callerGets(static fn (): mixed => $send($connector, new GetSteamLevelRequest(SteamId::fromSteamId64('76561198148125221'))));
 

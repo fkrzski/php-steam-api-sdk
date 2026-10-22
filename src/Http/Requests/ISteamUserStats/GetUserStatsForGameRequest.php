@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
@@ -13,7 +14,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetUserStatsForGameRequest extends Request
+final class GetUserStatsForGameRequest extends Request implements HasRequiredPaths
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -26,6 +27,11 @@ final class GetUserStatsForGameRequest extends Request
     public function resolveEndpoint(): string
     {
         return '/ISteamUserStats/GetUserStatsForGame/v2/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['playerstats'];
     }
 
     /**

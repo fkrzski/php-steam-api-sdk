@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Responses;
 
+use Fkrzski\SteamApiSdk\Exceptions\UnreadableResponseException;
 use GuzzleHttp\Exception\RequestException;
 use Override;
 use Saloon\Exceptions\Request\FatalRequestException;
@@ -45,6 +46,15 @@ final class SteamApiResponse extends Response
         return self::$raisedBy[$exception] ?? null;
     }
 
+    /**
+     * Requests decode the body in their own failure checks, so an unreadable one fails before they run.
+     */
+    #[Override]
+    public function failed(): bool
+    {
+        return $this->unreadable() instanceof UnreadableResponseException || parent::failed();
+    }
+
     #[Override]
     public function toException(): ?Throwable
     {
@@ -54,11 +64,43 @@ final class SteamApiResponse extends Response
     #[Override]
     protected function createException(): Throwable
     {
-        $exception = parent::createException();
+        $exception = $this->unreadable() ?? parent::createException();
 
         self::$raisedBy ??= new WeakMap;
         self::$raisedBy[$exception] = $this;
 
         return $exception;
+    }
+
+    /**
+     * An error status speaks for itself, and a request asking for another format reads its own body.
+     */
+    private function unreadable(): ?UnreadableResponseException
+    {
+        if ($this->clientError() || $this->serverError() || $this->getPendingRequest()->query()->get('format', 'json') !== 'json') {
+            return null;
+        }
+
+        return $this->decodes() ? null : UnreadableResponseException::notJson($this);
+    }
+
+    /**
+     * Decodes as json() does, into its cache: a stream that cannot rewind reads empty the second time.
+     */
+    private function decodes(): bool
+    {
+        if (isset($this->decodedJson)) {
+            return true;
+        }
+
+        $decoded = json_decode($this->body() ?: '[]', true);
+
+        if (! is_array($decoded)) {
+            return false;
+        }
+
+        $this->decodedJson = $decoded;
+
+        return true;
     }
 }

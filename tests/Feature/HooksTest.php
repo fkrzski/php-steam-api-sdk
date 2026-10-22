@@ -152,6 +152,15 @@ test('a request sent again counts from one', function (): void {
     expect(array_column($sent, 'attempt'))->toBe([1, 1]);
 });
 
+test('a request built outside send() counts as attempt one', function (): void {
+    $sent = [];
+    $received = [];
+
+    hooked(new SteamConnector(new SteamConfig('test-key')), $sent, $received)->createPendingRequest(friendListRequest());
+
+    expect(array_column($sent, 'attempt'))->toBe([1]);
+});
+
 test('a 429 reaches onResponse before the rate limiter raises', function (): void {
     $sent = [];
     $received = [];

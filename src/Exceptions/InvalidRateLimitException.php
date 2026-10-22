@@ -18,6 +18,16 @@ final class InvalidRateLimitException extends SteamApiException
     }
 
     /** @internal */
+    public static function reservedName(int|string $key, string $name): self
+    {
+        return new self(sprintf(
+            'SteamConfig::$rateLimits[%s] is named "%s", which the connector keeps for the lock after a 429. Give it a name of its own with ->name().',
+            $key,
+            $name,
+        ));
+    }
+
+    /** @internal */
     public static function tooShortCooldown(int $seconds): self
     {
         return new self(sprintf(

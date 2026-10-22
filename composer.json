@@ -12,7 +12,7 @@
     "require": {
         "php": "^8.5.0",
         "saloonphp/saloon": "^4.0",
-        "saloonphp/rate-limit-plugin": "^2.0"
+        "saloonphp/rate-limit-plugin": "^2.5.2"
     },
     "require-dev": {
         "laravel/pao": "^1.1",

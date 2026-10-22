@@ -6,6 +6,7 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
@@ -14,11 +15,17 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListReques
 use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use GuzzleHttp\Promise\Promise;
+use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\Utils;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Config;
+use Saloon\Contracts\Sender;
+use Saloon\Data\FactoryCollection;
 use Saloon\Enums\Method;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
+use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
@@ -398,6 +405,38 @@ test('requests go through again once the cool-down passes', function (): void {
         ->and($sent)->toHaveCount(2);
 });
 
+test("Steam's 429 raises an exception that carries its answer, and the lock it leaves refuses with none", function (Closure $send, Closure $request, string $method): void {
+    $connector = fakedConnector(new MockClient([
+        MockResponse::make([], 429, ['Retry-After' => '120']),
+        MockResponse::make([]),
+    ]));
+
+    $throttled = rateLimitOf(fn (): mixed => $send($connector, $request()));
+    $refused = rateLimitOf(fn (): mixed => $send($connector, $request()));
+
+    expect($throttled->getCode())->toBe(429)
+        ->and($throttled->response?->header('Retry-After'))->toBe('120')
+        ->and($throttled->getMessage())->toBe(sprintf('%s: Steam API rate limit reached (limit: %s).', $method, $throttled->limit->getName()))
+        ->and($refused->response)->toBeNull()
+        ->and($refused->getCode())->toBe(0)
+        ->and($refused->getMessage())->toBe(sprintf('Steam API rate limit reached (limit: %s).', $refused->limit->getName()));
+})->with(everyWayToSend())->with([
+    'with the key' => [friendListRequest(...), 'GetFriendList'],
+    'without the key' => [static fn (): Request => new GetNumberOfCurrentPlayersRequest(381210), 'GetNumberOfCurrentPlayers'],
+]);
+
+test('a 429 without Retry-After late in the cool-down window locks for the whole cool-down', function (): void {
+    $connector = connectorAnswering([new PsrResponse(429)], new SteamConfig('test-key', tooManyRequestsCooldown: 300));
+
+    array_last($connector->getLimits())->setExpiryTimestamp(time() + 5)->save($connector->rateLimitStore());
+
+    $before = time();
+    $throttled = rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
+    $after = time();
+
+    expect($throttled->limit->getExpiryTimestamp())->toBeGreaterThanOrEqual($before + 300)->toBeLessThanOrEqual($after + 300);
+});
+
 test('a 429 refuses requests for as long as Retry-After says, or for the cool-down without one', function (SteamConfig $config, array $headers, int $seconds): void {
     $connector = connectorAnswering([new PsrResponse(429, $headers)], $config);
 
@@ -410,6 +449,20 @@ test('a 429 refuses requests for as long as Retry-After says, or for the cool-do
     'default cool-down' => [new SteamConfig('test-key'), [], 60],
     'Retry-After under the cool-down' => [new SteamConfig('test-key', tooManyRequestsCooldown: 300), ['Retry-After' => '120'], 120],
     'Retry-After over the cool-down' => [new SteamConfig('test-key', tooManyRequestsCooldown: 30), ['Retry-After' => '120'], 120],
+]);
+
+test('a Retry-After of 0 or in the past locks for one second, not the cool-down', function (Closure $retryAfter): void {
+    $connector = connectorAnswering([new PsrResponse(429, ['Retry-After' => $retryAfter()])], new SteamConfig('test-key', tooManyRequestsCooldown: 600));
+
+    $before = time();
+    $throttled = rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
+    $after = time();
+
+    expect($throttled->limit->getExpiryTimestamp())->toBeGreaterThanOrEqual($before + 1)->toBeLessThanOrEqual($after + 1);
+})->with([
+    'zero' => [static fn (): string => '0'],
+    'negative' => [static fn (): string => '-5'],
+    'a date in the past' => [static fn (): string => gmdate('D, d M Y H:i:s \G\M\T', time() - 30)],
 ]);
 
 test('the cool-down holds with a key or without and whatever the rate limits', function (SteamConfig $config): void {
@@ -565,6 +618,108 @@ test('a configured limit set to sleep() waits instead of throwing', function (Cl
     'send' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->send($request)],
     'sendAsync' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->sendAsync($request)->wait()],
 ])->skip(! method_exists(Config::class, 'sleepUsing'), 'Saloon before 4.4 has no sleep handler, so the test would sleep for real.');
+
+test('a sleep() limit that re-sends keeps numbering the attempts and fires onFailure once', function (Closure $send, int $tries, array $statuses, array $numbered): void {
+    $answered = 0;
+    $attempts = [];
+    $failures = [];
+    // A window of no seconds is over by the time the plugin re-sends, so nothing sleeps.
+    $connector = new SteamConnector(new SteamConfig('test-key', tries: $tries, rateLimits: [
+        Limit::custom(static function (Response $response, Limit $limit) use (&$answered): void {
+            if ($answered++ === 0) {
+                $limit->exceeded();
+            }
+        })->everySeconds(0, 'at_once')->sleep(),
+    ]))
+        ->onRequest(static function (RequestSending $sending) use (&$attempts): void {
+            $attempts[] = $sending->attempt;
+        })
+        ->onFailure(static function (Throwable $throwable) use (&$failures): void {
+            $failures[] = $throwable;
+        });
+
+    $mockClient = new MockClient(array_map(static fn (int $status): MockResponse => MockResponse::make([], $status), $statuses));
+
+    $failure = failureFrom(fn (): mixed => $send($connector, $mockClient));
+
+    expect($attempts)->toBe($numbered)
+        ->and($failures)->toBe([$failure])
+        ->and($failure->getCode())->toBe(array_last($statuses))
+        ->and($mockClient->getRecordedResponses())->toHaveCount(count($statuses));
+})->with([
+    'send' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => $connector->withMockClient($mockClient)->send(friendListRequest())],
+    'send with its own mock client' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => $connector->send(friendListRequest(), $mockClient)],
+    'sendAsync with its own mock client' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => $connector->sendAsync(friendListRequest(), $mockClient)->wait()],
+    'pool' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => everyWayToSend()['pool'][0]($connector->withMockClient($mockClient))],
+])->with([
+    'the re-send fails' => [1, [200, 404], [1, 2]],
+    "the re-send spends its own tries, not the call's" => [2, [200, 503, 503], [1, 2, 3]],
+]);
+
+test('a request sent again after its call settled starts from attempt 1 and reports its own failure', function (Closure $first, int $status, int $failed): void {
+    $attempts = [];
+    $failures = 0;
+    $request = friendListRequest();
+    $connector = fakedConnector(new MockClient([MockResponse::make('{"friendslist":{"friends":[]}}', $status), MockResponse::make([], 404)]))
+        ->onRequest(static function (RequestSending $sending) use (&$attempts): void {
+            $attempts[] = $sending->attempt;
+        })
+        ->onFailure(static function () use (&$failures): void {
+            $failures++;
+        });
+
+    try {
+        $first($connector, $request);
+    } catch (Throwable) {
+        // pool() throws whichever way the first call went.
+    }
+
+    expect(fn (): Response => $connector->send($request))->toThrow(SteamApiException::class)
+        ->and($attempts)->toBe([1, 1])
+        ->and($failures)->toBe($failed);
+})->with(everyWayToSend())->with([
+    'after a success' => [200, 1],
+    'after a failure' => [404, 2],
+]);
+
+test('a sendAsync() never settled leaves a later send() of the request a call of its own', function (): void {
+    $attempts = [];
+    $failures = 0;
+    $request = friendListRequest();
+    $connector = new SteamConnector(new SteamConfig('test-key', sender: new class implements Sender
+    {
+        public function getFactoryCollection(): FactoryCollection
+        {
+            return senderAnswering([])->getFactoryCollection();
+        }
+
+        public function send(PendingRequest $pendingRequest): Response
+        {
+            throw new LogicException('Only sendAsync() is expected.');
+        }
+
+        public function sendAsync(PendingRequest $pendingRequest): PromiseInterface
+        {
+            return new Promise;
+        }
+    }))
+        ->onRequest(static function (RequestSending $sending) use (&$attempts): void {
+            $attempts[] = $sending->attempt;
+        })
+        ->onFailure(static function () use (&$failures): void {
+            $failures++;
+        });
+
+    $connector->sendAsync($request);
+    Utils::queue()->run();
+
+    $mockClient = new MockClient([MockResponse::make([], 404)]);
+
+    expect(fn (): Response => $connector->send($request, $mockClient))->toThrow(SteamApiException::class)
+        ->and($attempts)->toBe([1, 1])
+        ->and($failures)->toBe(1)
+        ->and($mockClient->getRecordedResponses())->toHaveCount(1);
+});
 
 test('a 429 on a custom request locks, counts and reaches onResponse however it was sent', function (Closure $send, Closure $answering, Closure $request): void {
     $statuses = [];

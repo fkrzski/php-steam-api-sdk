@@ -29,8 +29,8 @@ by default a connector without one counts nothing locally, and neither does a
 
 ## After a 429
 
-When Steam itself answers `429`, the connector raises the same exception and refuses every
-request locally until Steam's `Retry-After` passes. Without the header it holds them back for
+When Steam itself answers `429`, the connector raises the same exception, carrying Steam's
+response and code `429`, and refuses every request locally until Steam's `Retry-After` passes. Without the header it holds them back for
 `tooManyRequestsCooldown` seconds, 60 unless you set it:
 
 ```php title="steam.php" "tooManyRequestsCooldown: 300"
@@ -40,7 +40,8 @@ $connector = new SteamConnector(new SteamConfig(
 ));
 ```
 
-A `Retry-After` from Steam still wins. The cool-down applies with a key or without and
+A `Retry-After` from Steam still wins, and one of `0` or a date already past locks for a
+second. The cool-down applies with a key or without and
 whatever `rateLimits` holds, `[]` included, and it lives in the store next to the budget, per
 key, with requests sent without the key locked apart. A value under 1 throws
 `InvalidRateLimitException` as the config is built.
@@ -78,6 +79,7 @@ store don't drain each other; requests sent without the key
 [count them apart](#requests-sent-without-the-key). `->sleep()` waits for the window to pass
 instead of throwing, blocking the process meanwhile, in `pool()` as well. Two limits with one
 name throw `InvalidRateLimitException` as the config is built; give one of them a `->name()`.
+So does a limit named `too_many_attempts_limit`, the name of the lock after a `429`.
 
 <Aside type="caution" title="A window counted to a moment freezes with the config">
 `setExpiryTimestamp()`, `everySeconds()` fed with `time()`, `untilMidnightTonight()` and
@@ -100,7 +102,7 @@ if ($connector->hasReachedRateLimit(0.9)) {
 The argument is the share of a limit already spent, so `0.9` answers once 90 000 of the
 100 000 are gone; without it a limit has to be spent whole. Both see the lock after a `429` too.
 They read the key's counters; for requests sent without it, ask a connector built without a key
-on the same store.
+on the same store and with the same `rateLimits`.
 
 `$connector->useRateLimitPlugin(false)` turns the limiter off altogether: nothing is counted
 or refused locally, and a `429` surfaces as `SteamApiException` with code `429` rather than

@@ -16,6 +16,9 @@ use SensitiveParameter;
 
 final readonly class SteamConfig
 {
+    // LimitHelper::configureLimits() gives the plugin's own lock after a 429 this name.
+    private const string TOO_MANY_ATTEMPTS_LIMIT = 'too_many_attempts_limit';
+
     public ?string $apiKey;
 
     /**
@@ -97,6 +100,10 @@ final readonly class SteamConfig
 
         foreach ($rateLimits as $key => $limit) {
             $name = substr((clone $limit)->setPrefix('')->getName(), 1);
+
+            if ($name === self::TOO_MANY_ATTEMPTS_LIMIT) {
+                throw InvalidRateLimitException::reservedName($key, $name);
+            }
 
             if (isset($names[$name])) {
                 throw InvalidRateLimitException::duplicateName($names[$name], $key, $name);

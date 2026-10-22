@@ -266,11 +266,11 @@ final class SteamConnector extends Connector
     public function sendAsync(Request $request, ?MockClient $mockClient = null): PromiseInterface
     {
         return Utils::task(function () use ($request, $mockClient): PromiseInterface {
-            $pendingRequest = $this->createPendingRequest($request, $mockClient)->setAsynchronous(true);
+            $pendingRequest = $this->createPendingRequest($request, $mockClient);
 
             $promise = $pendingRequest->hasFakeResponse()
-                ? Create::promiseFor($this->createFakeResponse($pendingRequest))
-                : $this->sender()->sendAsync($pendingRequest);
+                ? Create::promiseFor($this->fakeResponse($pendingRequest))
+                : $this->sender()->sendAsync($pendingRequest->setAsynchronous(true));
 
             return $promise->then($this->runResponsePipeline(...), $this->runResponsePipeline(...));
         })->otherwise(fn (mixed $reason): never => throw $this->failed(Create::exceptionFor($reason)));
@@ -393,8 +393,20 @@ final class SteamConnector extends Connector
     }
 
     /**
-     * Guzzle and the mock client reject a 4xx or 5xx before any pipeline runs, so a failure takes
-     * the pipeline here as well and settles with what it returns, as send() would.
+     * Saloon records an async fake before rejecting with its exception; the sync path throws it unrecorded.
+     */
+    private function fakeResponse(PendingRequest $pendingRequest): mixed
+    {
+        $response = $this->createFakeResponse($pendingRequest);
+
+        $pendingRequest->setAsynchronous(true);
+
+        return $response;
+    }
+
+    /**
+     * Guzzle rejects a 4xx or 5xx before any pipeline runs, so a failure takes the pipeline here
+     * as well and settles with what it returns, as send() would.
      */
     private function runResponsePipeline(mixed $outcome): mixed
     {

@@ -13,4 +13,11 @@ enum PersonaState: int
     case Snooze = 4;
     case LookingToTrade = 5;
     case LookingToPlay = 6;
+    case Invisible = 7;
+    case Unknown = -1;
+
+    public static function fromApiValue(int $value): self
+    {
+        return self::tryFrom($value) ?? self::Unknown;
+    }
 }

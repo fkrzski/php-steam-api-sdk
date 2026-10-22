@@ -77,7 +77,7 @@ final readonly class PlayerSummary
             communityVisibility: CommunityVisibility::fromApiValue($payload['communityvisibilitystate']),
             hasCommunityProfile: isset($payload['profilestate']) && $payload['profilestate'] === 1,
             commentPermission: CommentPermission::fromApiValue($payload['commentpermission'] ?? null),
-            personaState: PersonaState::from($payload['personastate'] ?? 0),
+            personaState: PersonaState::fromApiValue($payload['personastate'] ?? 0),
             realName: $payload['realname'] ?? null,
             primaryClanId: $payload['primaryclanid'] ?? null,
             timeCreated: isset($payload['timecreated']) ? self::timestamp($payload['timecreated']) : null,

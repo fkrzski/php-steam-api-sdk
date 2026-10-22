@@ -90,6 +90,13 @@ test('a sender failure that is not a network one reaches the caller untouched', 
     expect(failureFrom(fn (): mixed => $send($connector)))->toBe($failure);
 })->with(everyWayToSend());
 
+test('a network failure a sender throws from sendAsync raises SteamConnectionException', function (Closure $send): void {
+    $thrown = failureFrom(fn (): mixed => $send(sendingThrough(senderFailingAsync(static fn (): never => throw networkFailure()))));
+
+    expect($thrown::class)->toBe(SteamConnectionException::class)
+        ->and($thrown->getMessage())->toBe('GetFriendList: Could not reach the Steam Web API: cURL error 28: Operation timed out after 30000 milliseconds');
+})->with(asyncWaysToSend());
+
 test('a rejection that is not a Throwable reaches the caller and onFailure', function (Closure $send): void {
     $failures = [];
     $connector = sendingThrough(senderFailingAsync(static fn (): PromiseInterface => Create::rejectionFor('The sender gave up.')))

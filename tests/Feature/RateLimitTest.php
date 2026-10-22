@@ -398,6 +398,26 @@ test('requests go through again once the cool-down passes', function (): void {
         ->and($sent)->toHaveCount(2);
 });
 
+test("Steam's 429 raises an exception that carries its answer, and the lock it leaves refuses with none", function (Closure $send, Closure $request, string $method): void {
+    $connector = fakedConnector(new MockClient([
+        MockResponse::make([], 429, ['Retry-After' => '120']),
+        MockResponse::make([]),
+    ]));
+
+    $throttled = rateLimitOf(fn (): mixed => $send($connector, $request()));
+    $refused = rateLimitOf(fn (): mixed => $send($connector, $request()));
+
+    expect($throttled->getCode())->toBe(429)
+        ->and($throttled->response?->header('Retry-After'))->toBe('120')
+        ->and($throttled->getMessage())->toBe(sprintf('%s: Steam API rate limit reached (limit: %s).', $method, $throttled->limit->getName()))
+        ->and($refused->response)->toBeNull()
+        ->and($refused->getCode())->toBe(0)
+        ->and($refused->getMessage())->toBe(sprintf('Steam API rate limit reached (limit: %s).', $refused->limit->getName()));
+})->with(everyWayToSend())->with([
+    'with the key' => [friendListRequest(...), 'GetFriendList'],
+    'without the key' => [static fn (): Request => new GetNumberOfCurrentPlayersRequest(381210), 'GetNumberOfCurrentPlayers'],
+]);
+
 test('a 429 without Retry-After late in the cool-down window locks for the whole cool-down', function (): void {
     $connector = connectorAnswering([new PsrResponse(429)], new SteamConfig('test-key', tooManyRequestsCooldown: 300));
 

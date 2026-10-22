@@ -86,6 +86,11 @@ final class SteamConnector extends Connector
     private array $attempts = [];
 
     /**
+     * The answer this request's limiter judges; the plugin hands throwLimitException() only the Limit.
+     */
+    private ?Response $answer = null;
+
+    /**
      * Saloon's send() reads the retry settings straight off these properties, so the
      * config is copied rather than resolved.
      */
@@ -215,7 +220,13 @@ final class SteamConnector extends Connector
                 }
             }, order: PipeOrder::FIRST);
 
-        $this->limiterFor($pendingRequest->getRequest())->bootRateLimiter($pendingRequest);
+        $limiter = $this->limiterFor($pendingRequest->getRequest());
+
+        $pendingRequest->middleware()->onResponse(static function (Response $response) use ($limiter): void {
+            $limiter->answer = $response;
+        }, order: PipeOrder::FIRST);
+
+        $limiter->bootRateLimiter($pendingRequest);
     }
 
     /**
@@ -382,7 +393,7 @@ final class SteamConnector extends Connector
 
     protected function throwLimitException(Limit $limit): never
     {
-        throw SteamRateLimitException::fromLimit($limit);
+        throw SteamRateLimitException::fromLimit($limit, $this->answer);
     }
 
     /**
@@ -464,13 +475,17 @@ final class SteamConnector extends Connector
     }
 
     /**
+     * A limiter of its own per request, so a lock thrown from Steam's answer carries that answer and no other.
      * Steam bills a request sent without the key to no key, so a connector built without one limits it.
-     * The plugin's closures keep that limiter per request, which a flag on this connector would lose in pool().
      */
     private function limiterFor(Request $request): self
     {
-        if (! $request instanceof SendsNoApiKey || ! $this->rateLimitingEnabled) {
+        if (! $this->rateLimitingEnabled) {
             return $this;
+        }
+
+        if (! $request instanceof SendsNoApiKey) {
+            return new self($this->steamConfig);
         }
 
         return new self(new SteamConfig(

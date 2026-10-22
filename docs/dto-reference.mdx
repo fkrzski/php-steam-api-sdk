@@ -4,9 +4,9 @@ description: The readonly DTOs and enums the SDK decodes Steam responses into �
 ---
 
 Every request returns readonly DTOs — immutable objects with typed, public properties.
-Timestamps are always `DateTimeImmutable`. A nullable property (`?`) means Steam omitted
-the field, never that decoding failed; where an absent field would be ambiguous the SDK
-raises a [domain exception](/php-steam-api-sdk/exceptions) instead.
+Timestamps are always `DateTimeImmutable` in UTC, whatever `date.timezone` says. A nullable
+property (`?`) means Steam omitted the field, never that decoding failed; where an absent
+field would be ambiguous the SDK raises a [domain exception](/php-steam-api-sdk/exceptions) instead.
 
 ## AppNews
 
@@ -215,7 +215,7 @@ Returned by [`GetPlayerSummariesRequest`](/php-steam-api-sdk/api-reference#getpl
 | `commentPermission` | `CommentPermission` | Who may comment on the profile. |
 | `personaState` | `PersonaState` | Online / away / offline, etc. |
 | `realName` | `?string` | Real name, if shared. |
-| `primaryClanId` | `?string` | Primary group ID, if any. |
+| `primaryClanId` | `?string` | Primary group's 64-bit ID, `null` when the player has none. |
 | `timeCreated` | `?DateTimeImmutable` | Account creation time, if exposed. |
 | `lastLogOff` | `?DateTimeImmutable` | Last logout, if exposed. |
 | `gameId` | `?string` | App ID currently being played. |
@@ -335,21 +335,21 @@ Each `WebApiParameter` carries:
 
 ## Enums
 
-Five of these mirror Steam's wire values; `CommentPermission` and `EconomyBan` do not,
-and those are the two worth reading before you `match` on them.
+Five of these mirror Steam's wire values, `Unknown` aside; `CommentPermission` and
+`EconomyBan` do not, and those are the two worth reading before you `match` on them.
 
 ### CommentPermission
 
 Backed by `string` — `Everyone` (`'everyone'`), `Nobody` (`'nobody'`), `FriendsOnly`
-(`'friends_only'`). Steam sends `commentpermission` as an **integer** and omits it
-entirely for the friends-only case, so these backing values are the SDK's own vocabulary
-rather than the wire values. Use `fromApiValue()` to map from a raw payload.
+(`'friends_only'`), `Unknown` (`'unknown'`). Steam sends `commentpermission` as an
+**integer** and omits it entirely for the friends-only case, so these backing values are the
+SDK's own vocabulary rather than the wire values. Use `fromApiValue()` to map from a raw payload.
 
 ### CommunityVisibility
 
-Backed by `int` — `Hidden` (`1`), `FriendsOnly` (`2`), `Visible` (`3`). Steam's own
-`communityvisibilitystate` codes; Valve documents only `1` and `3`, but `2` comes back for
-profiles set to friends only.
+Backed by `int` — `Hidden` (`1`), `FriendsOnly` (`2`), `Visible` (`3`), `Unknown` (`-1`).
+Steam's own `communityvisibilitystate` codes; Valve documents only `1` and `3`, but `2` comes
+back for profiles set to friends only.
 
 ### EconomyBan
 
@@ -396,6 +396,8 @@ Backed by `int`, using Steam's own `personastate` codes.
 | `Snooze` | `4` |
 | `LookingToTrade` | `5` |
 | `LookingToPlay` | `6` |
+| `Invisible` | `7` |
+| `Unknown` | `-1` |
 
 ### ServerRegion
 
@@ -413,9 +415,8 @@ Backed by `int`, using Steam's `region` codes, which a game server sets with `sv
 | `MiddleEast` | `6` |
 | `Africa` | `7` |
 
-<Aside type="caution" title="Two helpers never throw">
-`EconomyBan::fromApiValue()` maps anything unrecognised to `Unknown` and
-`ServerRegion::fromApiValue()` to `World`, so a new value from Valve cannot break callers. The
-other two, on `CommentPermission` and `CommunityVisibility`, treat their set as closed and throw
-`UnexpectedValueException`.
+<Aside type="caution" title="Unlisted values fall back">
+Every `fromApiValue()` maps a value it does not list to `Unknown`, or to `World` on
+`ServerRegion`, so a new value from Valve cannot fail a request. Give a `match` on these enums
+an arm for the fallback.
 </Aside>

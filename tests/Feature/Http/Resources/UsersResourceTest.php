@@ -6,7 +6,10 @@ use Fkrzski\SteamApiSdk\Dto\Friend;
 use Fkrzski\SteamApiSdk\Dto\PlayerBan;
 use Fkrzski\SteamApiSdk\Dto\PlayerSummary;
 use Fkrzski\SteamApiSdk\Dto\UserGroup;
+use Fkrzski\SteamApiSdk\Enums\CommentPermission;
+use Fkrzski\SteamApiSdk\Enums\CommunityVisibility;
 use Fkrzski\SteamApiSdk\Enums\FriendRelationship;
+use Fkrzski\SteamApiSdk\Enums\PersonaState;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
@@ -17,6 +20,8 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
+use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -218,6 +223,31 @@ test('summaries sends GetPlayerSummaries and returns PlayerSummary DTOs', functi
         ->and($summaries[0])->toBeInstanceOf(PlayerSummary::class)
         ->and($summaries[0]->personaName)->toBe('tester-one')
         ->and($mockClient->getLastRequest()?->query()->all())->toBe(['steamids' => '76561198000000000']);
+});
+
+test('values Steam adds later come back as Unknown without failing the batch', function (): void {
+    $mockClient = new MockClient([
+        GetPlayerSummariesRequest::class => SteamResponse::playerSummaries(
+            PlayerSummaryFactory::new()->state(['steamid' => '76561198000000000', 'personastate' => 7]),
+            PlayerSummaryFactory::new()->state([
+                'steamid' => '76561198000000001',
+                'personastate' => 99,
+                'communityvisibilitystate' => 4,
+                'commentpermission' => 5,
+            ]),
+            PlayerSummaryFactory::new()->state(['steamid' => '76561198000000002']),
+        ),
+    ]);
+
+    $summaries = usersResource($mockClient)->summaries(makeSteamIds(3));
+
+    expect($summaries)->toHaveCount(3)
+        ->and($summaries[0]->personaState)->toBe(PersonaState::Invisible)
+        ->and($summaries[1]->personaState)->toBe(PersonaState::Unknown)
+        ->and($summaries[1]->communityVisibility)->toBe(CommunityVisibility::Unknown)
+        ->and($summaries[1]->commentPermission)->toBe(CommentPermission::Unknown)
+        ->and($summaries[2]->personaState)->toBe(PersonaState::Offline)
+        ->and($summaries[2]->steamId->value)->toBe('76561198000000002');
 });
 
 test('bans sends GetPlayerBans and returns PlayerBan DTOs', function (): void {

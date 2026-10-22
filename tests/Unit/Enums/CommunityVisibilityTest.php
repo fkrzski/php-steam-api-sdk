@@ -14,13 +14,17 @@ test('maps API values to enum cases', function (int $value, CommunityVisibility 
     'visible' => [3, CommunityVisibility::Visible],
 ]);
 
-test('unknown values throw UnexpectedValueException', function (): void {
-    CommunityVisibility::fromApiValue(4);
-})->throws(UnexpectedValueException::class, 'Unknown communityvisibilitystate value "4".');
+test('unlisted values degrade to Unknown instead of throwing', function (int $value): void {
+    expect(CommunityVisibility::fromApiValue($value))->toBe(CommunityVisibility::Unknown);
+})->with([
+    'zero' => [0],
+    'past the last state' => [4],
+]);
 
 test('backing values mirror the API and survive json_encode', function (): void {
     expect(CommunityVisibility::Hidden->value)->toBe(1)
         ->and(CommunityVisibility::FriendsOnly->value)->toBe(2)
         ->and(CommunityVisibility::Visible->value)->toBe(3)
+        ->and(CommunityVisibility::Unknown->value)->toBe(-1)
         ->and(json_encode(CommunityVisibility::Visible, JSON_THROW_ON_ERROR))->toBe('3');
 });

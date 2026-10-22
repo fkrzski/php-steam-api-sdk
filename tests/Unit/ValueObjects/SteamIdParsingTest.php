@@ -23,6 +23,7 @@ test('fromSteamId64 rejects invalid input', function (string $value): void {
         'with letters' => ['7656119800000000a'],
         'empty' => [''],
         'whitespace' => ['                 '],
+        'trailing newline' => ["76561198000000000\n"],
     ])
     ->throws(InvalidSteamIdException::class);
 

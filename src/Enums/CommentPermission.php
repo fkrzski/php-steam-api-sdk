@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Enums;
 
-use UnexpectedValueException;
-
 enum CommentPermission: string
 {
     case Everyone = 'everyone';
     case Nobody = 'nobody';
     case FriendsOnly = 'friends_only';
+    case Unknown = 'unknown';
 
     public static function fromApiValue(?int $value): self
     {
@@ -18,7 +17,7 @@ enum CommentPermission: string
             1 => self::Everyone,
             2 => self::Nobody,
             null => self::FriendsOnly,
-            default => throw new UnexpectedValueException(sprintf('Unknown commentpermission value "%d".', $value)),
+            default => self::Unknown,
         };
     }
 }

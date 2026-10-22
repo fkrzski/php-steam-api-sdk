@@ -10,7 +10,7 @@ use Stringable;
 
 final readonly class SteamId implements JsonSerializable, Stringable
 {
-    private const string STEAM_ID_64_PATTERN = '/^\d{17}$/';
+    private const string STEAM_ID_64_PATTERN = '/^\d{17}\z/';
 
     private const string PROFILE_URL_PATTERN = '#/profiles/(\d{17})(?:[/?\#]|$)#';
 

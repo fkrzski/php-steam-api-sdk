@@ -398,6 +398,18 @@ test('requests go through again once the cool-down passes', function (): void {
         ->and($sent)->toHaveCount(2);
 });
 
+test('a 429 without Retry-After late in the cool-down window locks for the whole cool-down', function (): void {
+    $connector = connectorAnswering([new PsrResponse(429)], new SteamConfig('test-key', tooManyRequestsCooldown: 300));
+
+    array_last($connector->getLimits())->setExpiryTimestamp(time() + 5)->save($connector->rateLimitStore());
+
+    $before = time();
+    $throttled = rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
+    $after = time();
+
+    expect($throttled->limit->getExpiryTimestamp())->toBeGreaterThanOrEqual($before + 300)->toBeLessThanOrEqual($after + 300);
+});
+
 test('a 429 refuses requests for as long as Retry-After says, or for the cool-down without one', function (SteamConfig $config, array $headers, int $seconds): void {
     $connector = connectorAnswering([new PsrResponse(429, $headers)], $config);
 

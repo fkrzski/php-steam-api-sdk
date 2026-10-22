@@ -22,7 +22,8 @@ SteamApiException                  (root, extends RuntimeException)
 ├── SteamConnectionException       Steam never answered: timeout, DNS, TLS, refused connection.
 ├── SteamRateLimitException        A local limit ran out, or Steam answered 429; exposes the Limit.
 ├── SteamUserNotFoundException     Vanity URL unresolved or profile missing.
-└── TooManySteamIdsException       More than 100 IDs in one request; summaries() and bans() split them.
+├── TooManySteamIdsException       More than 100 IDs in one request; summaries() and bans() split them.
+└── UnreadableResponseException    A 2xx answer that is not JSON, or lacks what the method reads.
 ```
 
 Catch the leaf you care about, or the root to handle every SDK failure uniformly:
@@ -116,6 +117,7 @@ Steam never answers at all:
 | any other `4xx` / `5xx` | `SteamApiException`, a `5xx` once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
 | `200` with an empty, `success: 42` or `success: false` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` / `AppVersionUnavailableException` / `InvalidServerAddressException` |
 | `200` with `success: false` and a message the SDK does not recognise | `SteamApiException`, quoting Steam's message |
+| a non-error status with a body that is not JSON, or without the key the method decides on or returns | `UnreadableResponseException`, never retried |
 | no answer: a timeout, a DNS or TLS failure, a refused connection, a body cut off after a non-error status | `SteamConnectionException` with code `0`, once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
 
 `ApiKeyNotConfiguredException` has no row here: it is raised locally, so a request that

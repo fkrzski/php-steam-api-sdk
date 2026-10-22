@@ -101,7 +101,8 @@ The SDK follows [SemVer](https://semver.org/) from 1.0.0. A minor or patch relea
 Any release may change:
 
 - Anything marked `@internal`: DTO constructors and `fromArray()`, the hook payload and
-  `SteamSender` constructors, and the exceptions' named constructors such as `fromLimit()`.
+  `SteamSender` constructors, the exceptions' named constructors such as `fromLimit()`, and the
+  `HasRequiredPaths` contract.
   Build DTOs and failures in tests with the [testing helpers](/php-steam-api-sdk/testing);
   PHPStan with bleeding edge reports a call from your code.
 - Resource constructors; reach a resource through the connector.

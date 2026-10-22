@@ -27,7 +27,7 @@ $connector
 | --- | --- | --- |
 | `method` | `string` | `ISteamUser/GetPlayerSummaries/v2` |
 | `query` | `array<string, mixed>` | the query Steam receives, without `key` |
-| `attempt` | `int` | `1`, then `2` for the first retry; always `1` under `sendAsync()` and `pool()` |
+| `attempt` | `int` | `1`, then `2` for the first retry or for a request a `sleep()` limit sends again; `sendAsync()` and `pool()` never retry |
 | `status` | `int` | `ResponseReceived` only: the HTTP status |
 | `duration` | `float` | `ResponseReceived` only: seconds from sending to the answer, `onRequest` hooks excluded |
 

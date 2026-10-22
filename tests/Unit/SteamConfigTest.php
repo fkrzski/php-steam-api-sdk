@@ -210,6 +210,22 @@ test('SteamConfig rejects two rate limits under one name', function (array $rate
     ],
 ]);
 
+test('SteamConfig rejects a rate limit under the name of the lock after a 429', function (array $rateLimits, string $message): void {
+    expect(fn (): SteamConfig => new SteamConfig(rateLimits: $rateLimits))
+        ->toThrow(function (InvalidRateLimitException $invalidRateLimitException) use ($message): void {
+            expect($invalidRateLimitException->getMessage())->toBe($message);
+        });
+})->with([
+    'listed' => [
+        [Limit::allow(10)->everyMinute(), Limit::allow(5)->everyMinute()->name('too_many_attempts_limit')],
+        'SteamConfig::$rateLimits[1] is named "too_many_attempts_limit", which the connector keeps for the lock after a 429. Give it a name of its own with ->name().',
+    ],
+    'keyed' => [
+        ['lock' => Limit::allow(5)->everyMinute()->name('too_many_attempts_limit')->setPrefix('mine')],
+        'SteamConfig::$rateLimits[lock] is named "too_many_attempts_limit", which the connector keeps for the lock after a 429. Give it a name of its own with ->name().',
+    ],
+]);
+
 test('SteamConfig leaves the rate limits it checks untouched', function (): void {
     $limit = Limit::allow(10)->everyMinute();
 

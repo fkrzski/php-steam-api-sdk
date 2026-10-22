@@ -79,11 +79,11 @@ final class SteamConnector extends Connector
     private array $failureHooks = [];
 
     /**
-     * Saloon builds a new PendingRequest for every try of send() and numbers none of them.
+     * Saloon numbers none of a call's tries, and the plugin's re-send drops the call's mock client.
      *
-     * @var array<int, int>
+     * @var array<int, array{next: int, mockClient: MockClient|null}>
      */
-    private array $attempts = [];
+    private array $calls = [];
 
     /**
      * The answer this request's limiter judges; the plugin hands throwLimitException() only the Limit.
@@ -197,7 +197,7 @@ final class SteamConnector extends Connector
     public function bootHasRateLimits(PendingRequest $pendingRequest): void
     {
         $key = spl_object_id($pendingRequest->getRequest());
-        $attempt = isset($this->attempts[$key]) ? ++$this->attempts[$key] : 1;
+        $attempt = isset($this->calls[$key]) ? $this->calls[$key]['next']++ : 1;
         $sentAt = null;
 
         $pendingRequest->middleware()
@@ -259,14 +259,24 @@ final class SteamConnector extends Connector
     public function send(Request $request, ?MockClient $mockClient = null, ?callable $handleRetry = null): Response
     {
         $key = spl_object_id($request);
-        $this->attempts[$key] = 0;
+
+        // The rate limit plugin re-sends what a sleep() limit held back from inside the first call's pipeline.
+        if (isset($this->calls[$key])) {
+            try {
+                return parent::send($request, $this->calls[$key]['mockClient'], $handleRetry);
+            } catch (Throwable $throwable) {
+                throw $this->mapped($throwable);
+            }
+        }
+
+        $this->openCall($key, $mockClient, 1);
 
         try {
             return parent::send($request, $mockClient, $handleRetry);
         } catch (Throwable $throwable) {
             throw $this->failed($throwable);
         } finally {
-            unset($this->attempts[$key]);
+            $this->closeCall($key);
         }
     }
 
@@ -284,7 +294,9 @@ final class SteamConnector extends Connector
                 ? Create::promiseFor($this->fakeResponse($pendingRequest))
                 : $this->sender()->sendAsync($pendingRequest->setAsynchronous(true));
 
-            return $promise->then($this->runResponsePipeline(...), $this->runResponsePipeline(...));
+            $settle = fn (mixed $outcome): mixed => $this->runResponsePipeline($outcome, $mockClient);
+
+            return $promise->then($settle, $settle);
         })->otherwise(fn (mixed $reason): never => throw $this->failed(Create::exceptionFor($reason)));
     }
 
@@ -434,14 +446,14 @@ final class SteamConnector extends Connector
      * Guzzle rejects a 4xx or 5xx before any pipeline runs, so a failure takes the pipeline here
      * as well and settles with what it returns, as send() would.
      */
-    private function runResponsePipeline(mixed $outcome): mixed
+    private function runResponsePipeline(mixed $outcome, ?MockClient $mockClient): mixed
     {
         if ($outcome instanceof Response) {
             $failedTransfer = SteamApiResponse::failedTransfer($outcome);
 
             return $failedTransfer instanceof FatalRequestException
                 ? Create::rejectionFor($failedTransfer)
-                : $outcome->getPendingRequest()->executeResponsePipeline($outcome);
+                : $this->executeResponsePipeline($outcome, $mockClient);
         }
 
         $response = match (true) {
@@ -451,17 +463,40 @@ final class SteamConnector extends Connector
         };
 
         return $response instanceof Response
-            ? $response->getPendingRequest()->executeResponsePipeline($response)
+            ? $this->executeResponsePipeline($response, $mockClient)
             : Create::rejectionFor($outcome);
+    }
+
+    /**
+     * The call opens only while the pipeline runs: a promise nobody settles would otherwise hold it open for good.
+     */
+    private function executeResponsePipeline(Response $response, ?MockClient $mockClient): mixed
+    {
+        $key = spl_object_id($response->getRequest());
+
+        // The attempt answered here booted outside any call, as 1.
+        $this->openCall($key, $mockClient, 2);
+
+        try {
+            return $response->getPendingRequest()->executeResponsePipeline($response);
+        } finally {
+            $this->closeCall($key);
+        }
+    }
+
+    private function openCall(int $key, ?MockClient $mockClient, int $next): void
+    {
+        $this->calls[$key] = ['next' => $next, 'mockClient' => $mockClient];
+    }
+
+    private function closeCall(int $key): void
+    {
+        unset($this->calls[$key]);
     }
 
     private function failed(Throwable $throwable): Throwable
     {
-        $exception = match (true) {
-            $throwable instanceof FatalRequestException => SteamConnectionException::fromFatalRequest($throwable),
-            $throwable instanceof RequestException => SteamApiException::fromRequestException($throwable),
-            default => $throwable,
-        };
+        $exception = $this->mapped($throwable);
 
         foreach ($this->failureHooks as $hook) {
             try {
@@ -472,6 +507,15 @@ final class SteamConnector extends Connector
         }
 
         return $exception;
+    }
+
+    private function mapped(Throwable $throwable): Throwable
+    {
+        return match (true) {
+            $throwable instanceof FatalRequestException => SteamConnectionException::fromFatalRequest($throwable),
+            $throwable instanceof RequestException => SteamApiException::fromRequestException($throwable),
+            default => $throwable,
+        };
     }
 
     /**

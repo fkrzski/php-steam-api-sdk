@@ -6,6 +6,7 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
@@ -14,11 +15,17 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListReques
 use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use GuzzleHttp\Promise\Promise;
+use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\Utils;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Config;
+use Saloon\Contracts\Sender;
+use Saloon\Data\FactoryCollection;
 use Saloon\Enums\Method;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
+use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
@@ -611,6 +618,113 @@ test('a configured limit set to sleep() waits instead of throwing', function (Cl
     'send' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->send($request)],
     'sendAsync' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->sendAsync($request)->wait()],
 ])->skip(! method_exists(Config::class, 'sleepUsing'), 'Saloon before 4.4 has no sleep handler, so the test would sleep for real.');
+
+test('a sleep() limit that re-sends keeps numbering the attempts and fires onFailure once', function (Closure $send, int $tries, array $statuses, array $numbered): void {
+    Config::sleepUsing(static function (): void {});
+
+    try {
+        $answered = 0;
+        $attempts = [];
+        $failures = [];
+        $connector = new SteamConnector(new SteamConfig('test-key', tries: $tries, rateLimits: [
+            Limit::custom(static function (Response $response, Limit $limit) use (&$answered): void {
+                if ($answered++ === 0) {
+                    $limit->exceeded(1);
+                }
+            })->sleep(),
+        ]))
+            ->onRequest(static function (RequestSending $sending) use (&$attempts): void {
+                $attempts[] = $sending->attempt;
+            })
+            ->onFailure(static function (Throwable $throwable) use (&$failures): void {
+                $failures[] = $throwable;
+            });
+
+        $mockClient = new MockClient(array_map(static fn (int $status): MockResponse => MockResponse::make([], $status), $statuses));
+
+        $failure = failureFrom(fn (): mixed => $send($connector, $mockClient));
+
+        expect($attempts)->toBe($numbered)
+            ->and($failures)->toBe([$failure])
+            ->and($failure->getCode())->toBe(array_last($statuses))
+            ->and($mockClient->getRecordedResponses())->toHaveCount(count($statuses));
+    } finally {
+        Config::sleepUsing(null);
+    }
+})->with([
+    'send' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => $connector->withMockClient($mockClient)->send(friendListRequest())],
+    'send with its own mock client' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => $connector->send(friendListRequest(), $mockClient)],
+    'sendAsync with its own mock client' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => $connector->sendAsync(friendListRequest(), $mockClient)->wait()],
+    'pool' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => everyWayToSend()['pool'][0]($connector->withMockClient($mockClient))],
+])->with([
+    'the re-send fails' => [1, [200, 404], [1, 2]],
+    "the re-send spends its own tries, not the call's" => [2, [200, 503, 503], [1, 2, 3]],
+])->skip(! method_exists(Config::class, 'sleepUsing'), 'Saloon before 4.4 has no sleep handler, so the test would sleep for real.');
+
+test('a request sent again after its call settled starts from attempt 1 and reports its own failure', function (Closure $first, int $status, int $failed): void {
+    $attempts = [];
+    $failures = 0;
+    $request = friendListRequest();
+    $connector = fakedConnector(new MockClient([MockResponse::make('{"friendslist":{"friends":[]}}', $status), MockResponse::make([], 404)]))
+        ->onRequest(static function (RequestSending $sending) use (&$attempts): void {
+            $attempts[] = $sending->attempt;
+        })
+        ->onFailure(static function () use (&$failures): void {
+            $failures++;
+        });
+
+    try {
+        $first($connector, $request);
+    } catch (Throwable) {
+        // pool() throws whichever way the first call went.
+    }
+
+    expect(fn (): Response => $connector->send($request))->toThrow(SteamApiException::class)
+        ->and($attempts)->toBe([1, 1])
+        ->and($failures)->toBe($failed);
+})->with(everyWayToSend())->with([
+    'after a success' => [200, 1],
+    'after a failure' => [404, 2],
+]);
+
+test('a sendAsync() never settled leaves a later send() of the request a call of its own', function (): void {
+    $attempts = [];
+    $failures = 0;
+    $request = friendListRequest();
+    $connector = new SteamConnector(new SteamConfig('test-key', sender: new class implements Sender
+    {
+        public function getFactoryCollection(): FactoryCollection
+        {
+            return senderAnswering([])->getFactoryCollection();
+        }
+
+        public function send(PendingRequest $pendingRequest): Response
+        {
+            throw new LogicException('Only sendAsync() is expected.');
+        }
+
+        public function sendAsync(PendingRequest $pendingRequest): PromiseInterface
+        {
+            return new Promise;
+        }
+    }))
+        ->onRequest(static function (RequestSending $sending) use (&$attempts): void {
+            $attempts[] = $sending->attempt;
+        })
+        ->onFailure(static function () use (&$failures): void {
+            $failures++;
+        });
+
+    $connector->sendAsync($request);
+    Utils::queue()->run();
+
+    $mockClient = new MockClient([MockResponse::make([], 404)]);
+
+    expect(fn (): Response => $connector->send($request, $mockClient))->toThrow(SteamApiException::class)
+        ->and($attempts)->toBe([1, 1])
+        ->and($failures)->toBe(1)
+        ->and($mockClient->getRecordedResponses())->toHaveCount(1);
+});
 
 test('a 429 on a custom request locks, counts and reaches onResponse however it was sent', function (Closure $send, Closure $answering, Closure $request): void {
     $statuses = [];

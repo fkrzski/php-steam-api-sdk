@@ -45,7 +45,13 @@ final readonly class SteamSender implements Sender
 
     public function sendAsync(PendingRequest $pendingRequest): PromiseInterface
     {
-        return $this->sender->sendAsync($pendingRequest)->otherwise(
+        try {
+            $promise = $this->sender->sendAsync($pendingRequest);
+        } catch (NetworkExceptionInterface $networkException) {
+            $promise = Create::rejectionFor($networkException);
+        }
+
+        return $promise->otherwise(
             static fn (mixed $reason): PromiseInterface => $reason instanceof NetworkExceptionInterface
                 ? throw new FatalRequestException($reason, $pendingRequest)
                 : Create::rejectionFor($reason),

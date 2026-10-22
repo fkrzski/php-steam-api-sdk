@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use GuzzleHttp\Psr7\Response as PsrResponse;
@@ -9,7 +10,7 @@ use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Response;
 
-covers([SteamConnector::class]);
+covers([SteamApiResponse::class, SteamConnector::class]);
 
 dataset('answering 200s', [
     'MockClient' => [static fn (int $count): SteamConnector => new SteamConnector(new SteamConfig('any'))->withMockClient(new MockClient(
@@ -17,6 +18,15 @@ dataset('answering 200s', [
     ))],
     'Guzzle handler' => [static fn (int $count): SteamConnector => connectorAnswering(
         array_fill(0, $count, new PsrResponse(200, [], '{}')),
+    )],
+]);
+
+dataset('answering 503s', [
+    'MockClient' => [static fn (int $count): SteamConnector => fakedConnector(new MockClient(
+        array_fill(0, $count, MockResponse::make('{}', 503)),
+    ))],
+    'Guzzle handler' => [static fn (int $count): SteamConnector => connectorAnswering(
+        array_fill(0, $count, new PsrResponse(503, [], '{}')),
     )],
 ]);
 
@@ -76,3 +86,33 @@ test("a pool hands a middleware's failure on a 200 to the exception handler", fu
 
     expect($reasons)->toBe([$failure, $failure]);
 })->with('answering 200s');
+
+test('a response a middleware swaps in for a failure settles the async call', function (Closure $answering, Closure $send, Closure $request): void {
+    $swapped = [];
+    $connector = $answering(2);
+
+    $connector->middleware()->onResponse(static function (Response $response) use (&$swapped): Response {
+        return $swapped[] = new Response(new PsrResponse(200, [], '{}'), $response->getPendingRequest(), $response->getPsrRequest());
+    });
+
+    $settled = $send($connector, $request);
+
+    expect($settled)->toHaveCount(count($swapped))->toContain(...$swapped);
+})->with('answering 503s')->with([
+    'sendAsync' => [static fn (SteamConnector $connector, Closure $request): array => [$connector->sendAsync($request())->wait()]],
+    'pool' => [static function (SteamConnector $connector, Closure $request): array {
+        $responses = [];
+
+        $connector->pool(
+            [$request(), $request()],
+            responseHandler: static function (Response $response) use (&$responses): void {
+                $responses[] = $response;
+            },
+        )->send()->wait();
+
+        return $responses;
+    }],
+])->with([
+    "raising Saloon's exception" => [friendListRequest(...)],
+    'raising its own exception' => [requestRaisingItsOwnException(...)],
+]);

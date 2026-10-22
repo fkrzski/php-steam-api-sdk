@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Faked `summaries()` and `bans()` never repeat a player over 100 IDs: a player handed to a request that asked for none of them doesn't come back ([#146](https://github.com/fkrzski/php-steam-api-sdk/issues/146)).
 - `SteamResponse::friendListNotPublic()` (`401`) and `userGroupListNotPublic()` (`403`) replace `profileNotPublic()`, and `playerAchievementsRefused()` answers `GetPlayerAchievementsRequest`, each with the status and body Steam sends ([#146](https://github.com/fkrzski/php-steam-api-sdk/issues/146)).
 - `UserGroupFactory` defaults to a 32-bit group ID, as `GetUserGroupListRequest` returns it, rather than a 64-bit clan ID ([#146](https://github.com/fkrzski/php-steam-api-sdk/issues/146)).
+- `sendAsync()` and `pool()` settle a failed response as `send()` does: a `429` on a custom request raising its own exception still locks, counts and reaches `onResponse`, and a `Response` a middleware swaps in for a failure resolves the call. A faked `SteamResponse::connectionFailed()` is no longer recorded under either ([#144](https://github.com/fkrzski/php-steam-api-sdk/issues/144)).
+- A PSR-18 network exception a sender throws from `sendAsync()` raises `SteamConnectionException`, and a rejection that is not a `Throwable` reaches the caller and `onFailure()` as Guzzle's `RejectionException` instead of a `TypeError` ([#144](https://github.com/fkrzski/php-steam-api-sdk/issues/144)).
 
 ## [0.9.0] - 2026-10-09
 

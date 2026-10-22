@@ -952,6 +952,13 @@ test('retries a connection failure without recording any attempt', function (): 
         ->and($mock->getRecordedResponses())->toBeEmpty();
 });
 
+test('records no connection failure however it was sent', function (Closure $send): void {
+    $mock = new MockClient([SteamResponse::connectionFailed()]);
+
+    expect(failureFrom(fn (): mixed => $send(fakedConnector($mock))))->toBeInstanceOf(SteamConnectionException::class)
+        ->and($mock->getRecordedResponses())->toBeEmpty();
+})->with(everyWayToSend());
+
 test('raises a rate limit from a 429 and holds the key for the cool-down or Retry-After', function (?int $retryAfter, int $seconds): void {
     $connector = fakedConnector(new MockClient([
         GetPlayerSummariesRequest::class => SteamResponse::tooManyRequests($retryAfter),

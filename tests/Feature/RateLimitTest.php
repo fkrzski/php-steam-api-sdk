@@ -620,37 +620,32 @@ test('a configured limit set to sleep() waits instead of throwing', function (Cl
 ])->skip(! method_exists(Config::class, 'sleepUsing'), 'Saloon before 4.4 has no sleep handler, so the test would sleep for real.');
 
 test('a sleep() limit that re-sends keeps numbering the attempts and fires onFailure once', function (Closure $send, int $tries, array $statuses, array $numbered): void {
-    Config::sleepUsing(static function (): void {});
+    $answered = 0;
+    $attempts = [];
+    $failures = [];
+    // A window of no seconds is over by the time the plugin re-sends, so nothing sleeps.
+    $connector = new SteamConnector(new SteamConfig('test-key', tries: $tries, rateLimits: [
+        Limit::custom(static function (Response $response, Limit $limit) use (&$answered): void {
+            if ($answered++ === 0) {
+                $limit->exceeded();
+            }
+        })->everySeconds(0, 'at_once')->sleep(),
+    ]))
+        ->onRequest(static function (RequestSending $sending) use (&$attempts): void {
+            $attempts[] = $sending->attempt;
+        })
+        ->onFailure(static function (Throwable $throwable) use (&$failures): void {
+            $failures[] = $throwable;
+        });
 
-    try {
-        $answered = 0;
-        $attempts = [];
-        $failures = [];
-        $connector = new SteamConnector(new SteamConfig('test-key', tries: $tries, rateLimits: [
-            Limit::custom(static function (Response $response, Limit $limit) use (&$answered): void {
-                if ($answered++ === 0) {
-                    $limit->exceeded(1);
-                }
-            })->sleep(),
-        ]))
-            ->onRequest(static function (RequestSending $sending) use (&$attempts): void {
-                $attempts[] = $sending->attempt;
-            })
-            ->onFailure(static function (Throwable $throwable) use (&$failures): void {
-                $failures[] = $throwable;
-            });
+    $mockClient = new MockClient(array_map(static fn (int $status): MockResponse => MockResponse::make([], $status), $statuses));
 
-        $mockClient = new MockClient(array_map(static fn (int $status): MockResponse => MockResponse::make([], $status), $statuses));
+    $failure = failureFrom(fn (): mixed => $send($connector, $mockClient));
 
-        $failure = failureFrom(fn (): mixed => $send($connector, $mockClient));
-
-        expect($attempts)->toBe($numbered)
-            ->and($failures)->toBe([$failure])
-            ->and($failure->getCode())->toBe(array_last($statuses))
-            ->and($mockClient->getRecordedResponses())->toHaveCount(count($statuses));
-    } finally {
-        Config::sleepUsing(null);
-    }
+    expect($attempts)->toBe($numbered)
+        ->and($failures)->toBe([$failure])
+        ->and($failure->getCode())->toBe(array_last($statuses))
+        ->and($mockClient->getRecordedResponses())->toHaveCount(count($statuses));
 })->with([
     'send' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => $connector->withMockClient($mockClient)->send(friendListRequest())],
     'send with its own mock client' => [static fn (SteamConnector $connector, MockClient $mockClient): mixed => $connector->send(friendListRequest(), $mockClient)],
@@ -659,7 +654,7 @@ test('a sleep() limit that re-sends keeps numbering the attempts and fires onFai
 ])->with([
     'the re-send fails' => [1, [200, 404], [1, 2]],
     "the re-send spends its own tries, not the call's" => [2, [200, 503, 503], [1, 2, 3]],
-])->skip(! method_exists(Config::class, 'sleepUsing'), 'Saloon before 4.4 has no sleep handler, so the test would sleep for real.');
+]);
 
 test('a request sent again after its call settled starts from attempt 1 and reports its own failure', function (Closure $first, int $status, int $failed): void {
     $attempts = [];

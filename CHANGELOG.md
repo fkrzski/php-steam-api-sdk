@@ -32,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `UserGroupFactory` defaults to a 32-bit group ID, as `GetUserGroupListRequest` returns it, rather than a 64-bit clan ID ([#146](https://github.com/fkrzski/php-steam-api-sdk/issues/146)).
 - `sendAsync()` and `pool()` settle a failed response as `send()` does: a `429` on a custom request raising its own exception still locks, counts and reaches `onResponse`, and a `Response` a middleware swaps in for a failure resolves the call. A faked `SteamResponse::connectionFailed()` is no longer recorded under either ([#144](https://github.com/fkrzski/php-steam-api-sdk/issues/144)).
 - A PSR-18 network exception a sender throws from `sendAsync()` raises `SteamConnectionException`, and a rejection that is not a `Throwable` reaches the caller and `onFailure()` as Guzzle's `RejectionException` instead of a `TypeError` ([#144](https://github.com/fkrzski/php-steam-api-sdk/issues/144)).
+- A `429` without `Retry-After` locks for the whole `tooManyRequestsCooldown` however late in the window it arrives. `saloonphp/rate-limit-plugin` before 2.5.2 cut it to what was left of the window, so the SDK requires `^2.5.2` ([#142](https://github.com/fkrzski/php-steam-api-sdk/issues/142)).
+- A `Retry-After` of `0` or in the past locks for a second rather than the whole cool-down ([#142](https://github.com/fkrzski/php-steam-api-sdk/issues/142)).
+- `SteamRateLimitException` raised by Steam's `429` carries the response, code `429` and the method in its message; a request refused locally keeps `null` and `0` ([#142](https://github.com/fkrzski/php-steam-api-sdk/issues/142)).
+- `SteamConfig` throws `InvalidRateLimitException` for a rate limit named `too_many_attempts_limit`, which made every request throw the plugin's raw `LimitException` ([#142](https://github.com/fkrzski/php-steam-api-sdk/issues/142)).
+- A request a `sleep()` limit sends again counts as the next attempt of the same call, under `sendAsync()` and `pool()` too, keeps the mock client the call was given, and fires `onFailure()` once ([#142](https://github.com/fkrzski/php-steam-api-sdk/issues/142)).
 
 ## [0.9.0] - 2026-10-09
 

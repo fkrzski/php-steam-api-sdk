@@ -31,7 +31,7 @@ final readonly class Friend
         return new self(
             steamId: SteamId::fromSteamId64($payload['steamid']),
             relationship: FriendRelationship::from($payload['relationship']),
-            friendSince: (new DateTimeImmutable)->setTimestamp($payload['friend_since']),
+            friendSince: new DateTimeImmutable('@'.$payload['friend_since']),
         );
     }
 }

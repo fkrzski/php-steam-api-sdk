@@ -93,6 +93,6 @@ final readonly class PlayerSummary
 
     private static function timestamp(int $unix): DateTimeImmutable
     {
-        return (new DateTimeImmutable)->setTimestamp($unix);
+        return new DateTimeImmutable('@'.$unix);
     }
 }

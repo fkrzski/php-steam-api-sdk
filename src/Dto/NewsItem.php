@@ -58,7 +58,7 @@ final readonly class NewsItem
             feedLabel: $payload['feedlabel'],
             feedName: $payload['feedname'],
             isCommunityAnnouncement: $payload['feed_type'] === 1,
-            publishedAt: (new DateTimeImmutable)->setTimestamp($payload['date']),
+            publishedAt: new DateTimeImmutable('@'.$payload['date']),
             appId: $payload['appid'],
             tags: $payload['tags'] ?? [],
         );

@@ -137,6 +137,7 @@ test('fixture response parses into PlayerSummary DTOs', function (): void {
         ->and($dtos[0]->stateCode)->toBeNull()
         ->and($dtos[0]->cityId)->toBeNull()
         ->and($dtos[0]->timeCreated?->getTimestamp())->toBe(1407003640)
+        ->and($dtos[0]->primaryClanId)->toBeNull()
         ->and($dtos[1]->steamId->value)->toBe('76561198000000001')
         ->and($dtos[1]->commentPermission)->toBe(CommentPermission::Nobody)
         ->and($dtos[1]->personaState)->toBe(PersonaState::Offline)

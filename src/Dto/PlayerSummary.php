@@ -12,6 +12,9 @@ use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
 final readonly class PlayerSummary
 {
+    /** The clan base with account ID 0, which Steam sends for a player without a primary group. */
+    private const string NO_PRIMARY_CLAN_ID = '103582791429521408';
+
     /** @internal */
     public function __construct(
         public SteamId $steamId,
@@ -66,6 +69,8 @@ final readonly class PlayerSummary
      */
     public static function fromArray(array $payload): self
     {
+        $primaryClanId = $payload['primaryclanid'] ?? null;
+
         return new self(
             steamId: SteamId::fromSteamId64($payload['steamid']),
             personaName: $payload['personaname'],
@@ -79,7 +84,7 @@ final readonly class PlayerSummary
             commentPermission: CommentPermission::fromApiValue($payload['commentpermission'] ?? null),
             personaState: PersonaState::fromApiValue($payload['personastate'] ?? 0),
             realName: $payload['realname'] ?? null,
-            primaryClanId: $payload['primaryclanid'] ?? null,
+            primaryClanId: $primaryClanId !== self::NO_PRIMARY_CLAN_ID ? $primaryClanId : null,
             timeCreated: isset($payload['timecreated']) ? self::timestamp($payload['timecreated']) : null,
             lastLogOff: isset($payload['lastlogoff']) ? self::timestamp($payload['lastlogoff']) : null,
             gameId: $payload['gameid'] ?? null,

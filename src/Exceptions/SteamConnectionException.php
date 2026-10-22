@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Exceptions;
 
+use Fkrzski\SteamApiSdk\Http\ApiKeyMask;
 use Saloon\Exceptions\Request\FatalRequestException;
 
 final class SteamConnectionException extends SteamApiException
@@ -15,12 +16,9 @@ final class SteamConnectionException extends SteamApiException
      */
     public static function fromFatalRequest(FatalRequestException $exception): self
     {
-        $key = $exception->getPendingRequest()->query()->get('key');
-        $reason = $exception->getMessage();
-
         return new self(self::naming($exception->getPendingRequest(), sprintf(
             'Could not reach the Steam Web API: %s',
-            is_string($key) ? str_replace([urlencode($key), $key], '***', $reason) : $reason,
+            ApiKeyMask::message($exception->getMessage(), $exception->getPendingRequest()),
         )));
     }
 }

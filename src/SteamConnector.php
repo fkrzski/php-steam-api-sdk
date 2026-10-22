@@ -273,7 +273,7 @@ final class SteamConnector extends Connector
                 : $this->sender()->sendAsync($pendingRequest);
 
             return $promise->then($this->runResponsePipeline(...), $this->runResponsePipeline(...));
-        })->otherwise(fn (Throwable $reason): never => throw $this->failed($reason));
+        })->otherwise(fn (mixed $reason): never => throw $this->failed(Create::exceptionFor($reason)));
     }
 
     /**

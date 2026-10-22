@@ -9,8 +9,16 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Promise\RejectionException;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Psr\Http\Message\RequestInterface;
+use Saloon\Contracts\Sender;
+use Saloon\Data\FactoryCollection;
+use Saloon\Http\PendingRequest;
+use Saloon\Http\Request;
+use Saloon\Http\Response;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
 covers([SteamSender::class, SteamConnector::class]);
@@ -81,3 +89,54 @@ test('a sender failure that is not a network one reaches the caller untouched', 
 
     expect(failureFrom(fn (): mixed => $send($connector)))->toBe($failure);
 })->with(everyWayToSend());
+
+test('a rejection that is not a Throwable reaches the caller and onFailure', function (Closure $send): void {
+    $failures = [];
+    $connector = sendingThrough(senderFailingAsync(static fn (): PromiseInterface => Create::rejectionFor('The sender gave up.')))
+        ->onFailure(static function (Throwable $failure) use (&$failures): void {
+            $failures[] = $failure;
+        });
+
+    $thrown = failureFrom(fn (): mixed => $send($connector));
+
+    expect($thrown)->toBeInstanceOf(RejectionException::class)
+        ->and($thrown->getReason())->toBe('The sender gave up.')
+        ->and($failures)->toBe([$thrown]);
+})->with(asyncWaysToSend());
+
+/**
+ * @return array<string, array{Closure(SteamConnector, ?Request=): mixed}>
+ */
+function asyncWaysToSend(): array
+{
+    return array_diff_key(everyWayToSend(), ['send' => true]);
+}
+
+/**
+ * @param  Closure(): PromiseInterface  $fail
+ */
+function senderFailingAsync(Closure $fail): Sender
+{
+    return new readonly class($fail) implements Sender
+    {
+        /**
+         * @param  Closure(): PromiseInterface  $fail
+         */
+        public function __construct(private Closure $fail) {}
+
+        public function getFactoryCollection(): FactoryCollection
+        {
+            return senderAnswering([])->getFactoryCollection();
+        }
+
+        public function send(PendingRequest $pendingRequest): Response
+        {
+            throw new LogicException('Only sendAsync() is expected.');
+        }
+
+        public function sendAsync(PendingRequest $pendingRequest): PromiseInterface
+        {
+            return ($this->fail)();
+        }
+    };
+}

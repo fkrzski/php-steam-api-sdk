@@ -44,6 +44,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
+use Saloon\RateLimitPlugin\Helpers\RetryAfterHelper;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 use Saloon\RateLimitPlugin\Traits\HasRateLimits;
@@ -390,6 +391,20 @@ final class SteamConnector extends Connector
     protected function getTooManyAttemptsLimiter(): Limit
     {
         return Limit::custom($this->handleTooManyAttempts(...))->everySeconds($this->steamConfig->tooManyRequestsCooldown);
+    }
+
+    /**
+     * The plugin sets no expiry for a Retry-After of 0 or in the past, so save() would fall back to the cool-down.
+     */
+    protected function handleTooManyAttempts(Response $response, Limit $limit): void
+    {
+        if ($response->status() !== 429) {
+            return;
+        }
+
+        $seconds = RetryAfterHelper::parse($response->getPsrResponse()->getHeaderLine('Retry-After'));
+
+        $limit->exceeded($seconds === null ? null : max($seconds, 1));
     }
 
     /**

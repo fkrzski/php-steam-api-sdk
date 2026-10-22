@@ -6,6 +6,7 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
+use Fkrzski\SteamApiSdk\Http\ApiKeyMask;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use GuzzleHttp\Exception\ConnectException;
@@ -17,7 +18,7 @@ use Saloon\Http\PendingRequest;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 use Symfony\Component\VarDumper\VarDumper;
 
-covers([SteamConnector::class, SteamApiException::class, SteamConnectionException::class]);
+covers([ApiKeyMask::class, SteamConnector::class, SteamApiException::class, SteamConnectionException::class]);
 
 afterEach(function (): void {
     VarDumper::setHandler(null);

@@ -18,6 +18,7 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
+use Fkrzski\SteamApiSdk\Http\ApiKeyMask;
 use Fkrzski\SteamApiSdk\Http\Resources\AppsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\NewsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
@@ -311,7 +312,7 @@ final class SteamConnector extends Connector
 
         return parent::debugRequest(
             static function (PendingRequest $pendingRequest, RequestInterface $psrRequest) use ($onRequest): void {
-                $onRequest($pendingRequest, self::withMaskedKey($psrRequest));
+                $onRequest($pendingRequest, $psrRequest->withUri(ApiKeyMask::uri($psrRequest->getUri())));
             },
             $die,
         );
@@ -400,7 +401,7 @@ final class SteamConnector extends Connector
             return 'SteamConnector:anonymous';
         }
 
-        return sprintf('SteamConnector:%s', hash('sha256', $this->steamConfig->apiKey));
+        return sprintf('SteamConnector:%s', ApiKeyMask::digest($this->steamConfig->apiKey));
     }
 
     protected function throwLimitException(Limit $limit): never
@@ -541,20 +542,6 @@ final class SteamConnector extends Connector
 
     private function sending(PendingRequest $pendingRequest, int $attempt): RequestSending
     {
-        $query = $pendingRequest->query()->all();
-
-        unset($query['key']);
-
-        return new RequestSending(trim($pendingRequest->getUri()->getPath(), '/'), $query, $attempt);
-    }
-
-    private static function withMaskedKey(RequestInterface $request): RequestInterface
-    {
-        $uri = $request->getUri();
-
-        return $request->withUri($uri->withQuery(implode('&', array_map(
-            static fn (string $pair): string => str_starts_with($pair, 'key=') ? 'key=***' : $pair,
-            explode('&', $uri->getQuery()),
-        ))));
+        return new RequestSending(trim($pendingRequest->getUri()->getPath(), '/'), ApiKeyMask::query($pendingRequest->query()->all()), $attempt);
     }
 }

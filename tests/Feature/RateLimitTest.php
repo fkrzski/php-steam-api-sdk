@@ -6,14 +6,17 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListRequest;
+use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Config;
+use Saloon\Enums\Method;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Request;
@@ -22,7 +25,7 @@ use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
-covers([SteamRateLimitException::class, SteamConnector::class, ApiKeyNotConfiguredException::class]);
+covers([SteamRateLimitException::class, SteamConnector::class, ApiKeyNotConfiguredException::class, SteamApiResponse::class]);
 
 test('connector exposes Steam daily limit of 100k requests', function (): void {
     $connector = new SteamConnector(new SteamConfig('test-key'));
@@ -562,6 +565,34 @@ test('a configured limit set to sleep() waits instead of throwing', function (Cl
     'send' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->send($request)],
     'sendAsync' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->sendAsync($request)->wait()],
 ])->skip(! method_exists(Config::class, 'sleepUsing'), 'Saloon before 4.4 has no sleep handler, so the test would sleep for real.');
+
+test('a 429 on a custom request locks, counts and reaches onResponse however it was sent', function (Closure $send, Closure $answering, Closure $request): void {
+    $statuses = [];
+    $connector = $answering()->onResponse(static function (ResponseReceived $received) use (&$statuses): void {
+        $statuses[] = $received->status;
+    });
+
+    expect(failureFrom(fn (): mixed => $send($connector, $request())))->toBeInstanceOf(SteamRateLimitException::class)
+        ->and(failureFrom(fn (): mixed => $send($connector, $request())))->toBeInstanceOf(SteamRateLimitException::class)
+        ->and($statuses)->toBe([429])
+        ->and(dailyHits($connector))->toBe(1);
+})->with(everyWayToSend())->with([
+    'MockClient' => [static fn (): SteamConnector => fakedConnector(new MockClient([MockResponse::make([], 429), MockResponse::make([])]))],
+    'Guzzle handler' => [static fn (): SteamConnector => connectorAnswering([new PsrResponse(429), new PsrResponse(200, [], '[]')])],
+])->with([
+    'raising its own exception' => [requestRaisingItsOwnException(...)],
+    'with its own response class' => [static fn (): Request => new class extends Request
+    {
+        protected Method $method = Method::GET;
+
+        protected ?string $response = Response::class;
+
+        public function resolveEndpoint(): string
+        {
+            return '/ISteamDirectory/GetCMList/v1/';
+        }
+    }],
+]);
 
 function sendVanityUrlRequest(string $apiKey): SteamConnector
 {

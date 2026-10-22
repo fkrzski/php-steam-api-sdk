@@ -394,7 +394,7 @@ final class SteamConnector extends Connector
 
     /**
      * Guzzle and the mock client reject a 4xx or 5xx before any pipeline runs, so a failure takes
-     * the pipeline here as well and stays rejected, while a success resolves to what it returns.
+     * the pipeline here as well and settles with what it returns, as send() would.
      */
     private function runResponsePipeline(mixed $outcome): mixed
     {
@@ -407,16 +407,14 @@ final class SteamConnector extends Connector
         }
 
         $response = match (true) {
-            $outcome instanceof SteamApiException => $outcome->response,
             $outcome instanceof RequestException => $outcome->getResponse(),
+            $outcome instanceof Throwable => SteamApiResponse::raising($outcome),
             default => null,
         };
 
-        if ($response instanceof Response) {
-            $response->getPendingRequest()->executeResponsePipeline($response);
-        }
-
-        return Create::rejectionFor($outcome);
+        return $response instanceof Response
+            ? $response->getPendingRequest()->executeResponsePipeline($response)
+            : Create::rejectionFor($outcome);
     }
 
     private function failed(Throwable $throwable): Throwable

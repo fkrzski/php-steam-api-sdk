@@ -21,6 +21,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Saloon\Contracts\Sender;
 use Saloon\Data\FactoryCollection;
+use Saloon\Enums\Method;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
@@ -190,6 +191,24 @@ function everyWayToSend(): array
             throw $reasons[0] ?? new LogicException('Expected the pool to fail.');
         }],
     ];
+}
+
+function requestRaisingItsOwnException(): Request
+{
+    return new class extends Request
+    {
+        protected Method $method = Method::GET;
+
+        public function resolveEndpoint(): string
+        {
+            return '/ISteamDirectory/GetCMList/v1/';
+        }
+
+        public function getRequestException(Response $response, ?Throwable $senderException): Throwable
+        {
+            return new RuntimeException('Not a list.');
+        }
+    };
 }
 
 function friendListRequest(): GetFriendListRequest

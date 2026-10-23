@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk;
 
-use DateTimeImmutable;
-use DateTimeZone;
 use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Contracts\SendsOptionalApiKey;
@@ -15,10 +13,10 @@ use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
-use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
 use Fkrzski\SteamApiSdk\Http\ApiKeyMask;
+use Fkrzski\SteamApiSdk\Http\RateLimiter;
 use Fkrzski\SteamApiSdk\Http\Resources\AppsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\NewsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\PlayersResource;
@@ -45,10 +43,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
-use Saloon\RateLimitPlugin\Helpers\RetryAfterHelper;
 use Saloon\RateLimitPlugin\Limit;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
-use Saloon\RateLimitPlugin\Traits\HasRateLimits;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 use Saloon\Traits\Plugins\HasTimeout;
 use Throwable;
@@ -56,9 +51,6 @@ use Throwable;
 final class SteamConnector extends Connector
 {
     use AlwaysThrowOnErrors;
-    use HasRateLimits {
-        bootHasRateLimits as private bootRateLimiter;
-    }
     use HasTimeout;
 
     #[Override]
@@ -86,10 +78,7 @@ final class SteamConnector extends Connector
      */
     private array $calls = [];
 
-    /**
-     * The answer this request's limiter judges; the plugin hands throwLimitException() only the Limit.
-     */
-    private ?Response $answer = null;
+    private bool $rateLimitingEnabled = true;
 
     /**
      * Saloon's send() reads the retry settings straight off these properties, so the
@@ -176,11 +165,17 @@ final class SteamConnector extends Connector
     public function boot(PendingRequest $pendingRequest): void
     {
         $request = $pendingRequest->getRequest();
+        $key = $this->keyFor($request);
 
-        if ($request instanceof SendsNoApiKey) {
+        if ($key === null) {
             $pendingRequest->query()->remove('key');
-        } elseif ($this->steamConfig->apiKey === null && ! $request instanceof SendsOptionalApiKey) {
-            throw ApiKeyNotConfiguredException::forRequest($request);
+        }
+
+        // The limiter turns a 429 into an exception in its first response pipe, so the hooks go in ahead of it.
+        $this->bootHooks($pendingRequest);
+
+        if ($this->rateLimitingEnabled) {
+            new RateLimiter($this->steamConfig, $key)->boot($pendingRequest);
         }
 
         if (! $request instanceof HasLanguage || $request->language instanceof Language) {
@@ -193,41 +188,35 @@ final class SteamConnector extends Connector
     }
 
     /**
-     * The limiter turns a 429 into an exception in its first response pipe, so the hooks go in ahead of it.
+     * The rate limit plugin's own checks read the configured key's budget, or the anonymous one without a key.
+     *
+     * @return array<Limit>
      */
-    public function bootHasRateLimits(PendingRequest $pendingRequest): void
+    public function getLimits(): array
     {
-        $key = spl_object_id($pendingRequest->getRequest());
-        $attempt = isset($this->calls[$key]) ? $this->calls[$key]['next']++ : 1;
-        $sentAt = null;
+        return $this->rateLimiter()->getLimits();
+    }
 
-        $pendingRequest->middleware()
-            ->onRequest(function (PendingRequest $pendingRequest) use ($attempt, &$sentAt): void {
-                $sending = $this->sending($pendingRequest, $attempt);
+    public function rateLimitStore(): RateLimitStore
+    {
+        return $this->rateLimiter()->rateLimitStore();
+    }
 
-                foreach ($this->requestHooks as $hook) {
-                    $hook($sending);
-                }
+    public function getExceededLimit(?float $threshold = null): ?Limit
+    {
+        return $this->rateLimiter()->getExceededLimit($threshold);
+    }
 
-                $sentAt = microtime(true);
-            }, order: PipeOrder::LAST)
-            ->onResponse(function (Response $response) use ($attempt, &$sentAt): void {
-                $duration = microtime(true) - $sentAt;
-                $sending = $this->sending($response->getPendingRequest(), $attempt);
-                $received = new ResponseReceived($sending->method, $sending->query, $attempt, $response->status(), $duration);
+    public function hasReachedRateLimit(?float $threshold = null): bool
+    {
+        return $this->rateLimiter()->hasReachedRateLimit($threshold);
+    }
 
-                foreach ($this->responseHooks as $hook) {
-                    $hook($received);
-                }
-            }, order: PipeOrder::FIRST);
+    public function useRateLimitPlugin(bool $enabled = true): static
+    {
+        $this->rateLimitingEnabled = $enabled;
 
-        $limiter = $this->limiterFor($pendingRequest->getRequest());
-
-        $pendingRequest->middleware()->onResponse(static function (Response $response) use ($limiter): void {
-            $limiter->answer = $response;
-        }, order: PipeOrder::FIRST);
-
-        $limiter->bootRateLimiter($pendingRequest);
+        return $this;
     }
 
     /**
@@ -364,73 +353,6 @@ final class SteamConnector extends Connector
         return new SteamSender($this->steamConfig->sender ?? new GuzzleSender);
     }
 
-    protected function resolveLimits(): array
-    {
-        if ($this->steamConfig->rateLimits !== null) {
-            return $this->steamConfig->rateLimits;
-        }
-
-        if ($this->steamConfig->apiKey === null) {
-            return [];
-        }
-
-        // Not untilMidnightTonight(): that follows date.timezone, not UTC.
-        return [
-            Limit::allow(100_000)
-                ->everySeconds(86_400, 'utc_midnight')
-                ->setExpiryTimestamp(new DateTimeImmutable('tomorrow', new DateTimeZone('UTC'))->getTimestamp()),
-        ];
-    }
-
-    /**
-     * MemoryStore keeps its backing array static, so the default budget is shared
-     * process-wide rather than per instance.
-     */
-    protected function resolveRateLimitStore(): RateLimitStore
-    {
-        return $this->steamConfig->rateLimitStore ?? new MemoryStore;
-    }
-
-    /**
-     * The quota belongs to the API key, not to the connector class. The key is hashed
-     * so it never lands in a shared store.
-     */
-    protected function getLimiterPrefix(): string
-    {
-        if ($this->steamConfig->apiKey === null) {
-            return 'SteamConnector:anonymous';
-        }
-
-        return sprintf('SteamConnector:%s', ApiKeyMask::digest($this->steamConfig->apiKey));
-    }
-
-    protected function throwLimitException(Limit $limit): never
-    {
-        throw SteamRateLimitException::fromLimit($limit, $this->answer);
-    }
-
-    /**
-     * The plugin falls back to this interval only when a 429 carries no Retry-After.
-     */
-    protected function getTooManyAttemptsLimiter(): Limit
-    {
-        return Limit::custom($this->handleTooManyAttempts(...))->everySeconds($this->steamConfig->tooManyRequestsCooldown);
-    }
-
-    /**
-     * The plugin sets no expiry for a Retry-After of 0 or in the past, so save() would fall back to the cool-down.
-     */
-    protected function handleTooManyAttempts(Response $response, Limit $limit): void
-    {
-        if ($response->status() !== 429) {
-            return;
-        }
-
-        $seconds = RetryAfterHelper::parse($response->getPsrResponse()->getHeaderLine('Retry-After'));
-
-        $limit->exceeded($seconds === null ? null : max($seconds, 1));
-    }
-
     /**
      * Saloon records an async fake before rejecting with its exception; the sync path throws it unrecorded.
      */
@@ -520,24 +442,51 @@ final class SteamConnector extends Connector
     }
 
     /**
-     * A limiter of its own per request, so a lock thrown from Steam's answer carries that answer and no other.
-     * Steam bills a request sent without the key to no key, so a connector built without one limits it.
+     * The key a request goes out with, and so the budget Steam bills it to.
      */
-    private function limiterFor(Request $request): self
+    private function keyFor(Request $request): ?string
     {
-        if (! $this->rateLimitingEnabled) {
-            return $this;
+        if ($request instanceof SendsNoApiKey) {
+            return null;
         }
 
-        if (! $request instanceof SendsNoApiKey) {
-            return new self($this->steamConfig);
+        if ($this->steamConfig->apiKey === null && ! $request instanceof SendsOptionalApiKey) {
+            throw ApiKeyNotConfiguredException::forRequest($request);
         }
 
-        return new self(new SteamConfig(
-            rateLimitStore: $this->steamConfig->rateLimitStore,
-            rateLimits: $this->steamConfig->rateLimits,
-            tooManyRequestsCooldown: $this->steamConfig->tooManyRequestsCooldown,
-        ));
+        return $this->steamConfig->apiKey;
+    }
+
+    private function bootHooks(PendingRequest $pendingRequest): void
+    {
+        $key = spl_object_id($pendingRequest->getRequest());
+        $attempt = isset($this->calls[$key]) ? $this->calls[$key]['next']++ : 1;
+        $sentAt = null;
+
+        $pendingRequest->middleware()
+            ->onRequest(function (PendingRequest $pendingRequest) use ($attempt, &$sentAt): void {
+                $sending = $this->sending($pendingRequest, $attempt);
+
+                foreach ($this->requestHooks as $hook) {
+                    $hook($sending);
+                }
+
+                $sentAt = microtime(true);
+            }, order: PipeOrder::LAST)
+            ->onResponse(function (Response $response) use ($attempt, &$sentAt): void {
+                $duration = microtime(true) - $sentAt;
+                $sending = $this->sending($response->getPendingRequest(), $attempt);
+                $received = new ResponseReceived($sending->method, $sending->query, $attempt, $response->status(), $duration);
+
+                foreach ($this->responseHooks as $hook) {
+                    $hook($received);
+                }
+            }, order: PipeOrder::FIRST);
+    }
+
+    private function rateLimiter(): RateLimiter
+    {
+        return new RateLimiter($this->steamConfig, $this->steamConfig->apiKey);
     }
 
     private function sending(PendingRequest $pendingRequest, int $attempt): RequestSending

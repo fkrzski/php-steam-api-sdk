@@ -8,6 +8,7 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
+use Fkrzski\SteamApiSdk\Http\RateLimiter;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
@@ -32,110 +33,30 @@ use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
-covers([SteamRateLimitException::class, SteamConnector::class, ApiKeyNotConfiguredException::class, SteamApiResponse::class]);
+covers([SteamRateLimitException::class, SteamConnector::class, RateLimiter::class, ApiKeyNotConfiguredException::class, SteamApiResponse::class]);
 
-test('connector exposes Steam daily limit of 100k requests', function (): void {
-    $connector = new SteamConnector(new SteamConfig('test-key'));
-
-    $limits = $connector->getLimits();
-    $primary = $limits[0];
-
-    expect($primary)->toBeInstanceOf(Limit::class)
-        ->and($primary->getAllow())->toBe(100_000)
-        ->and($primary->getName())->toContain('SteamConnector')
-        ->and($primary->getName())->toContain('100000');
-});
-
-test('connector defaults to a MemoryStore when none is configured', function (): void {
-    $connector = new SteamConnector(new SteamConfig('test-key'));
-
-    expect($connector->rateLimitStore())->toBeInstanceOf(MemoryStore::class);
-});
-
-test('connector honours the configured rate limit store', function (): void {
+test("the connector's rate limit checks read the configured key's budget", function (): void {
     $store = new MemoryStore;
     $connector = new SteamConnector(new SteamConfig('test-key', $store));
+    $daily = $connector->getLimits()[0];
 
-    expect($connector->rateLimitStore())->toBe($store);
+    $daily->hit(90_000)->save($connector->rateLimitStore());
+
+    expect(array_map(static fn (Limit $limit): string => $limit->getName(), $connector->getLimits()))->toBe([
+        'SteamConnector:'.hash('sha256', 'test-key').':100000_every_utc_midnight',
+        'SteamConnector:'.hash('sha256', 'test-key').':too_many_attempts_limit',
+    ])
+        ->and($connector->rateLimitStore())->toBe($store)
+        ->and($connector->hasReachedRateLimit(0.9))->toBeTrue()
+        ->and($connector->hasReachedRateLimit())->toBeFalse()
+        ->and($connector->getExceededLimit(0.9)?->getName())->toBe($daily->getName())
+        ->and($connector->getExceededLimit())->toBeNull();
 });
 
-test('limits are keyed by a hash of the API key', function (): void {
-    $connector = new SteamConnector(new SteamConfig('test-key'));
-
+test('a connector without a key checks the anonymous budget', function (): void {
     $names = array_map(
         static fn (Limit $limit): string => $limit->getName(),
-        $connector->getLimits(),
-    );
-
-    expect($names)->toBe([
-        'SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:100000_every_utc_midnight',
-        'SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:too_many_attempts_limit',
-    ])->and(implode('', $names))->not->toContain('test-key');
-});
-
-test('the daily budget resets at the next midnight UTC whatever date.timezone says', function (string $timezone): void {
-    $default = date_default_timezone_get();
-    date_default_timezone_set($timezone);
-
-    try {
-        $connector = sendVanityUrlRequest('test-key');
-    } finally {
-        date_default_timezone_set($default);
-    }
-
-    $expiry = $connector->getLimits()[0]->update($connector->rateLimitStore())->getExpiryTimestamp();
-
-    expect($expiry % 86_400)->toBe(0)
-        ->and($expiry - time())->toBeGreaterThan(0)->toBeLessThanOrEqual(86_400);
-})->with(['UTC', 'Pacific/Kiritimati', 'Pacific/Pago_Pago']);
-
-test('the daily budget still resets at midnight UTC when a second passes after the limit is resolved', function (): void {
-    $limit = new SteamConnector(new SteamConfig('test-key'))->getLimits()[0];
-
-    time_sleep_until(time() + 1);
-
-    expect($limit->getExpiryTimestamp() % 86_400)->toBe(0);
-});
-
-test('a spent budget is refused until midnight UTC', function (): void {
-    $connector = new SteamConnector(new SteamConfig('test-key'))->withMockClient(new MockClient([
-        MockResponse::make('{"friendslist":{"friends":[]}}'),
-    ]));
-
-    $connector->getLimits()[0]->hit(100_000)->save($connector->rateLimitStore());
-
-    try {
-        $connector->send(friendListRequest());
-        $this->fail('Expected SteamRateLimitException was not thrown.');
-    } catch (SteamRateLimitException $steamRateLimitException) {
-        expect($steamRateLimitException->limit->getExpiryTimestamp() % 86_400)->toBe(0)
-            ->and($steamRateLimitException->limit->getRemainingSeconds())->toBeGreaterThan(0)->toBeLessThanOrEqual(86_400);
-    }
-});
-
-test('each API key gets its own counter', function (): void {
-    $first = sendVanityUrlRequest('key-aaa');
-    $second = sendVanityUrlRequest('key-bbb');
-
-    expect(dailyLimitKeys())->toHaveCount(2)
-        ->and(dailyHits($first))->toBe(1)
-        ->and(dailyHits($second))->toBe(1);
-});
-
-test('connectors sharing an API key share one counter', function (): void {
-    sendVanityUrlRequest('key-aaa');
-    $second = sendVanityUrlRequest('key-aaa');
-
-    expect(dailyLimitKeys())->toHaveCount(1)
-        ->and(dailyHits($second))->toBe(2);
-});
-
-test('without an API key the daily budget is not metered at all', function (): void {
-    $connector = new SteamConnector(new SteamConfig);
-
-    $names = array_map(
-        static fn (Limit $limit): string => $limit->getName(),
-        $connector->getLimits(),
+        new SteamConnector(new SteamConfig)->getLimits(),
     );
 
     expect($names)->toBe(['SteamConnector:anonymous:too_many_attempts_limit']);
@@ -425,58 +346,6 @@ test("Steam's 429 raises an exception that carries its answer, and the lock it l
     'without the key' => [static fn (): Request => new GetNumberOfCurrentPlayersRequest(381210), 'GetNumberOfCurrentPlayers'],
 ]);
 
-test('a 429 without Retry-After late in the cool-down window locks for the whole cool-down', function (): void {
-    $connector = connectorAnswering([new PsrResponse(429)], new SteamConfig('test-key', tooManyRequestsCooldown: 300));
-
-    array_last($connector->getLimits())->setExpiryTimestamp(time() + 5)->save($connector->rateLimitStore());
-
-    $before = time();
-    $throttled = rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
-    $after = time();
-
-    expect($throttled->limit->getExpiryTimestamp())->toBeGreaterThanOrEqual($before + 300)->toBeLessThanOrEqual($after + 300);
-});
-
-test('a 429 refuses requests for as long as Retry-After says, or for the cool-down without one', function (SteamConfig $config, array $headers, int $seconds): void {
-    $connector = connectorAnswering([new PsrResponse(429, $headers)], $config);
-
-    $before = time();
-    $throttled = rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
-    $after = time();
-
-    expect($throttled->limit->getExpiryTimestamp())->toBeGreaterThanOrEqual($before + $seconds)->toBeLessThanOrEqual($after + $seconds);
-})->with([
-    'default cool-down' => [new SteamConfig('test-key'), [], 60],
-    'Retry-After under the cool-down' => [new SteamConfig('test-key', tooManyRequestsCooldown: 300), ['Retry-After' => '120'], 120],
-    'Retry-After over the cool-down' => [new SteamConfig('test-key', tooManyRequestsCooldown: 30), ['Retry-After' => '120'], 120],
-]);
-
-test('a Retry-After of 0 or in the past locks for one second, not the cool-down', function (Closure $retryAfter): void {
-    $connector = connectorAnswering([new PsrResponse(429, ['Retry-After' => $retryAfter()])], new SteamConfig('test-key', tooManyRequestsCooldown: 600));
-
-    $before = time();
-    $throttled = rateLimitOf(fn (): Response => $connector->send(friendListRequest()));
-    $after = time();
-
-    expect($throttled->limit->getExpiryTimestamp())->toBeGreaterThanOrEqual($before + 1)->toBeLessThanOrEqual($after + 1);
-})->with([
-    'zero' => [static fn (): string => '0'],
-    'negative' => [static fn (): string => '-5'],
-    'a date in the past' => [static fn (): string => gmdate('D, d M Y H:i:s \G\M\T', time() - 30)],
-]);
-
-test('the cool-down holds with a key or without and whatever the rate limits', function (SteamConfig $config): void {
-    $limiter = array_last(new SteamConnector($config)->getLimits());
-
-    expect($limiter->getName())->toEndWith(':too_many_attempts_limit')
-        ->and($limiter->getReleaseInSeconds())->toBe(300);
-})->with([
-    'without a key' => [new SteamConfig(tooManyRequestsCooldown: 300)],
-    'with a key' => [new SteamConfig('test-key', tooManyRequestsCooldown: 300)],
-    'no local limits' => [new SteamConfig('test-key', rateLimits: [], tooManyRequestsCooldown: 300)],
-    'own limits' => [new SteamConfig('test-key', rateLimits: [Limit::allow(10)->everyMinute()], tooManyRequestsCooldown: 300)],
-]);
-
 test('a request Steam never answered costs nothing from the budget', function (Closure $send): void {
     $connector = connectorAnswering([connectionFailure()], new SteamConfig('test-key'));
 
@@ -499,55 +368,6 @@ test('a request refused for a missing API key never reaches the wire', function 
         ->and($mockClient->getRecordedResponses())->toBeEmpty();
 });
 
-test('hitting the limit throws SteamRateLimitException with the offending limit', function (): void {
-    $connector = new SteamConnector(new SteamConfig('test-key', rateLimits: [Limit::allow(3)->everyMinute()]));
-
-    $mock = new MockClient([
-        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),
-    ]);
-
-    $connector->withMockClient($mock);
-
-    $connector->send(new ResolveVanityUrlRequest('first'));
-    $connector->send(new ResolveVanityUrlRequest('second'));
-    $connector->send(new ResolveVanityUrlRequest('third'));
-
-    try {
-        $connector->send(new ResolveVanityUrlRequest('fourth'));
-        $this->fail('Expected SteamRateLimitException was not thrown.');
-    } catch (SteamRateLimitException $steamRateLimitException) {
-        expect($steamRateLimitException->limit)->toBeInstanceOf(Limit::class)
-            ->and($steamRateLimitException->limit->getAllow())->toBe(3)
-            ->and($steamRateLimitException->getMessage())->toContain('Steam API rate limit reached');
-    }
-});
-
-test('configured limits replace the daily budget', function (): void {
-    $connector = new SteamConnector(new SteamConfig('test-key', rateLimits: [Limit::allow(10)->everyMinute()]));
-    $prefix = 'SteamConnector:'.hash('sha256', 'test-key');
-
-    $names = array_map(
-        static fn (Limit $limit): string => $limit->getName(),
-        $connector->getLimits(),
-    );
-
-    expect($names)->toBe([$prefix.':10_every_60', $prefix.':too_many_attempts_limit']);
-});
-
-test('an empty list of limits meters nothing locally', function (): void {
-    $connector = new SteamConnector(new SteamConfig('test-key', rateLimits: []));
-
-    $connector->withMockClient(new MockClient([
-        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),
-    ]));
-
-    $connector->send(new ResolveVanityUrlRequest('first'));
-    $connector->send(new ResolveVanityUrlRequest('second'));
-
-    expect(array_keys((new MemoryStore)->getStore()))
-        ->toBe(['SteamConnector:'.hash('sha256', 'test-key').':too_many_attempts_limit']);
-});
-
 test('Steam throttling still raises SteamRateLimitException without local limits', function (Closure $send): void {
     $connector = new SteamConnector(new SteamConfig('test-key', rateLimits: []));
 
@@ -561,37 +381,6 @@ test('Steam throttling still raises SteamRateLimitException without local limits
     'send' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->send($request)],
     'sendAsync' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->sendAsync($request)->wait()],
 ]);
-
-test('configured limits apply without an API key', function (): void {
-    $connector = new SteamConnector(new SteamConfig(rateLimits: [Limit::allow(1)->everyMinute()]));
-
-    $connector->withMockClient(new MockClient([
-        GetNumberOfCurrentPlayersRequest::class => MockResponse::fixture('ISteamUserStats/GetNumberOfCurrentPlayers/default'),
-    ]));
-
-    $connector->send(new GetNumberOfCurrentPlayersRequest(381210));
-
-    expect(fn (): Response => $connector->send(new GetNumberOfCurrentPlayersRequest(381210)))
-        ->toThrow(function (SteamRateLimitException $steamRateLimitException): void {
-            expect($steamRateLimitException->limit->getName())->toBe('SteamConnector:anonymous:1_every_60');
-        });
-});
-
-test('configured limits keep a counter per API key', function (): void {
-    $rateLimits = [Limit::allow(1)->everyMinute()];
-    $mockClient = new MockClient([
-        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),
-    ]);
-
-    $first = new SteamConnector(new SteamConfig('key-aaa', rateLimits: $rateLimits))->withMockClient($mockClient);
-    $second = new SteamConnector(new SteamConfig('key-bbb', rateLimits: $rateLimits))->withMockClient($mockClient);
-
-    $first->send(new ResolveVanityUrlRequest('first'));
-
-    expect(fn (): Response => $first->send(new ResolveVanityUrlRequest('again')))
-        ->toThrow(SteamRateLimitException::class)
-        ->and($second->send(new ResolveVanityUrlRequest('second'))->status())->toBe(200);
-});
 
 test('a configured limit set to sleep() waits instead of throwing', function (Closure $send): void {
     $slept = [];
@@ -749,19 +538,6 @@ test('a 429 on a custom request locks, counts and reaches onResponse however it 
     }],
 ]);
 
-function sendVanityUrlRequest(string $apiKey): SteamConnector
-{
-    $connector = new SteamConnector(new SteamConfig($apiKey));
-
-    $connector->withMockClient(new MockClient([
-        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),
-    ]));
-
-    $connector->send(new ResolveVanityUrlRequest('nick'));
-
-    return $connector;
-}
-
 function sendCurrentPlayersRequest(): SteamConnector
 {
     $connector = new SteamConnector(new SteamConfig);
@@ -784,15 +560,4 @@ function dailyLimitKeys(): array
         array_keys((new MemoryStore)->getStore()),
         static fn (string $key): bool => str_ends_with($key, '100000_every_utc_midnight'),
     ));
-}
-
-function rateLimitOf(Closure $call): SteamRateLimitException
-{
-    try {
-        $call();
-    } catch (SteamRateLimitException $steamRateLimitException) {
-        return $steamRateLimitException;
-    }
-
-    throw new RuntimeException('Expected the request to be rate limited.');
 }

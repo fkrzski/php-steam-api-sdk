@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
@@ -147,6 +148,17 @@ function transferFailure(PsrResponse $response, string $message = 'cURL error 56
 function dailyHits(SteamConnector $connector): int
 {
     return $connector->getLimits()[0]->update($connector->rateLimitStore())->getHits();
+}
+
+function rateLimitOf(Closure $call): SteamRateLimitException
+{
+    try {
+        $call();
+    } catch (SteamRateLimitException $steamRateLimitException) {
+        return $steamRateLimitException;
+    }
+
+    throw new RuntimeException('Expected the request to be rate limited.');
 }
 
 function sendingThrough(Sender $sender, string $apiKey = 'any', int $tries = 1): SteamConnector

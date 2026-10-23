@@ -9,6 +9,7 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRateLimitException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRetryException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidTimeoutException;
+use Fkrzski\SteamApiSdk\Http\RateLimiter;
 use Saloon\Contracts\Sender;
 use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 use Saloon\RateLimitPlugin\Limit;
@@ -16,9 +17,6 @@ use SensitiveParameter;
 
 final readonly class SteamConfig
 {
-    // LimitHelper::configureLimits() gives the plugin's own lock after a 429 this name.
-    private const string TOO_MANY_ATTEMPTS_LIMIT = 'too_many_attempts_limit';
-
     public ?string $apiKey;
 
     /**
@@ -90,7 +88,7 @@ final readonly class SteamConfig
     }
 
     /**
-     * The connector replaces every prefix with its own, so names are compared without one.
+     * The limiter replaces every prefix with its own, so names are compared without one.
      *
      * @param  array<Limit>  $rateLimits
      */
@@ -101,7 +99,7 @@ final readonly class SteamConfig
         foreach ($rateLimits as $key => $limit) {
             $name = substr((clone $limit)->setPrefix('')->getName(), 1);
 
-            if ($name === self::TOO_MANY_ATTEMPTS_LIMIT) {
+            if ($name === RateLimiter::TOO_MANY_ATTEMPTS_LIMIT) {
                 throw InvalidRateLimitException::reservedName($key, $name);
             }
 

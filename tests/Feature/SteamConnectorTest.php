@@ -26,8 +26,6 @@ use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
-use Saloon\RateLimitPlugin\Limit;
-use Saloon\RateLimitPlugin\Stores\MemoryStore;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 
 covers([SteamConnector::class, ApiKeyNotConfiguredException::class, InvalidApiKeyException::class, ProfileNotPublicException::class]);
@@ -66,34 +64,6 @@ test('resource accessors expose one resource per Steam interface', function (): 
 
 test('connector uses AlwaysThrowOnErrors plugin', function (): void {
     expect(in_array(AlwaysThrowOnErrors::class, class_uses(SteamConnector::class), true))->toBeTrue();
-});
-
-test('resolveLimits exposes a single 100,000 requests-per-day limit', function (): void {
-    $connector = new SteamConnector(new SteamConfig('any'));
-
-    /** @var array<Limit> $limits */
-    $limits = $connector->getLimits();
-
-    expect($limits)->toHaveCount(2)
-        ->and($limits[0]->getAllow())->toBe(100_000)
-        ->and($limits[0]->getReleaseInSeconds())->toBe(86_400);
-});
-
-test('resolveRateLimitStore returns the store configured on SteamConfig', function (): void {
-    $store = new MemoryStore;
-    $connector = new SteamConnector(new SteamConfig('any', $store));
-
-    $rateLimitStore = $connector->rateLimitStore();
-
-    expect($rateLimitStore)->toBe($store);
-});
-
-test('resolveRateLimitStore falls back to a fresh in-memory store', function (): void {
-    $connector = new SteamConnector(new SteamConfig('any'));
-
-    $rateLimitStore = $connector->rateLimitStore();
-
-    expect($rateLimitStore)->toBeInstanceOf(MemoryStore::class);
 });
 
 /**

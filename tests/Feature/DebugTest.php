@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
@@ -71,18 +72,21 @@ test('keeps the key on the request Steam receives', function (): void {
         ->and($history[0]['request']->getUri()->getQuery())->toBe('key=secret-key&steamid=76561198148125221');
 });
 
-test('hands a failed answer to the response debugger', function (Closure $send): void {
+test('hands a failed answer to the response debugger', function (Closure $send, int $status, string $exception): void {
     $statuses = [];
-    $connector = connectorAnswering([new PsrResponse(503)])
+    $connector = connectorAnswering([new PsrResponse($status)])
         ->debugResponse(static function (Response $response) use (&$statuses): void {
             $statuses[] = $response->status();
         });
 
-    expect(fn (): mixed => $send($connector))->toThrow(SteamApiException::class)
-        ->and($statuses)->toBe([503]);
+    expect(fn (): mixed => $send($connector))->toThrow($exception)
+        ->and($statuses)->toBe([$status]);
 })->with([
     'send' => [static fn (SteamConnector $connector): mixed => $connector->send(friendListRequest())],
     'sendAsync' => [static fn (SteamConnector $connector): mixed => $connector->sendAsync(friendListRequest())->wait()],
+])->with([
+    'a 5xx' => [503, SteamApiException::class],
+    "Steam's 429" => [429, SteamRateLimitException::class],
 ]);
 
 test('masks the key in the default dump of debug()', function (): void {

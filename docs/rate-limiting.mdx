@@ -101,8 +101,9 @@ if ($connector->hasReachedRateLimit(0.9)) {
 
 The argument is the share of a limit already spent, so `0.9` answers once 90 000 of the
 100 000 are gone; without it a limit has to be spent whole. Both see the lock after a `429` too.
-They read the key's counters; for requests sent without it, ask a connector built without a key
-on the same store and with the same `rateLimits`.
+They read the counters of requests sent with the key, or of every request on a connector without
+one. Requests sent without the key [count apart](#requests-sent-without-the-key), and nothing
+checks theirs before sending.
 
 `$connector->useRateLimitPlugin(false)` turns the limiter off altogether: nothing is counted
 or refused locally, and a `429` surfaces as `SteamApiException` with code `429` rather than

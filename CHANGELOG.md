@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SteamConfig` throws `InvalidRateLimitException` for a rate limit named `too_many_attempts_limit`, which made every request throw the plugin's raw `LimitException` ([#142](https://github.com/fkrzski/php-steam-api-sdk/issues/142)).
 - A request a `sleep()` limit sends again counts as the next attempt of the same call, under `sendAsync()` and `pool()` too, keeps the mock client the call was given, and fires `onFailure()` once ([#142](https://github.com/fkrzski/php-steam-api-sdk/issues/142)).
 - A non-error answer whose body is not JSON, or lacks the key its method decides on or returns, raises the new `UnreadableResponseException` under `send()`, `sendAsync()` and `pool()` and fires `onFailure()` once, unless the request asks Steam for another `format`. It used to pass as an empty list, a hidden profile or an unknown user, or escape as a raw `JsonException`, `TypeError` or PHP warning, and a hand-made `MockResponse` without its envelope now raises it too ([#160](https://github.com/fkrzski/php-steam-api-sdk/issues/160)).
+- `debugResponse()`, like any connector middleware ordered `PipeOrder::FIRST`, sees Steam's `429`; the rate limiter used to throw before it ran ([#163](https://github.com/fkrzski/php-steam-api-sdk/issues/163)).
 
 ## [0.9.0] - 2026-10-09
 

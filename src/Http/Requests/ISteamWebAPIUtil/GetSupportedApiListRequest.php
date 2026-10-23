@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsOptionalApiKey;
 use Fkrzski\SteamApiSdk\Dto\WebApiInterface;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
@@ -13,7 +14,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetSupportedApiListRequest extends Request implements SendsOptionalApiKey
+final class GetSupportedApiListRequest extends Request implements HasRequiredPaths, SendsOptionalApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -21,6 +22,11 @@ final class GetSupportedApiListRequest extends Request implements SendsOptionalA
     public function resolveEndpoint(): string
     {
         return '/ISteamWebAPIUtil/GetSupportedAPIList/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['apilist.interfaces'];
     }
 
     /**

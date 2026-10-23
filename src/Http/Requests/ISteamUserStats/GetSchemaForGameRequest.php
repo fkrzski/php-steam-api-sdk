@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
 use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\GameSchema;
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
@@ -14,7 +15,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetSchemaForGameRequest extends Request implements HasLanguage
+final class GetSchemaForGameRequest extends Request implements HasLanguage, HasRequiredPaths
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -27,6 +28,11 @@ final class GetSchemaForGameRequest extends Request implements HasLanguage
     public function resolveEndpoint(): string
     {
         return '/ISteamUserStats/GetSchemaForGame/v2/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['game'];
     }
 
     /**

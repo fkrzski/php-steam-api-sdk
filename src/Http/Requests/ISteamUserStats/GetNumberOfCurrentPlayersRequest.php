@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
 use Override;
@@ -12,7 +13,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetNumberOfCurrentPlayersRequest extends Request implements SendsNoApiKey
+final class GetNumberOfCurrentPlayersRequest extends Request implements HasRequiredPaths, SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -24,6 +25,11 @@ final class GetNumberOfCurrentPlayersRequest extends Request implements SendsNoA
     public function resolveEndpoint(): string
     {
         return '/ISteamUserStats/GetNumberOfCurrentPlayers/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['response.player_count'];
     }
 
     /**

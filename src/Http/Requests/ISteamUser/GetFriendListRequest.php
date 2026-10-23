@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\Friend;
 use Fkrzski\SteamApiSdk\Enums\FriendRelationship;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
@@ -12,7 +13,7 @@ use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-final class GetFriendListRequest extends Request
+final class GetFriendListRequest extends Request implements HasRequiredPaths
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -25,6 +26,14 @@ final class GetFriendListRequest extends Request
     public function resolveEndpoint(): string
     {
         return '/ISteamUser/GetFriendList/v1/';
+    }
+
+    /**
+     * Unmeasured: the SDK has always read an empty object as an account without friends.
+     */
+    public function requiredPaths(Response $response): array
+    {
+        return $response->json() === [] ? [] : ['friendslist'];
     }
 
     /**

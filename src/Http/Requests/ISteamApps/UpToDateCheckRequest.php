@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamApps;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Dto\AppVersionCheck;
 use Fkrzski\SteamApiSdk\Exceptions\AppVersionUnavailableException;
@@ -13,7 +14,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class UpToDateCheckRequest extends Request implements SendsNoApiKey
+final class UpToDateCheckRequest extends Request implements HasRequiredPaths, SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -26,6 +27,11 @@ final class UpToDateCheckRequest extends Request implements SendsNoApiKey
     public function resolveEndpoint(): string
     {
         return '/ISteamApps/UpToDateCheck/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['response.success'];
     }
 
     /**

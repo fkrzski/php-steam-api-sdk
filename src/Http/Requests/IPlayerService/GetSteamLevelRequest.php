@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\IPlayerService;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
@@ -12,7 +13,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetSteamLevelRequest extends Request
+final class GetSteamLevelRequest extends Request implements HasRequiredPaths
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -24,6 +25,11 @@ final class GetSteamLevelRequest extends Request
     public function resolveEndpoint(): string
     {
         return '/IPlayerService/GetSteamLevel/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['response'];
     }
 
     /**

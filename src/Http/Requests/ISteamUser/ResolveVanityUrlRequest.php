@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Exceptions\SteamUserNotFoundException;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
@@ -12,7 +13,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class ResolveVanityUrlRequest extends Request
+final class ResolveVanityUrlRequest extends Request implements HasRequiredPaths
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -24,6 +25,11 @@ final class ResolveVanityUrlRequest extends Request
     public function resolveEndpoint(): string
     {
         return '/ISteamUser/ResolveVanityURL/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['response.success'];
     }
 
     #[Override]

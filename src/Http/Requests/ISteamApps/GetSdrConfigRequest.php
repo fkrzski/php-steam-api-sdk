@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamApps;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Dto\SdrConfig;
 use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
@@ -13,7 +14,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetSdrConfigRequest extends Request implements SendsNoApiKey
+final class GetSdrConfigRequest extends Request implements HasRequiredPaths, SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -25,6 +26,11 @@ final class GetSdrConfigRequest extends Request implements SendsNoApiKey
     public function resolveEndpoint(): string
     {
         return '/ISteamApps/GetSDRConfig/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['revision', 'pops'];
     }
 
     /**

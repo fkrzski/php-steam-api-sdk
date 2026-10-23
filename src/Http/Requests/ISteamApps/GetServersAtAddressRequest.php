@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamApps;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Dto\GameServer;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidServerAddressException;
@@ -14,7 +15,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetServersAtAddressRequest extends Request implements SendsNoApiKey
+final class GetServersAtAddressRequest extends Request implements HasRequiredPaths, SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -26,6 +27,14 @@ final class GetServersAtAddressRequest extends Request implements SendsNoApiKey
     public function resolveEndpoint(): string
     {
         return '/ISteamApps/GetServersAtAddress/v1/';
+    }
+
+    /**
+     * Steam explains a refusal in `message` and lists the servers only on success.
+     */
+    public function requiredPaths(Response $response): array
+    {
+        return ['response.success', $response->json('response.success') === false ? 'response.message' : 'response.servers'];
     }
 
     #[Override]

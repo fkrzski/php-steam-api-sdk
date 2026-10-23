@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
 use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
@@ -15,7 +16,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetPlayerAchievementsRequest extends Request implements HasLanguage
+final class GetPlayerAchievementsRequest extends Request implements HasLanguage, HasRequiredPaths
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -29,6 +30,11 @@ final class GetPlayerAchievementsRequest extends Request implements HasLanguage
     public function resolveEndpoint(): string
     {
         return '/ISteamUserStats/GetPlayerAchievements/v1/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['playerstats'];
     }
 
     /**

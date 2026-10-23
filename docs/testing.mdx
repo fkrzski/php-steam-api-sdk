@@ -127,6 +127,11 @@ No two endpoints agree on where the collection goes: `GetPlayerBans` puts it at 
 | `->webApi()->serverInfo()` | `SteamResponse::serverInfo()` | `GetServerInfoRequest` |
 | `->webApi()->supportedApiList()` | `SteamResponse::supportedApiList()` | `GetSupportedApiListRequest` |
 
+A `MockResponse` of your own needs the envelope its builder sends: without it the call raises
+`UnreadableResponseException`, except an empty `GetFriendListRequest` body, which reads as no
+friends. A maintenance page in place of JSON raises it on every request:
+`MockResponse::make('<html>maintenance</html>')`.
+
 ## DTO factories
 
 Every DTO the SDK returns has a factory for the payload Steam sends, under

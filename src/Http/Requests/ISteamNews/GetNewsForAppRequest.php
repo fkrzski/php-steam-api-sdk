@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamNews;
 
 use DateTimeInterface;
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Dto\AppNews;
 use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
@@ -14,7 +15,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetNewsForAppRequest extends Request implements SendsNoApiKey
+final class GetNewsForAppRequest extends Request implements HasRequiredPaths, SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -35,6 +36,11 @@ final class GetNewsForAppRequest extends Request implements SendsNoApiKey
     public function resolveEndpoint(): string
     {
         return '/ISteamNews/GetNewsForApp/v2/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['appnews'];
     }
 
     /**

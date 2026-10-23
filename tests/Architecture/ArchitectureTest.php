@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
@@ -55,6 +56,10 @@ arch('enums are backed enums')
 arch('requests extend the Saloon Request base class')
     ->expect('Fkrzski\SteamApiSdk\Http\Requests')
     ->toExtend(Request::class);
+
+arch('requests name the paths their answer carries')
+    ->expect('Fkrzski\SteamApiSdk\Http\Requests')
+    ->toImplement(HasRequiredPaths::class);
 
 arch('resources extend the Saloon base resource')
     ->expect('Fkrzski\SteamApiSdk\Http\Resources')

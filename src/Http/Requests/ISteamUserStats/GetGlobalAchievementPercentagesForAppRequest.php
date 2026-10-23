@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
+use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Dto\GlobalAchievement;
 use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
@@ -13,7 +14,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Throwable;
 
-final class GetGlobalAchievementPercentagesForAppRequest extends Request implements SendsNoApiKey
+final class GetGlobalAchievementPercentagesForAppRequest extends Request implements HasRequiredPaths, SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -28,6 +29,11 @@ final class GetGlobalAchievementPercentagesForAppRequest extends Request impleme
     public function resolveEndpoint(): string
     {
         return '/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/';
+    }
+
+    public function requiredPaths(Response $response): array
+    {
+        return ['achievementpercentages.achievements'];
     }
 
     /**

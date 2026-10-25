@@ -7,8 +7,6 @@ use Fkrzski\SteamApiSdk\Dto\AppVersionCheck;
 use Fkrzski\SteamApiSdk\Dto\GameSchema;
 use Fkrzski\SteamApiSdk\Dto\NewsItem;
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
-use Fkrzski\SteamApiSdk\Dto\PlayerBadges;
-use Fkrzski\SteamApiSdk\Dto\RecentlyPlayedGames;
 use Fkrzski\SteamApiSdk\Dto\SdrConfig;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
@@ -23,10 +21,7 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\CommunityBadgeQuestFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\OwnedGameFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\PlayerBadgesFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\RecentlyPlayedGameFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\RecentlyPlayedGamesFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\AppVersionCheckFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\GameServerFactory;
@@ -46,7 +41,6 @@ use Fkrzski\SteamApiSdk\Testing\Fakes\StatsFake;
 use Fkrzski\SteamApiSdk\Testing\Fakes\UsersFake;
 use Fkrzski\SteamApiSdk\Testing\Fakes\WebApiFake;
 use Fkrzski\SteamApiSdk\Testing\SteamFake;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
@@ -88,34 +82,6 @@ test('hands the same mock back from every endpoint', function (Closure $fakeEndp
     ],
     'supported api list' => [fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList()],
 ]);
-
-test('fakes every players endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->players()->ownedGames(OwnedGameFactory::new(), OwnedGameFactory::new()->withAppInfo())
-        ->players()->recentlyPlayedGames(RecentlyPlayedGamesFactory::new()->games(
-            RecentlyPlayedGameFactory::new()->name('Counter-Strike 2'),
-        ))
-        ->players()->steamLevel(42)
-        ->players()->badges(PlayerBadgesFactory::new())
-        ->players()->communityBadgeProgress(
-            CommunityBadgeQuestFactory::new(),
-            CommunityBadgeQuestFactory::new()->questId(202),
-        );
-    $connector = fakedConnector($fake);
-
-    $ownedGames = $connector->players()->ownedGames(steamId());
-    $quests = $connector->players()->communityBadgeProgress(steamId());
-
-    expect($ownedGames)->toHaveCount(2)
-        ->and($ownedGames[1]->name)->toBe('Dead by Daylight')
-        ->and($connector->players()->recentlyPlayedGames(steamId())->games[0]->name)->toBe('Counter-Strike 2')
-        ->and($connector->players()->steamLevel(steamId()))->toBe(42)
-        ->and($connector->players()->badges(steamId())->playerLevel)->toBe(12)
-        ->and($quests)->toHaveCount(2)
-        ->and($quests[1]->questId)->toBe(202);
-
-    $fake->assertSentCount(5);
-});
 
 test('fakes every stats endpoint through the chain', function (): void {
     $fake = new SteamFake()
@@ -226,31 +192,6 @@ test('raises what the sdk raises for a named failure', function (
     expect($fail($fake))->toBe($fake)
         ->and(fn (): mixed => $call($connector))->toThrow($exception, $message);
 })->with([
-    'owned games not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->ownedGamesNotPublic(),
-        fn (SteamConnector $connector): array => $connector->players()->ownedGames(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'recently played games not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->recentlyPlayedGamesNotPublic(),
-        fn (SteamConnector $connector): RecentlyPlayedGames => $connector->players()->recentlyPlayedGames(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'steam level not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->steamLevelNotPublic(),
-        fn (SteamConnector $connector): int => $connector->players()->steamLevel(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'badges not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->badgesNotPublic(),
-        fn (SteamConnector $connector): PlayerBadges => $connector->players()->badges(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'community badge progress not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->communityBadgeProgressNotPublic(),
-        fn (SteamConnector $connector): array => $connector->players()->communityBadgeProgress(steamId()),
-        ProfileNotPublicException::class,
-    ],
     'user stats not public' => [
         fn (SteamFake $fake): SteamFake => $fake->stats()->userStatsNotPublic(),
         fn (SteamConnector $connector): UserStats => $connector->stats()->userStats(steamId(), appId: 381210),
@@ -363,7 +304,7 @@ test('a plain mock client keeps the lock a faked 429 left behind', function (): 
 
     expect(fn (): int => $throttled->players()->steamLevel(steamId()))->toThrow(SteamRateLimitException::class);
 
-    $connector = fakedConnector(new MockClient([SteamConnector::class => SteamResponse::steamLevel(42)]));
+    $connector = fakedConnector(new MockClient([SteamConnector::class => MockResponse::make(['response' => ['player_level' => 42]])]));
 
     expect(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow(SteamRateLimitException::class);
 });

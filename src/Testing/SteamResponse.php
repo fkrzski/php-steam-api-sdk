@@ -9,10 +9,6 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\CommunityBadgeQuestFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\OwnedGameFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\PlayerBadgesFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\RecentlyPlayedGamesFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\AppVersionCheckFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\GameServerFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
@@ -37,65 +33,6 @@ use Saloon\Http\PendingRequest;
  */
 final class SteamResponse
 {
-    /**
-     * `game_count` is what tells the SDK the profile is public — see
-     * {@see self::playerServiceNotPublic()} for the response that omits it.
-     */
-    public static function ownedGames(OwnedGameFactory ...$games): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'game_count' => count($games),
-                'games' => array_map(
-                    static fn (OwnedGameFactory $game): array => $game->toArray(),
-                    $games,
-                ),
-            ],
-        ]);
-    }
-
-    /**
-     * `total_count` is Steam's own total for the window, so it is independent of how
-     * many games the payload lists — see {@see RecentlyPlayedGamesFactory::totalCount()}.
-     */
-    public static function recentlyPlayedGames(RecentlyPlayedGamesFactory $games): MockResponse
-    {
-        return MockResponse::make([
-            'response' => $games->toArray(),
-        ]);
-    }
-
-    public static function steamLevel(int $level): MockResponse
-    {
-        return MockResponse::make([
-            'response' => ['player_level' => $level],
-        ]);
-    }
-
-    /**
-     * `player_level` is what tells the SDK the profile is public — a hidden one
-     * answers with the empty `response` object {@see self::playerServiceNotPublic()}
-     * returns.
-     */
-    public static function badges(PlayerBadgesFactory $badges): MockResponse
-    {
-        return MockResponse::make([
-            'response' => $badges->toArray(),
-        ]);
-    }
-
-    public static function communityBadgeProgress(CommunityBadgeQuestFactory ...$quests): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'quests' => array_map(
-                    static fn (CommunityBadgeQuestFactory $quest): array => $quest->toArray(),
-                    $quests,
-                ),
-            ],
-        ]);
-    }
-
     public static function userStats(UserStatsFactory $stats): MockResponse
     {
         return MockResponse::make([
@@ -254,17 +191,6 @@ final class SteamResponse
                 ),
             ],
         ]);
-    }
-
-    /**
-     * Every IPlayerService endpoint answers a hidden profile with 200 and an empty
-     * `response` object, dropping only the key it reads — `game_count`, `total_count`,
-     * `player_level`. Nothing but that absence separates it from a player who owns or
-     * played nothing, so this cannot be expressed as a status code.
-     */
-    public static function playerServiceNotPublic(): MockResponse
-    {
-        return MockResponse::make(['response' => (object) []]);
     }
 
     /**

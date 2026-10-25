@@ -6,8 +6,6 @@ use Fkrzski\SteamApiSdk\Dto\AppNews;
 use Fkrzski\SteamApiSdk\Dto\AppVersionCheck;
 use Fkrzski\SteamApiSdk\Dto\GameSchema;
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
-use Fkrzski\SteamApiSdk\Dto\PlayerBadges;
-use Fkrzski\SteamApiSdk\Dto\RecentlyPlayedGames;
 use Fkrzski\SteamApiSdk\Dto\SdrConfig;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
@@ -20,11 +18,7 @@ use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
-use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetBadgesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetCommunityBadgeProgressRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetRecentlyPlayedGamesRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetSteamLevelRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetSdrConfigRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetServersAtAddressRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\UpToDateCheckRequest;
@@ -39,12 +33,6 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetServerInfoRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\BadgeFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\CommunityBadgeQuestFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\OwnedGameFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\PlayerBadgesFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\RecentlyPlayedGameFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\RecentlyPlayedGamesFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\AppVersionCheckFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\GameServerFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
@@ -77,58 +65,6 @@ function bodyOf(MockResponse $response): mixed
 }
 
 // Envelopes
-
-test('counts the games it wraps', function (): void {
-    expect(bodyOf(SteamResponse::ownedGames(
-        OwnedGameFactory::new()->appId(381210),
-        OwnedGameFactory::new()->appId(730),
-    )))->toBe([
-        'response' => [
-            'game_count' => 2,
-            'games' => [
-                OwnedGameFactory::new()->appId(381210)->toArray(),
-                OwnedGameFactory::new()->appId(730)->toArray(),
-            ],
-        ],
-    ]);
-});
-
-test('nests recently played games under the response key', function (): void {
-    expect(bodyOf(SteamResponse::recentlyPlayedGames(
-        RecentlyPlayedGamesFactory::new()->games(
-            RecentlyPlayedGameFactory::new()->appId(381210),
-            RecentlyPlayedGameFactory::new()->appId(730),
-        ),
-    )))->toBe([
-        'response' => [
-            'total_count' => 2,
-            'games' => [
-                RecentlyPlayedGameFactory::new()->appId(381210)->toArray(),
-                RecentlyPlayedGameFactory::new()->appId(730)->toArray(),
-            ],
-        ],
-    ]);
-});
-
-test('nests badges under the response key', function (): void {
-    expect(bodyOf(SteamResponse::badges(PlayerBadgesFactory::new())))->toBe([
-        'response' => PlayerBadgesFactory::new()->toArray(),
-    ]);
-});
-
-test('nests community badge quests under the response key', function (): void {
-    expect(bodyOf(SteamResponse::communityBadgeProgress(
-        CommunityBadgeQuestFactory::new(),
-        CommunityBadgeQuestFactory::new()->questId(202)->incomplete(),
-    )))->toBe([
-        'response' => [
-            'quests' => [
-                CommunityBadgeQuestFactory::new()->toArray(),
-                CommunityBadgeQuestFactory::new()->questId(202)->incomplete()->toArray(),
-            ],
-        ],
-    ]);
-});
 
 test('nests user stats under the playerstats key', function (): void {
     expect(bodyOf(SteamResponse::userStats(UserStatsFactory::new())))->toBe([
@@ -240,11 +176,6 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     expect($builder()->status())->toBe($captured->statusCode)
         ->and((string) $builder()->body())->toBe(is_string($captured->data) ? $captured->data : json_encode($captured->data, JSON_THROW_ON_ERROR));
 })->with([
-    'playerServiceNotPublic() on GetOwnedGames' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetOwnedGames/private'],
-    'playerServiceNotPublic() on GetRecentlyPlayedGames' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetRecentlyPlayedGames/private'],
-    'playerServiceNotPublic() on GetSteamLevel' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetSteamLevel/private'],
-    'playerServiceNotPublic() on GetBadges' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetBadges/private'],
-    'playerServiceNotPublic() on GetCommunityBadgeProgress' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetCommunityBadgeProgress/private'],
     'statsRefused()' => [SteamResponse::statsRefused(...), 'ISteamUserStats/GetUserStatsForGame/private'],
     'playerAchievementsRefused()' => [SteamResponse::playerAchievementsRefused(...), 'ISteamUserStats/GetPlayerAchievements/stats-unavailable'],
     'appNotFound()' => [SteamResponse::appNotFound(...), 'ISteamUserStats/GetNumberOfCurrentPlayers/unknown-app'],
@@ -259,13 +190,6 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     'invalidApiKey()' => [SteamResponse::invalidApiKey(...), 'Errors/invalid-key'],
     'apiKeyUnauthorized()' => [SteamResponse::apiKeyUnauthorized(...), 'Errors/unauthorized-key'],
     'apiKeyMissing()' => [SteamResponse::apiKeyMissing(...), 'Errors/missing-key'],
-    'ownedGames() of no games' => [static fn (): MockResponse => SteamResponse::ownedGames(), 'IPlayerService/GetOwnedGames/not_owned'],
-    'recentlyPlayedGames() of nothing played' => [
-        static fn (): MockResponse => SteamResponse::recentlyPlayedGames(RecentlyPlayedGamesFactory::new()->nothingPlayed()),
-        'IPlayerService/GetRecentlyPlayedGames/empty',
-    ],
-    'steamLevel()' => [static fn (): MockResponse => SteamResponse::steamLevel(56), 'IPlayerService/GetSteamLevel/default'],
-    'steamLevel() of zero' => [static fn (): MockResponse => SteamResponse::steamLevel(0), 'IPlayerService/GetSteamLevel/zero'],
     'currentPlayers()' => [static fn (): MockResponse => SteamResponse::currentPlayers(40008), 'ISteamUserStats/GetNumberOfCurrentPlayers/default'],
     'gameSchema() of an empty schema' => [
         static fn (): MockResponse => SteamResponse::gameSchema(GameSchemaFactory::new()->empty()),
@@ -290,60 +214,6 @@ test('throttles with a 429 that carries Retry-After only when given one', functi
 });
 
 // Round trips through the connector
-
-test('feeds owned games back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetOwnedGamesRequest::class => SteamResponse::ownedGames(OwnedGameFactory::new()->withAppInfo()),
-    ]));
-
-    expect($connector->players()->ownedGames(fakedId())[0]->name)->toBe('Dead by Daylight');
-});
-
-test('feeds recently played games back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetRecentlyPlayedGamesRequest::class => SteamResponse::recentlyPlayedGames(
-            RecentlyPlayedGamesFactory::new()->games(
-                RecentlyPlayedGameFactory::new()->name('Counter-Strike 2'),
-            ),
-        ),
-    ]));
-
-    expect($connector->players()->recentlyPlayedGames(fakedId())->games[0]->name)->toBe('Counter-Strike 2');
-});
-
-test('feeds the steam level back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([GetSteamLevelRequest::class => SteamResponse::steamLevel(42)]));
-
-    expect($connector->players()->steamLevel(fakedId()))->toBe(42);
-});
-
-test('feeds badges back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetBadgesRequest::class => SteamResponse::badges(
-            PlayerBadgesFactory::new()->badges(BadgeFactory::new()->communityItem()),
-        ),
-    ]));
-
-    $badges = $connector->players()->badges(fakedId());
-
-    expect($badges->playerLevel)->toBe(12)
-        ->and($badges->badges[0]->communityItemId)->toBe('2101234567890123456');
-});
-
-test('feeds community badge progress back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetCommunityBadgeProgressRequest::class => SteamResponse::communityBadgeProgress(
-            CommunityBadgeQuestFactory::new(),
-            CommunityBadgeQuestFactory::new()->questId(202)->incomplete(),
-        ),
-    ]));
-
-    $quests = $connector->players()->communityBadgeProgress(fakedId());
-
-    expect($quests)->toHaveCount(2)
-        ->and($quests[1]->questId)->toBe(202)
-        ->and($quests[1]->completed)->toBeFalse();
-});
 
 test('feeds user stats back through the connector', function (): void {
     $connector = fakedConnector(new MockClient([
@@ -549,41 +419,6 @@ test('feeds the supported api list back through the connector', function (): voi
 });
 
 // Failures — these pin the contract with the SDK's exception mapping
-
-test('raises a not public profile from owned games without a game count', function (): void {
-    $connector = fakedConnector(new MockClient([GetOwnedGamesRequest::class => SteamResponse::playerServiceNotPublic()]));
-
-    expect(fn (): array => $connector->players()->ownedGames(fakedId()))
-        ->toThrow(ProfileNotPublicException::class);
-});
-
-test('raises a not public profile from recently played games without a total count', function (): void {
-    $connector = fakedConnector(new MockClient([GetRecentlyPlayedGamesRequest::class => SteamResponse::playerServiceNotPublic()]));
-
-    expect(fn (): RecentlyPlayedGames => $connector->players()->recentlyPlayedGames(fakedId()))
-        ->toThrow(ProfileNotPublicException::class);
-});
-
-test('raises a not public profile from a steam level without a player level', function (): void {
-    $connector = fakedConnector(new MockClient([GetSteamLevelRequest::class => SteamResponse::playerServiceNotPublic()]));
-
-    expect(fn (): int => $connector->players()->steamLevel(fakedId()))
-        ->toThrow(ProfileNotPublicException::class);
-});
-
-test('raises a not public profile from badges without a player level', function (): void {
-    $connector = fakedConnector(new MockClient([GetBadgesRequest::class => SteamResponse::playerServiceNotPublic()]));
-
-    expect(fn (): PlayerBadges => $connector->players()->badges(fakedId()))
-        ->toThrow(ProfileNotPublicException::class);
-});
-
-test('raises a not public profile from community badge progress without quests', function (): void {
-    $connector = fakedConnector(new MockClient([GetCommunityBadgeProgressRequest::class => SteamResponse::playerServiceNotPublic()]));
-
-    expect(fn (): array => $connector->players()->communityBadgeProgress(fakedId()))
-        ->toThrow(ProfileNotPublicException::class);
-});
 
 test('raises a not public profile from refused user stats', function (): void {
     $connector = fakedConnector(new MockClient([GetUserStatsForGameRequest::class => SteamResponse::statsRefused()]));

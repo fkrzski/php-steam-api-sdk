@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
@@ -250,6 +251,33 @@ function steamId(): SteamId
 function fakedConnector(MockClient $mockClient, SteamConfig $config = new SteamConfig('test-key')): SteamConnector
 {
     return new SteamConnector($config)->withMockClient($mockClient);
+}
+
+/**
+ * The response the fake answered the request with, even one the SDK raises an exception from.
+ */
+function answerFrom(MockClient $mockClient, Request $request): Response
+{
+    try {
+        fakedConnector($mockClient)->send($request);
+    } catch (SteamApiException) {
+        // The fake recorded the response before the SDK read it.
+    }
+
+    return $mockClient->getLastResponse() ?? throw new LogicException('Expected the fake to answer.');
+}
+
+/**
+ * The status and body Steam was captured sending, read raw since `MockResponse::fixture()` replays `{}` as `[]`.
+ *
+ * @return array{int, string}
+ */
+function captured(string $fixture): array
+{
+    /** @var object{statusCode: int, data: mixed} $captured */
+    $captured = json_decode((string) file_get_contents(__DIR__."/Fixtures/Saloon/{$fixture}.json"), flags: JSON_THROW_ON_ERROR);
+
+    return [$captured->statusCode, is_string($captured->data) ? $captured->data : json_encode($captured->data, JSON_THROW_ON_ERROR)];
 }
 
 /**

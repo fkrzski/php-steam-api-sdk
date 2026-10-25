@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
+use Fkrzski\SteamApiSdk\Testing\SteamFake;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Psr\Http\Message\RequestInterface;
 use Saloon\Helpers\Debugger;
-use Saloon\Http\Faking\MockClient;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
@@ -28,10 +26,7 @@ afterEach(function (): void {
 function debuggableConnector(): SteamConnector
 {
     $connector = new SteamConnector(new SteamConfig('secret-key'));
-    $connector->withMockClient(new MockClient([
-        GetFriendListRequest::class => SteamResponse::friendList(),
-        GetNumberOfCurrentPlayersRequest::class => SteamResponse::currentPlayers(0),
-    ]));
+    $connector->withMockClient(new SteamFake()->users()->friends()->stats()->currentPlayers(0));
 
     return $connector;
 }

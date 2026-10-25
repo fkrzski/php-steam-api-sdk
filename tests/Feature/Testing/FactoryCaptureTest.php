@@ -47,8 +47,8 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\UserStatsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiMethodFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiParameterFactory;
+use Fkrzski\SteamApiSdk\Testing\SteamFake;
 use Fkrzski\SteamApiSdk\Testing\SteamResponse;
-use Saloon\Http\Faking\Fixture;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Request;
@@ -131,149 +131,149 @@ function dtoType(mixed $dto): string
 dataset('factory defaults', [
     'PlayerSummaryFactory' => [
         new GetPlayerSummariesRequest([steamId()]),
-        static fn (): MockResponse => SteamResponse::playerSummaries(PlayerSummaryFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->users()->summaries(PlayerSummaryFactory::new()),
         ['ISteamUser/GetPlayerSummaries/default', 'ISteamUser/GetPlayerSummaries/friends-only', 'ISteamUser/GetPlayerSummaries/hidden'],
     ],
     'PlayerBanFactory' => [
         new GetPlayerBansRequest([steamId()]),
-        static fn (): MockResponse => SteamResponse::playerBans(PlayerBanFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->users()->bans(PlayerBanFactory::new()),
         ['ISteamUser/GetPlayerBans/default', 'ISteamUser/GetPlayerBans/community_banned', 'ISteamUser/GetPlayerBans/economy_banned'],
     ],
     'FriendFactory' => [
         friendListRequest(),
-        static fn (): MockResponse => SteamResponse::friendList(FriendFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->users()->friends(FriendFactory::new()),
         ['ISteamUser/GetFriendList/default'],
     ],
     'UserGroupFactory' => [
         new GetUserGroupListRequest(steamId()),
-        static fn (): MockResponse => SteamResponse::userGroupList(UserGroupFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->users()->groups(UserGroupFactory::new()),
         ['ISteamUser/GetUserGroupList/default'],
     ],
     'OwnedGameFactory' => [
         new GetOwnedGamesRequest(steamId()),
-        static fn (): MockResponse => SteamResponse::ownedGames(OwnedGameFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->players()->ownedGames(OwnedGameFactory::new()),
         ['IPlayerService/GetOwnedGames/default'],
     ],
     'RecentlyPlayedGamesFactory' => [
         new GetRecentlyPlayedGamesRequest(steamId()),
-        static fn (): MockResponse => SteamResponse::recentlyPlayedGames(RecentlyPlayedGamesFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->players()->recentlyPlayedGames(RecentlyPlayedGamesFactory::new()),
         ['IPlayerService/GetRecentlyPlayedGames/default', 'IPlayerService/GetRecentlyPlayedGames/limited'],
     ],
     'RecentlyPlayedGameFactory' => [
         new GetRecentlyPlayedGamesRequest(steamId()),
-        static fn (): MockResponse => SteamResponse::recentlyPlayedGames(RecentlyPlayedGamesFactory::new()->games(RecentlyPlayedGameFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->players()->recentlyPlayedGames(RecentlyPlayedGamesFactory::new()->games(RecentlyPlayedGameFactory::new())),
         ['IPlayerService/GetRecentlyPlayedGames/default', 'IPlayerService/GetRecentlyPlayedGames/limited'],
     ],
     'PlayerBadgesFactory' => [
         new GetBadgesRequest(steamId()),
-        static fn (): MockResponse => SteamResponse::badges(PlayerBadgesFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->players()->badges(PlayerBadgesFactory::new()),
         ['IPlayerService/GetBadges/default', 'IPlayerService/GetBadges/zero'],
     ],
     'BadgeFactory' => [
         new GetBadgesRequest(steamId()),
-        static fn (): MockResponse => SteamResponse::badges(PlayerBadgesFactory::new()->badges(BadgeFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->players()->badges(PlayerBadgesFactory::new()->badges(BadgeFactory::new())),
         ['IPlayerService/GetBadges/default'],
     ],
     'CommunityBadgeQuestFactory' => [
         new GetCommunityBadgeProgressRequest(steamId()),
-        static fn (): MockResponse => SteamResponse::communityBadgeProgress(CommunityBadgeQuestFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->players()->communityBadgeProgress(CommunityBadgeQuestFactory::new()),
         ['IPlayerService/GetCommunityBadgeProgress/default'],
     ],
     'AppVersionCheckFactory' => [
         new UpToDateCheckRequest(440, 1),
-        static fn (): MockResponse => SteamResponse::upToDateCheck(AppVersionCheckFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->apps()->upToDateCheck(AppVersionCheckFactory::new()),
         ['ISteamApps/UpToDateCheck/up-to-date', 'ISteamApps/UpToDateCheck/out-of-date'],
     ],
     'GameServerFactory' => [
         new GetServersAtAddressRequest('1.2.3.4'),
-        static fn (): MockResponse => SteamResponse::serversAtAddress(GameServerFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->apps()->serversAtAddress(GameServerFactory::new()),
         ['ISteamApps/GetServersAtAddress/default', 'ISteamApps/GetServersAtAddress/rust'],
     ],
     'SdrConfigFactory' => [
         new GetSdrConfigRequest(440),
-        static fn (): MockResponse => SteamResponse::sdrConfig(SdrConfigFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->apps()->sdrConfig(SdrConfigFactory::new()),
         ['ISteamApps/GetSDRConfig/default', 'ISteamApps/GetSDRConfig/steam-wide'],
     ],
     'SdrPointOfPresenceFactory' => [
         new GetSdrConfigRequest(440),
-        static fn (): MockResponse => SteamResponse::sdrConfig(SdrConfigFactory::new()->pointsOfPresence(SdrPointOfPresenceFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->apps()->sdrConfig(SdrConfigFactory::new()->pointsOfPresence(SdrPointOfPresenceFactory::new())),
         ['ISteamApps/GetSDRConfig/default', 'ISteamApps/GetSDRConfig/steam-wide'],
     ],
     'SdrRelayFactory' => [
         new GetSdrConfigRequest(440),
-        static fn (): MockResponse => SteamResponse::sdrConfig(
+        static fn (SteamFake $fake): SteamFake => $fake->apps()->sdrConfig(
             SdrConfigFactory::new()->pointsOfPresence(SdrPointOfPresenceFactory::new()->relays(SdrRelayFactory::new())),
         ),
         ['ISteamApps/GetSDRConfig/default', 'ISteamApps/GetSDRConfig/steam-wide'],
     ],
     'AppNewsFactory' => [
         new GetNewsForAppRequest(440),
-        static fn (): MockResponse => SteamResponse::appNews(AppNewsFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->news()->appNews(AppNewsFactory::new()),
         ['ISteamNews/GetNewsForApp/default', 'ISteamNews/GetNewsForApp/end-date', 'ISteamNews/GetNewsForApp/excerpt', 'ISteamNews/GetNewsForApp/parent-app'],
     ],
     'NewsItemFactory' => [
         new GetNewsForAppRequest(440),
-        static fn (): MockResponse => SteamResponse::appNews(AppNewsFactory::new()->items(NewsItemFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->news()->appNews(AppNewsFactory::new()->items(NewsItemFactory::new())),
         ['ISteamNews/GetNewsForApp/default', 'ISteamNews/GetNewsForApp/end-date', 'ISteamNews/GetNewsForApp/excerpt', 'ISteamNews/GetNewsForApp/parent-app'],
     ],
     'GameSchemaFactory' => [
         new GetSchemaForGameRequest(440),
-        static fn (): MockResponse => SteamResponse::gameSchema(GameSchemaFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->stats()->schema(GameSchemaFactory::new()),
         ['ISteamUserStats/GetSchemaForGame/default', 'ISteamUserStats/GetSchemaForGame/localized', 'ISteamUserStats/GetSchemaForGame/unnamed-game'],
     ],
     'SchemaStatFactory' => [
         new GetSchemaForGameRequest(440),
-        static fn (): MockResponse => SteamResponse::gameSchema(GameSchemaFactory::new()->stats(SchemaStatFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->stats()->schema(GameSchemaFactory::new()->stats(SchemaStatFactory::new())),
         ['ISteamUserStats/GetSchemaForGame/default', 'ISteamUserStats/GetSchemaForGame/localized', 'ISteamUserStats/GetSchemaForGame/unnamed-game'],
     ],
     'SchemaAchievementFactory' => [
         new GetSchemaForGameRequest(440),
-        static fn (): MockResponse => SteamResponse::gameSchema(GameSchemaFactory::new()->achievements(SchemaAchievementFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->stats()->schema(GameSchemaFactory::new()->achievements(SchemaAchievementFactory::new())),
         ['ISteamUserStats/GetSchemaForGame/default', 'ISteamUserStats/GetSchemaForGame/localized', 'ISteamUserStats/GetSchemaForGame/unnamed-game'],
     ],
     'GlobalAchievementFactory' => [
         new GetGlobalAchievementPercentagesForAppRequest(440),
-        static fn (): MockResponse => SteamResponse::globalAchievements(GlobalAchievementFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->stats()->globalAchievements(GlobalAchievementFactory::new()),
         ['ISteamUserStats/GetGlobalAchievementPercentagesForApp/default'],
     ],
     'PlayerAchievementsFactory' => [
         new GetPlayerAchievementsRequest(steamId(), 440),
-        static fn (): MockResponse => SteamResponse::playerAchievements(PlayerAchievementsFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->stats()->achievements(PlayerAchievementsFactory::new()),
         ['ISteamUserStats/GetPlayerAchievements/default', 'ISteamUserStats/GetPlayerAchievements/localized'],
     ],
     'PlayerAchievementFactory' => [
         new GetPlayerAchievementsRequest(steamId(), 440),
-        static fn (): MockResponse => SteamResponse::playerAchievements(PlayerAchievementsFactory::new()->achievements(PlayerAchievementFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->stats()->achievements(PlayerAchievementsFactory::new()->achievements(PlayerAchievementFactory::new())),
         ['ISteamUserStats/GetPlayerAchievements/default', 'ISteamUserStats/GetPlayerAchievements/localized'],
     ],
     'UserStatsFactory' => [
         new GetUserStatsForGameRequest(steamId(), 440),
-        static fn (): MockResponse => SteamResponse::userStats(UserStatsFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->stats()->userStats(UserStatsFactory::new()),
         ['ISteamUserStats/GetUserStatsForGame/default'],
     ],
     'UserStatFactory' => [
         new GetUserStatsForGameRequest(steamId(), 440),
-        static fn (): MockResponse => SteamResponse::userStats(UserStatsFactory::new()->stats(UserStatFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->stats()->userStats(UserStatsFactory::new()->stats(UserStatFactory::new())),
         ['ISteamUserStats/GetUserStatsForGame/default'],
     ],
     'UserStatAchievementFactory' => [
         new GetUserStatsForGameRequest(steamId(), 440),
-        static fn (): MockResponse => SteamResponse::userStats(UserStatsFactory::new()->achievements(UserStatAchievementFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->stats()->userStats(UserStatsFactory::new()->achievements(UserStatAchievementFactory::new())),
         ['ISteamUserStats/GetUserStatsForGame/default'],
     ],
     'WebApiInterfaceFactory' => [
         new GetSupportedApiListRequest,
-        static fn (): MockResponse => SteamResponse::supportedApiList(WebApiInterfaceFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList(WebApiInterfaceFactory::new()),
         ['ISteamWebAPIUtil/GetSupportedAPIList/keyed', 'ISteamWebAPIUtil/GetSupportedAPIList/anonymous'],
     ],
     'WebApiMethodFactory' => [
         new GetSupportedApiListRequest,
-        static fn (): MockResponse => SteamResponse::supportedApiList(WebApiInterfaceFactory::new()->methods(WebApiMethodFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList(WebApiInterfaceFactory::new()->methods(WebApiMethodFactory::new())),
         ['ISteamWebAPIUtil/GetSupportedAPIList/keyed', 'ISteamWebAPIUtil/GetSupportedAPIList/anonymous'],
     ],
     'WebApiParameterFactory' => [
         new GetSupportedApiListRequest,
-        static fn (): MockResponse => SteamResponse::supportedApiList(
+        static fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList(
             WebApiInterfaceFactory::new()->methods(WebApiMethodFactory::new()->parameters(WebApiParameterFactory::new())),
         ),
         ['ISteamWebAPIUtil/GetSupportedAPIList/keyed', 'ISteamWebAPIUtil/GetSupportedAPIList/anonymous'],
@@ -284,7 +284,7 @@ test('sends no key or type steam does not', function (Request $request, Closure 
     $steam = array_reduce($captures, static fn (array $shape, string $capture): array => jsonShape(capturedData($capture), shape: $shape), []);
     $unknown = [];
 
-    foreach (jsonShape(json_decode((string) $faked()->body(), flags: JSON_THROW_ON_ERROR)) as $path => $types) {
+    foreach (jsonShape(json_decode(answerFrom($faked(new SteamFake), $request)->body(), flags: JSON_THROW_ON_ERROR)) as $path => $types) {
         $foreign = array_values(array_diff($types, $steam[$path] ?? []));
 
         if ($foreign !== []) {
@@ -296,7 +296,7 @@ test('sends no key or type steam does not', function (Request $request, Closure 
 })->with('factory defaults');
 
 test('reads its default back through the request like its capture', function (Request $request, Closure $faked, array $captures): void {
-    $read = static fn (MockResponse|Fixture $response): string => dtoType(fakedConnector(new MockClient([$response]))->send($request)->dto());
+    $read = static fn (MockClient $mockClient): string => dtoType(fakedConnector($mockClient)->send($request)->dto());
 
-    expect($read($faked()))->toBe($read(MockResponse::fixture($captures[0])));
+    expect($read($faked(new SteamFake)))->toBe($read(new MockClient([MockResponse::fixture($captures[0])])));
 })->with('factory defaults');

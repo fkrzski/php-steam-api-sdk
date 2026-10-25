@@ -21,7 +21,7 @@ use Fkrzski\SteamApiSdk\Http\Resources\UsersResource;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
+use Fkrzski\SteamApiSdk\Testing\SteamFake;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -226,18 +226,16 @@ test('summaries sends GetPlayerSummaries and returns PlayerSummary DTOs', functi
 });
 
 test('values Steam adds later come back as Unknown without failing the batch', function (): void {
-    $mockClient = new MockClient([
-        GetPlayerSummariesRequest::class => SteamResponse::playerSummaries(
-            PlayerSummaryFactory::new()->state(['steamid' => '76561198000000000', 'personastate' => 7]),
-            PlayerSummaryFactory::new()->state([
-                'steamid' => '76561198000000001',
-                'personastate' => 99,
-                'communityvisibilitystate' => 4,
-                'commentpermission' => 5,
-            ]),
-            PlayerSummaryFactory::new()->state(['steamid' => '76561198000000002']),
-        ),
-    ]);
+    $mockClient = new SteamFake()->users()->summaries(
+        PlayerSummaryFactory::new()->state(['steamid' => '76561198000000000', 'personastate' => 7]),
+        PlayerSummaryFactory::new()->state([
+            'steamid' => '76561198000000001',
+            'personastate' => 99,
+            'communityvisibilitystate' => 4,
+            'commentpermission' => 5,
+        ]),
+        PlayerSummaryFactory::new()->state(['steamid' => '76561198000000002']),
+    );
 
     $summaries = usersResource($mockClient)->summaries(makeSteamIds(3));
 

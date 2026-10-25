@@ -18,16 +18,11 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\GameServerFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\FriendFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerBanFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\UserGroupFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GameSchemaFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GlobalAchievementFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\UserStatsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
-use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use GuzzleHttp\Exception\ConnectException;
 use LogicException;
 use Saloon\Exceptions\Request\FatalRequestException;
@@ -42,57 +37,6 @@ use Saloon\Http\PendingRequest;
  */
 final class SteamResponse
 {
-    public static function playerSummaries(PlayerSummaryFactory ...$players): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'players' => array_map(
-                    static fn (PlayerSummaryFactory $player): array => $player->toArray(),
-                    $players,
-                ),
-            ],
-        ]);
-    }
-
-    /**
-     * Ban records sit at the top level, without the `response` wrapper every other
-     * ISteamUser endpoint uses.
-     */
-    public static function playerBans(PlayerBanFactory ...$bans): MockResponse
-    {
-        return MockResponse::make([
-            'players' => array_map(
-                static fn (PlayerBanFactory $ban): array => $ban->toArray(),
-                $bans,
-            ),
-        ]);
-    }
-
-    public static function friendList(FriendFactory ...$friends): MockResponse
-    {
-        return MockResponse::make([
-            'friendslist' => [
-                'friends' => array_map(
-                    static fn (FriendFactory $friend): array => $friend->toArray(),
-                    $friends,
-                ),
-            ],
-        ]);
-    }
-
-    public static function userGroupList(UserGroupFactory ...$groups): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'success' => true,
-                'groups' => array_map(
-                    static fn (UserGroupFactory $group): array => $group->toArray(),
-                    $groups,
-                ),
-            ],
-        ]);
-    }
-
     /**
      * `game_count` is what tells the SDK the profile is public — see
      * {@see self::playerServiceNotPublic()} for the response that omits it.
@@ -195,16 +139,6 @@ final class SteamResponse
         // An empty array encodes as `[]`, where Steam sends `{}`.
         return MockResponse::make([
             'game' => $game === [] ? (object) [] : $game,
-        ]);
-    }
-
-    public static function vanityUrl(SteamId $steamId): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'steamid' => $steamId->value,
-                'success' => 1,
-            ],
         ]);
     }
 
@@ -323,29 +257,6 @@ final class SteamResponse
     }
 
     /**
-     * A hidden friend list, which the connector raises from the bare 401 as
-     * `ProfileNotPublicException`.
-     */
-    public static function friendListNotPublic(): MockResponse
-    {
-        return MockResponse::make('{}', 401);
-    }
-
-    /**
-     * A hidden group list, which the connector raises from the 403 as
-     * `ProfileNotPublicException`.
-     */
-    public static function userGroupListNotPublic(): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'success' => false,
-                'error' => 'Private profile',
-            ],
-        ], 403);
-    }
-
-    /**
      * Every IPlayerService endpoint answers a hidden profile with 200 and an empty
      * `response` object, dropping only the key it reads — `game_count`, `total_count`,
      * `player_level`. Nothing but that absence separates it from a player who owns or
@@ -409,19 +320,6 @@ final class SteamResponse
     public static function schemaAppNotFound(): MockResponse
     {
         return MockResponse::make('{}', 400);
-    }
-
-    /**
-     * `ResolveVanityURL` reports an unclaimed slug in the body, not the status.
-     */
-    public static function vanityNotFound(): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'success' => 42,
-                'message' => 'No match',
-            ],
-        ]);
     }
 
     /**

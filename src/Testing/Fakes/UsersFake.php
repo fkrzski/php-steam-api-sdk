@@ -15,7 +15,6 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerBanFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\UserGroupFactory;
 use Fkrzski\SteamApiSdk\Testing\SteamFake;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\PendingRequest;
@@ -37,7 +36,14 @@ final readonly class UsersFake
         $askedFor = $this->askedFor('steamid', $players);
 
         $this->fake->addResponse(
-            static fn (PendingRequest $pendingRequest): MockResponse => SteamResponse::playerSummaries(...$askedFor($pendingRequest)),
+            static fn (PendingRequest $pendingRequest): MockResponse => MockResponse::make([
+                'response' => [
+                    'players' => array_map(
+                        static fn (PlayerSummaryFactory $player): array => $player->toArray(),
+                        $askedFor($pendingRequest),
+                    ),
+                ],
+            ]),
             GetPlayerSummariesRequest::class,
         );
 
@@ -46,13 +52,19 @@ final readonly class UsersFake
 
     /**
      * Each request gets the bans it asks for, or, asking for none, the ones no request has had yet.
+     * Ban records sit at the top level, without the `response` wrapper every other ISteamUser endpoint uses.
      */
     public function bans(PlayerBanFactory ...$bans): SteamFake
     {
         $askedFor = $this->askedFor('SteamId', $bans);
 
         $this->fake->addResponse(
-            static fn (PendingRequest $pendingRequest): MockResponse => SteamResponse::playerBans(...$askedFor($pendingRequest)),
+            static fn (PendingRequest $pendingRequest): MockResponse => MockResponse::make([
+                'players' => array_map(
+                    static fn (PlayerBanFactory $ban): array => $ban->toArray(),
+                    $askedFor($pendingRequest),
+                ),
+            ]),
             GetPlayerBansRequest::class,
         );
 
@@ -61,42 +73,81 @@ final readonly class UsersFake
 
     public function friends(FriendFactory ...$friends): SteamFake
     {
-        $this->fake->addResponse(SteamResponse::friendList(...$friends), GetFriendListRequest::class);
+        $this->fake->addResponse(MockResponse::make([
+            'friendslist' => [
+                'friends' => array_map(
+                    static fn (FriendFactory $friend): array => $friend->toArray(),
+                    $friends,
+                ),
+            ],
+        ]), GetFriendListRequest::class);
 
         return $this->fake;
     }
 
+    /**
+     * A hidden friend list, which the connector raises from the bare 401 as `ProfileNotPublicException`.
+     */
     public function friendsNotPublic(): SteamFake
     {
-        $this->fake->addResponse(SteamResponse::friendListNotPublic(), GetFriendListRequest::class);
+        $this->fake->addResponse(MockResponse::make('{}', 401), GetFriendListRequest::class);
 
         return $this->fake;
     }
 
     public function groups(UserGroupFactory ...$groups): SteamFake
     {
-        $this->fake->addResponse(SteamResponse::userGroupList(...$groups), GetUserGroupListRequest::class);
+        $this->fake->addResponse(MockResponse::make([
+            'response' => [
+                'success' => true,
+                'groups' => array_map(
+                    static fn (UserGroupFactory $group): array => $group->toArray(),
+                    $groups,
+                ),
+            ],
+        ]), GetUserGroupListRequest::class);
 
         return $this->fake;
     }
 
+    /**
+     * A hidden group list, which the connector raises from the 403 as `ProfileNotPublicException`.
+     */
     public function groupsNotPublic(): SteamFake
     {
-        $this->fake->addResponse(SteamResponse::userGroupListNotPublic(), GetUserGroupListRequest::class);
+        $this->fake->addResponse(MockResponse::make([
+            'response' => [
+                'success' => false,
+                'error' => 'Private profile',
+            ],
+        ], 403), GetUserGroupListRequest::class);
 
         return $this->fake;
     }
 
     public function resolveVanityUrl(SteamId $steamId): SteamFake
     {
-        $this->fake->addResponse(SteamResponse::vanityUrl($steamId), ResolveVanityUrlRequest::class);
+        $this->fake->addResponse(MockResponse::make([
+            'response' => [
+                'steamid' => $steamId->value,
+                'success' => 1,
+            ],
+        ]), ResolveVanityUrlRequest::class);
 
         return $this->fake;
     }
 
+    /**
+     * `ResolveVanityURL` reports an unclaimed slug in the body, not the status.
+     */
     public function vanityUrlNotFound(): SteamFake
     {
-        $this->fake->addResponse(SteamResponse::vanityNotFound(), ResolveVanityUrlRequest::class);
+        $this->fake->addResponse(MockResponse::make([
+            'response' => [
+                'success' => 42,
+                'message' => 'No match',
+            ],
+        ]), ResolveVanityUrlRequest::class);
 
         return $this->fake;
     }
@@ -107,7 +158,7 @@ final readonly class UsersFake
      * @template TFactory of PlayerSummaryFactory|PlayerBanFactory
      *
      * @param  array<TFactory>  $players
-     * @return Closure(PendingRequest): array<TFactory>
+     * @return Closure(PendingRequest): list<TFactory>
      */
     private function askedFor(string $key, array $players): Closure
     {
@@ -135,7 +186,8 @@ final readonly class UsersFake
 
             $unclaimed = array_diff_key($unclaimed, $asked);
 
-            return $asked;
+            // The keys track who got whom; Steam's list carries none.
+            return array_values($asked);
         };
     }
 }

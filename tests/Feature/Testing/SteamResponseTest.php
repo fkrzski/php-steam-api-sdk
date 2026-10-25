@@ -20,7 +20,6 @@ use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
-use Fkrzski\SteamApiSdk\Exceptions\SteamUserNotFoundException;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetBadgesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetCommunityBadgeProgressRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
@@ -30,11 +29,7 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetSdrConfigRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetServersAtAddressRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\UpToDateCheckRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerBansRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetUserGroupListRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetGlobalAchievementPercentagesForAppRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
@@ -56,10 +51,6 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrPointOfPresenceFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\FriendFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerBanFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\UserGroupFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GameSchemaFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GlobalAchievementFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementFactory;
@@ -86,41 +77,6 @@ function bodyOf(MockResponse $response): mixed
 }
 
 // Envelopes
-
-test('nests player summaries under the response key', function (): void {
-    expect(bodyOf(SteamResponse::playerSummaries(
-        PlayerSummaryFactory::new()->personaName('Gabe'),
-        PlayerSummaryFactory::new()->personaName('Newell'),
-    )))->toBe([
-        'response' => [
-            'players' => [
-                PlayerSummaryFactory::new()->personaName('Gabe')->toArray(),
-                PlayerSummaryFactory::new()->personaName('Newell')->toArray(),
-            ],
-        ],
-    ]);
-});
-
-test('puts ban records at the top level, without the response wrapper', function (): void {
-    expect(bodyOf(SteamResponse::playerBans(PlayerBanFactory::new()->vacBanned(2))))->toBe([
-        'players' => [PlayerBanFactory::new()->vacBanned(2)->toArray()],
-    ]);
-});
-
-test('nests friends under the friendslist key', function (): void {
-    expect(bodyOf(SteamResponse::friendList(FriendFactory::new())))->toBe([
-        'friendslist' => ['friends' => [FriendFactory::new()->toArray()]],
-    ]);
-});
-
-test('flags the group list as successful', function (): void {
-    expect(bodyOf(SteamResponse::userGroupList(UserGroupFactory::new())))->toBe([
-        'response' => [
-            'success' => true,
-            'groups' => [UserGroupFactory::new()->toArray()],
-        ],
-    ]);
-});
 
 test('counts the games it wraps', function (): void {
     expect(bodyOf(SteamResponse::ownedGames(
@@ -284,8 +240,6 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     expect($builder()->status())->toBe($captured->statusCode)
         ->and((string) $builder()->body())->toBe(is_string($captured->data) ? $captured->data : json_encode($captured->data, JSON_THROW_ON_ERROR));
 })->with([
-    'friendListNotPublic()' => [SteamResponse::friendListNotPublic(...), 'ISteamUser/GetFriendList/private'],
-    'userGroupListNotPublic()' => [SteamResponse::userGroupListNotPublic(...), 'ISteamUser/GetUserGroupList/private'],
     'playerServiceNotPublic() on GetOwnedGames' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetOwnedGames/private'],
     'playerServiceNotPublic() on GetRecentlyPlayedGames' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetRecentlyPlayedGames/private'],
     'playerServiceNotPublic() on GetSteamLevel' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetSteamLevel/private'],
@@ -296,7 +250,6 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     'appNotFound()' => [SteamResponse::appNotFound(...), 'ISteamUserStats/GetNumberOfCurrentPlayers/unknown-app'],
     'globalAchievementsRefused()' => [SteamResponse::globalAchievementsRefused(...), 'ISteamUserStats/GetGlobalAchievementPercentagesForApp/no-achievements'],
     'schemaAppNotFound()' => [SteamResponse::schemaAppNotFound(...), 'ISteamUserStats/GetSchemaForGame/unknown-app'],
-    'vanityNotFound()' => [SteamResponse::vanityNotFound(...), 'ISteamUser/ResolveVanityUrl/not_found'],
     'appVersionUnavailable()' => [SteamResponse::appVersionUnavailable(...), 'ISteamApps/UpToDateCheck/unavailable'],
     'invalidServerAddress()' => [SteamResponse::invalidServerAddress(...), 'ISteamApps/GetServersAtAddress/invalid-address'],
     'serversAtAddressRefused()' => [SteamResponse::serversAtAddressRefused(...), 'ISteamApps/GetServersAtAddress/refused'],
@@ -306,10 +259,6 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     'invalidApiKey()' => [SteamResponse::invalidApiKey(...), 'Errors/invalid-key'],
     'apiKeyUnauthorized()' => [SteamResponse::apiKeyUnauthorized(...), 'Errors/unauthorized-key'],
     'apiKeyMissing()' => [SteamResponse::apiKeyMissing(...), 'Errors/missing-key'],
-    'playerBans() of no players' => [static fn (): MockResponse => SteamResponse::playerBans(), 'ISteamUser/GetPlayerBans/empty'],
-    'friendList() of no friends' => [static fn (): MockResponse => SteamResponse::friendList(), 'ISteamUser/GetFriendList/empty'],
-    'userGroupList() of no groups' => [static fn (): MockResponse => SteamResponse::userGroupList(), 'ISteamUser/GetUserGroupList/empty'],
-    'vanityUrl()' => [static fn (): MockResponse => SteamResponse::vanityUrl(fakedId()), 'ISteamUser/ResolveVanityUrl/success'],
     'ownedGames() of no games' => [static fn (): MockResponse => SteamResponse::ownedGames(), 'IPlayerService/GetOwnedGames/not_owned'],
     'recentlyPlayedGames() of nothing played' => [
         static fn (): MockResponse => SteamResponse::recentlyPlayedGames(RecentlyPlayedGamesFactory::new()->nothingPlayed()),
@@ -341,43 +290,6 @@ test('throttles with a 429 that carries Retry-After only when given one', functi
 });
 
 // Round trips through the connector
-
-test('feeds player summaries back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetPlayerSummariesRequest::class => SteamResponse::playerSummaries(
-            PlayerSummaryFactory::new()->personaName('Gabe')->online(),
-        ),
-    ]));
-
-    $summaries = $connector->users()->summaries([fakedId()]);
-
-    expect($summaries)->toHaveCount(1)
-        ->and($summaries[0]->personaName)->toBe('Gabe');
-});
-
-test('feeds ban records back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetPlayerBansRequest::class => SteamResponse::playerBans(PlayerBanFactory::new()->vacBanned(2)),
-    ]));
-
-    expect($connector->users()->bans([fakedId()])[0]->numberOfVacBans)->toBe(2);
-});
-
-test('feeds a friend list back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetFriendListRequest::class => SteamResponse::friendList(FriendFactory::new(), FriendFactory::new()),
-    ]));
-
-    expect($connector->users()->friends(fakedId()))->toHaveCount(2);
-});
-
-test('feeds a group list back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetUserGroupListRequest::class => SteamResponse::userGroupList(UserGroupFactory::new()->gid('25358940')),
-    ]));
-
-    expect($connector->users()->groups(fakedId())[0]->gid)->toBe('25358940');
-});
 
 test('feeds owned games back through the connector', function (): void {
     $connector = fakedConnector(new MockClient([
@@ -489,14 +401,6 @@ test('feeds the game schema back through the connector', function (): void {
     expect($schema->gameName)->toBe('Portal 2')
         ->and($schema->stats)->toHaveCount(1)
         ->and($schema->achievements)->toHaveCount(1);
-});
-
-test('feeds a resolved vanity url back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        ResolveVanityUrlRequest::class => SteamResponse::vanityUrl(fakedId()),
-    ]));
-
-    expect($connector->users()->resolveVanityUrl('gabelogannewell')->value)->toBe('76561198000000000');
 });
 
 test('feeds a version check back through the connector', function (): void {
@@ -646,20 +550,6 @@ test('feeds the supported api list back through the connector', function (): voi
 
 // Failures — these pin the contract with the SDK's exception mapping
 
-test('raises a not public profile from a refused friend list', function (): void {
-    $connector = fakedConnector(new MockClient([GetFriendListRequest::class => SteamResponse::friendListNotPublic()]));
-
-    expect(fn (): array => $connector->users()->friends(fakedId()))
-        ->toThrow(ProfileNotPublicException::class);
-});
-
-test('raises a not public profile from a refused group list', function (): void {
-    $connector = fakedConnector(new MockClient([GetUserGroupListRequest::class => SteamResponse::userGroupListNotPublic()]));
-
-    expect(fn (): array => $connector->users()->groups(fakedId()))
-        ->toThrow(ProfileNotPublicException::class);
-});
-
 test('raises a not public profile from owned games without a game count', function (): void {
     $connector = fakedConnector(new MockClient([GetOwnedGamesRequest::class => SteamResponse::playerServiceNotPublic()]));
 
@@ -732,13 +622,6 @@ test('raises a missing app from an app id the schema endpoint does not know', fu
 
     expect(fn (): GameSchema => $connector->stats()->schema(appId: 1))
         ->toThrow(AppNotFoundException::class);
-});
-
-test('raises a missing user from an unclaimed vanity url', function (): void {
-    $connector = fakedConnector(new MockClient([ResolveVanityUrlRequest::class => SteamResponse::vanityNotFound()]));
-
-    expect(fn (): SteamId => $connector->users()->resolveVanityUrl('nobody'))
-        ->toThrow(SteamUserNotFoundException::class);
 });
 
 test('raises an unavailable app version from an unsuccessful version check', function (): void {

@@ -16,7 +16,6 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GameSchemaFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\UserStatsFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
 use Fkrzski\SteamApiSdk\Testing\Fakes\AppsFake;
 use Fkrzski\SteamApiSdk\Testing\Fakes\NewsFake;
 use Fkrzski\SteamApiSdk\Testing\Fakes\PlayersFake;
@@ -66,21 +65,6 @@ test('hands the same mock back from every endpoint', function (Closure $fakeEndp
     'supported api list' => [fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList()],
 ]);
 
-test('fakes every web api endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->webApi()->serverInfo(new DateTimeImmutable('2026-10-08 19:59:38 UTC'))
-        ->webApi()->supportedApiList(WebApiInterfaceFactory::new(), WebApiInterfaceFactory::new()->name('IGCVersion_440'));
-    $connector = fakedConnector($fake);
-
-    $interfaces = $connector->webApi()->supportedApis();
-
-    expect($connector->webApi()->serverTime()->getTimestamp())->toBe(1791489578)
-        ->and($interfaces)->toHaveCount(2)
-        ->and($interfaces[1]->name)->toBe('IGCVersion_440');
-
-    $fake->assertSentCount(2);
-});
-
 test('chains from the array form', function (): void {
     $connector = fakedConnector(new SteamFake([
         ResolveVanityUrlRequest::class => MockResponse::make(['response' => ['steamid' => '76561198000000000', 'success' => 1]]),
@@ -89,25 +73,6 @@ test('chains from the array form', function (): void {
     expect($connector->users()->resolveVanityUrl('gabelogannewell')->value)->toBe('76561198000000000')
         ->and($connector->players()->steamLevel(steamId()))->toBe(42);
 });
-
-test('raises what the sdk raises for a named failure', function (
-    Closure $fail,
-    Closure $call,
-    string $exception,
-    ?string $message = null,
-): void {
-    $fake = new SteamFake;
-    $connector = fakedConnector($fake);
-
-    expect($fail($fake))->toBe($fake)
-        ->and(fn (): mixed => $call($connector))->toThrow($exception, $message);
-})->with([
-    'supported api list invalid key' => [
-        fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiListInvalidKey(),
-        fn (SteamConnector $connector): array => $connector->webApi()->supportedApis(),
-        InvalidApiKeyException::class,
-    ],
-]);
 
 test('fails every request without its own response', function (Closure $fail, string $exception): void {
     $fake = new SteamFake()->players()->steamLevel(42);

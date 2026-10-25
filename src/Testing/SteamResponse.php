@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Testing;
 
-use DateTimeImmutable;
-use DateTimeInterface;
-use DateTimeZone;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
 use GuzzleHttp\Exception\ConnectException;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Http\Faking\MockResponse;
@@ -21,42 +17,6 @@ use Saloon\Http\PendingRequest;
  */
 final class SteamResponse
 {
-    /**
-     * `servertimestring` is the same moment in US Pacific time without an offset,
-     * which nothing reads; it is here because Steam sends it.
-     */
-    public static function serverInfo(DateTimeInterface $time): MockResponse
-    {
-        $pacific = DateTimeImmutable::createFromInterface($time)->setTimezone(new DateTimeZone('America/Los_Angeles'));
-
-        return MockResponse::make([
-            'servertime' => $time->getTimestamp(),
-            'servertimestring' => sprintf('%s %2d %s', $pacific->format('D M'), $pacific->format('j'), $pacific->format('H:i:s Y')),
-        ]);
-    }
-
-    public static function supportedApiList(WebApiInterfaceFactory ...$interfaces): MockResponse
-    {
-        return MockResponse::make([
-            'apilist' => [
-                'interfaces' => array_map(
-                    static fn (WebApiInterfaceFactory $interface): array => $interface->toArray(),
-                    $interfaces,
-                ),
-            ],
-        ]);
-    }
-
-    /**
-     * A key `GetSupportedAPIList` rejects, answered with a 403 and an empty list rather
-     * than the `key=` page {@see self::invalidApiKey()} returns. The request raises
-     * `InvalidApiKeyException` itself before the connector can read it as a hidden profile.
-     */
-    public static function supportedApiListInvalidKey(): MockResponse
-    {
-        return MockResponse::make(['apilist' => ['interfaces' => []]], 403);
-    }
-
     /**
      * A key Steam rejects. The connector matches on `key=` in the body, so the
      * echoed query string is what makes this an `InvalidApiKeyException`.

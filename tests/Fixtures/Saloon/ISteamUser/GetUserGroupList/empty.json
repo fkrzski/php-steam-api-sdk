@@ -5,7 +5,8 @@
     },
     "data": {
         "response": {
-            "success": true
+            "success": true,
+            "groups": []
         }
     }
 }

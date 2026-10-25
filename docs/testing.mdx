@@ -346,6 +346,10 @@ exception the SDK raises for that endpoint:
 and answer every request that has no response of its own, so a chain can fake one endpoint and
 let the rest fail. The key builders without a method fit any request class in the map.
 
+Every builder above but `connectionFailed()` and `tooManyRequests()` sends the status and body
+Steam was captured sending, byte for byte, so code that reads the response itself through
+`body()` or `object()` sees what Steam sends.
+
 A hidden profile looks different on every endpoint. `friendListNotPublic()` is a `401` with an
 empty JSON object, and `userGroupListNotPublic()` a `403` carrying `Private profile`.
 `playerServiceNotPublic()` is a **`200`** whose only tell is the missing key the endpoint reads

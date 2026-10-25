@@ -137,12 +137,6 @@ test('counts the games it wraps', function (): void {
     ]);
 });
 
-test('reports a game count of zero for a player who owns nothing', function (): void {
-    expect(bodyOf(SteamResponse::ownedGames()))->toBe([
-        'response' => ['game_count' => 0, 'games' => []],
-    ]);
-});
-
 test('nests recently played games under the response key', function (): void {
     expect(bodyOf(SteamResponse::recentlyPlayedGames(
         RecentlyPlayedGamesFactory::new()->games(
@@ -157,12 +151,6 @@ test('nests recently played games under the response key', function (): void {
                 RecentlyPlayedGameFactory::new()->appId(730)->toArray(),
             ],
         ],
-    ]);
-});
-
-test('nests the steam level under the response key', function (): void {
-    expect(bodyOf(SteamResponse::steamLevel(42)))->toBe([
-        'response' => ['player_level' => 42],
     ]);
 });
 
@@ -198,12 +186,6 @@ test('nests player achievements under the playerstats key', function (): void {
     ]);
 });
 
-test('nests the player count under the response key', function (): void {
-    expect(bodyOf(SteamResponse::currentPlayers(12_345)))->toBe([
-        'response' => ['player_count' => 12_345],
-    ]);
-});
-
 test('nests global achievements under the achievementpercentages key', function (): void {
     expect(bodyOf(SteamResponse::globalAchievements(
         GlobalAchievementFactory::new(),
@@ -221,21 +203,6 @@ test('nests global achievements under the achievementpercentages key', function 
 test('nests the game schema under the game key', function (): void {
     expect(bodyOf(SteamResponse::gameSchema(GameSchemaFactory::new())))->toBe([
         'game' => GameSchemaFactory::new()->toArray(),
-    ]);
-});
-
-test('answers an app publishing no schema with an empty game object', function (): void {
-    expect(bodyOf(SteamResponse::gameSchema(GameSchemaFactory::new()->empty())))->toBe([
-        'game' => [],
-    ]);
-});
-
-test('reports a resolved vanity url as successful', function (): void {
-    expect(bodyOf(SteamResponse::vanityUrl(fakedId())))->toBe([
-        'response' => [
-            'success' => 1,
-            'steamid' => '76561198000000000',
-        ],
     ]);
 });
 
@@ -263,16 +230,6 @@ test('flags the server list as successful', function (): void {
     ]);
 });
 
-test('answers an address with no servers with steams message', function (): void {
-    expect(bodyOf(SteamResponse::serversAtAddress()))->toBe([
-        'response' => [
-            'success' => true,
-            'servers' => [],
-            'message' => 'No servers found at that address',
-        ],
-    ]);
-});
-
 test('puts the sdr config at the top level beside a success flag', function (): void {
     expect(bodyOf(SteamResponse::sdrConfig(SdrConfigFactory::new())))->toBe([
         ...SdrConfigFactory::new()->toArray(),
@@ -289,14 +246,6 @@ test('nests app news under the appnews key', function (): void {
             'newsitems' => [NewsItemFactory::new()->toArray()],
             'count' => 3939,
         ],
-    ]);
-});
-
-// The values are GetServerInfo's own, so the Pacific string matches Steam's to the padded day.
-test('puts the server time at the top level beside steams pacific string', function (): void {
-    expect(bodyOf(SteamResponse::serverInfo(new DateTimeImmutable('2026-10-08 19:59:38 UTC'))))->toBe([
-        'servertime' => 1791489578,
-        'servertimestring' => 'Thu Oct  8 12:59:38 2026',
     ]);
 });
 
@@ -328,115 +277,61 @@ test('answers an empty supported api list with no interfaces', function (): void
     expect(bodyOf(SteamResponse::supportedApiList()))->toBe(['apilist' => ['interfaces' => []]]);
 });
 
-test('hides a player service result behind a 200 with an empty response', function (): void {
-    expect(SteamResponse::playerServiceNotPublic()->status())->toBe(200)
-        ->and(bodyOf(SteamResponse::playerServiceNotPublic()))->toBe(['response' => []]);
-});
-
-test('refuses stats with a 400 carrying an empty json object', function (): void {
-    expect(SteamResponse::statsRefused()->status())->toBe(400)
-        ->and(bodyOf(SteamResponse::statsRefused()))->toBe('{}');
-});
-
-test('sends the refusal steam was captured sending', function (Closure $builder, string $fixture): void {
+test('sends the body steam was captured sending', function (Closure $builder, string $fixture): void {
     /** @var object{statusCode: int, data: mixed} $captured */
     $captured = json_decode((string) file_get_contents(__DIR__."/../../Fixtures/Saloon/{$fixture}.json"), flags: JSON_THROW_ON_ERROR);
 
     expect($builder()->status())->toBe($captured->statusCode)
-        ->and((string) $builder()->body())->toBe(json_encode($captured->data, JSON_THROW_ON_ERROR));
+        ->and((string) $builder()->body())->toBe(is_string($captured->data) ? $captured->data : json_encode($captured->data, JSON_THROW_ON_ERROR));
 })->with([
-    'friend list' => [SteamResponse::friendListNotPublic(...), 'ISteamUser/GetFriendList/private'],
-    'group list' => [SteamResponse::userGroupListNotPublic(...), 'ISteamUser/GetUserGroupList/private'],
-    'player achievements' => [SteamResponse::playerAchievementsRefused(...), 'ISteamUserStats/GetPlayerAchievements/stats-unavailable'],
+    'friendListNotPublic()' => [SteamResponse::friendListNotPublic(...), 'ISteamUser/GetFriendList/private'],
+    'userGroupListNotPublic()' => [SteamResponse::userGroupListNotPublic(...), 'ISteamUser/GetUserGroupList/private'],
+    'playerServiceNotPublic() on GetOwnedGames' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetOwnedGames/private'],
+    'playerServiceNotPublic() on GetRecentlyPlayedGames' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetRecentlyPlayedGames/private'],
+    'playerServiceNotPublic() on GetSteamLevel' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetSteamLevel/private'],
+    'playerServiceNotPublic() on GetBadges' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetBadges/private'],
+    'playerServiceNotPublic() on GetCommunityBadgeProgress' => [SteamResponse::playerServiceNotPublic(...), 'IPlayerService/GetCommunityBadgeProgress/private'],
+    'statsRefused()' => [SteamResponse::statsRefused(...), 'ISteamUserStats/GetUserStatsForGame/private'],
+    'playerAchievementsRefused()' => [SteamResponse::playerAchievementsRefused(...), 'ISteamUserStats/GetPlayerAchievements/stats-unavailable'],
+    'appNotFound()' => [SteamResponse::appNotFound(...), 'ISteamUserStats/GetNumberOfCurrentPlayers/unknown-app'],
+    'globalAchievementsRefused()' => [SteamResponse::globalAchievementsRefused(...), 'ISteamUserStats/GetGlobalAchievementPercentagesForApp/no-achievements'],
+    'schemaAppNotFound()' => [SteamResponse::schemaAppNotFound(...), 'ISteamUserStats/GetSchemaForGame/unknown-app'],
+    'vanityNotFound()' => [SteamResponse::vanityNotFound(...), 'ISteamUser/ResolveVanityUrl/not_found'],
+    'appVersionUnavailable()' => [SteamResponse::appVersionUnavailable(...), 'ISteamApps/UpToDateCheck/unavailable'],
+    'invalidServerAddress()' => [SteamResponse::invalidServerAddress(...), 'ISteamApps/GetServersAtAddress/invalid-address'],
+    'serversAtAddressRefused()' => [SteamResponse::serversAtAddressRefused(...), 'ISteamApps/GetServersAtAddress/refused'],
+    'sdrConfigAppNotFound()' => [SteamResponse::sdrConfigAppNotFound(...), 'ISteamApps/GetSDRConfig/unknown-app'],
+    'appNewsUnavailable()' => [SteamResponse::appNewsUnavailable(...), 'ISteamNews/GetNewsForApp/unavailable'],
+    'supportedApiListInvalidKey()' => [SteamResponse::supportedApiListInvalidKey(...), 'ISteamWebAPIUtil/GetSupportedAPIList/invalid-key'],
+    'invalidApiKey()' => [SteamResponse::invalidApiKey(...), 'Errors/invalid-key'],
+    'apiKeyUnauthorized()' => [SteamResponse::apiKeyUnauthorized(...), 'Errors/unauthorized-key'],
+    'apiKeyMissing()' => [SteamResponse::apiKeyMissing(...), 'Errors/missing-key'],
+    'playerBans() of no players' => [static fn (): MockResponse => SteamResponse::playerBans(), 'ISteamUser/GetPlayerBans/empty'],
+    'friendList() of no friends' => [static fn (): MockResponse => SteamResponse::friendList(), 'ISteamUser/GetFriendList/empty'],
+    'userGroupList() of no groups' => [static fn (): MockResponse => SteamResponse::userGroupList(), 'ISteamUser/GetUserGroupList/empty'],
+    'vanityUrl()' => [static fn (): MockResponse => SteamResponse::vanityUrl(fakedId()), 'ISteamUser/ResolveVanityUrl/success'],
+    'ownedGames() of no games' => [static fn (): MockResponse => SteamResponse::ownedGames(), 'IPlayerService/GetOwnedGames/not_owned'],
+    'recentlyPlayedGames() of nothing played' => [
+        static fn (): MockResponse => SteamResponse::recentlyPlayedGames(RecentlyPlayedGamesFactory::new()->nothingPlayed()),
+        'IPlayerService/GetRecentlyPlayedGames/empty',
+    ],
+    'steamLevel()' => [static fn (): MockResponse => SteamResponse::steamLevel(56), 'IPlayerService/GetSteamLevel/default'],
+    'steamLevel() of zero' => [static fn (): MockResponse => SteamResponse::steamLevel(0), 'IPlayerService/GetSteamLevel/zero'],
+    'currentPlayers()' => [static fn (): MockResponse => SteamResponse::currentPlayers(40008), 'ISteamUserStats/GetNumberOfCurrentPlayers/default'],
+    'gameSchema() of an empty schema' => [
+        static fn (): MockResponse => SteamResponse::gameSchema(GameSchemaFactory::new()->empty()),
+        'ISteamUserStats/GetSchemaForGame/empty',
+    ],
+    'serversAtAddress() of no servers' => [static fn (): MockResponse => SteamResponse::serversAtAddress(), 'ISteamApps/GetServersAtAddress/empty'],
+    'appNews() of no news' => [
+        static fn (): MockResponse => SteamResponse::appNews(AppNewsFactory::new()->appId(3000000)->items()->total(0)),
+        'ISteamNews/GetNewsForApp/no-news',
+    ],
+    'serverInfo()' => [
+        static fn (): MockResponse => SteamResponse::serverInfo(new DateTimeImmutable('2026-10-08 19:59:38 UTC')),
+        'ISteamWebAPIUtil/GetServerInfo/default',
+    ],
 ]);
-
-test('reports an unknown app with a 404 carrying result 42', function (): void {
-    expect(SteamResponse::appNotFound()->status())->toBe(404)
-        ->and(bodyOf(SteamResponse::appNotFound()))->toBe(['response' => ['result' => 42]]);
-});
-
-test('refuses global achievements with a 403 carrying an empty json object', function (): void {
-    expect(SteamResponse::globalAchievementsRefused()->status())->toBe(403)
-        ->and(bodyOf(SteamResponse::globalAchievementsRefused()))->toBe('{}');
-});
-
-test('reports an app the schema endpoint does not know with a bare 400', function (): void {
-    expect(SteamResponse::schemaAppNotFound()->status())->toBe(400)
-        ->and(bodyOf(SteamResponse::schemaAppNotFound()))->toBe('{}');
-});
-
-test('reports an unclaimed vanity url in the body, not the status', function (): void {
-    expect(SteamResponse::vanityNotFound()->status())->toBe(200)
-        ->and(bodyOf(SteamResponse::vanityNotFound()))->toBe([
-            'response' => [
-                'success' => 42,
-                'message' => 'No match',
-            ],
-        ]);
-});
-
-test('reports an unavailable version check in the body, not the status', function (): void {
-    expect(SteamResponse::appVersionUnavailable()->status())->toBe(200)
-        ->and(bodyOf(SteamResponse::appVersionUnavailable()))->toBe([
-            'response' => [
-                'success' => false,
-                'error' => "Couldn't get app info for the app specified.",
-            ],
-        ]);
-});
-
-test('reports a rejected server address in the body, not the status', function (): void {
-    expect(SteamResponse::invalidServerAddress()->status())->toBe(200)
-        ->and(bodyOf(SteamResponse::invalidServerAddress()))->toBe([
-            'response' => [
-                'success' => false,
-                'message' => "'addr' param should specify a valid IPv4 or IPv4:queryport",
-            ],
-        ]);
-});
-
-test('reports a refused server lookup in the body, not the status', function (): void {
-    expect(SteamResponse::serversAtAddressRefused()->status())->toBe(200)
-        ->and(bodyOf(SteamResponse::serversAtAddressRefused()))->toBe([
-            'response' => [
-                'success' => false,
-                'message' => "Please don't call this API more often than once per minute for a given IP.",
-            ],
-        ]);
-});
-
-test('reports an app the sdr config does not know with a 500', function (): void {
-    expect(SteamResponse::sdrConfigAppNotFound()->status())->toBe(500)
-        ->and(bodyOf(SteamResponse::sdrConfigAppNotFound()))->toBe([
-            'success' => false,
-            'message' => 'Failed to get appinfo',
-        ]);
-});
-
-test('refuses app news with a 403 carrying an empty json object', function (): void {
-    expect(SteamResponse::appNewsUnavailable()->status())->toBe(403)
-        ->and(bodyOf(SteamResponse::appNewsUnavailable()))->toBe('{}');
-});
-
-test('answers a key the supported api list rejects with a 403 and an empty list', function (): void {
-    expect(SteamResponse::supportedApiListInvalidKey()->status())->toBe(403)
-        ->and(bodyOf(SteamResponse::supportedApiListInvalidKey()))->toBe(['apilist' => ['interfaces' => []]]);
-});
-
-test('answers a rejected key with a 403 echoing the key parameter', function (): void {
-    expect(SteamResponse::invalidApiKey()->status())->toBe(403)
-        ->and(bodyOf(SteamResponse::invalidApiKey()))->toContain('key=');
-});
-
-test('answers a rejected key with a 401 echoing the key parameter', function (): void {
-    expect(SteamResponse::apiKeyUnauthorized()->status())->toBe(401)
-        ->and(bodyOf(SteamResponse::apiKeyUnauthorized()))->toContain('key=');
-});
-
-test('answers a missing key with a 400 in html', function (): void {
-    expect(SteamResponse::apiKeyMissing()->status())->toBe(400)
-        ->and(bodyOf(SteamResponse::apiKeyMissing()))->toContain("Parameter 'key' is missing");
-});
 
 test('throttles with a 429 that carries Retry-After only when given one', function (): void {
     expect(SteamResponse::tooManyRequests()->status())->toBe(429)

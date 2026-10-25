@@ -169,7 +169,10 @@ final class SteamResponse
     public static function currentPlayers(int $count): MockResponse
     {
         return MockResponse::make([
-            'response' => ['player_count' => $count],
+            'response' => [
+                'player_count' => $count,
+                'result' => 1,
+            ],
         ]);
     }
 
@@ -187,8 +190,11 @@ final class SteamResponse
 
     public static function gameSchema(GameSchemaFactory $schema): MockResponse
     {
+        $game = $schema->toArray();
+
+        // An empty array encodes as `[]`, where Steam sends `{}`.
         return MockResponse::make([
-            'game' => $schema->toArray(),
+            'game' => $game === [] ? (object) [] : $game,
         ]);
     }
 
@@ -196,8 +202,8 @@ final class SteamResponse
     {
         return MockResponse::make([
             'response' => [
-                'success' => 1,
                 'steamid' => $steamId->value,
+                'success' => 1,
             ],
         ]);
     }
@@ -347,7 +353,7 @@ final class SteamResponse
      */
     public static function playerServiceNotPublic(): MockResponse
     {
-        return MockResponse::make(['response' => []]);
+        return MockResponse::make(['response' => (object) []]);
     }
 
     /**
@@ -503,7 +509,18 @@ final class SteamResponse
     public static function invalidApiKey(): MockResponse
     {
         return MockResponse::make(
-            '<html><head><title>Forbidden</title></head><body><h1>Forbidden</h1>Access is denied. Retrying will not help. Please verify your <pre>key=</pre> parameter.</body></html>',
+            <<<'HTML'
+                <html>
+                    <head>
+                        <title>Forbidden</title>
+                    </head>
+                    <body>
+                        <h1>Forbidden</h1>
+                        Access is denied. Retrying will not help. Please verify your <pre>key=</pre>
+                        parameter.
+                    </body>
+                </html>
+                HTML,
             403,
         );
     }
@@ -516,7 +533,18 @@ final class SteamResponse
     public static function apiKeyUnauthorized(): MockResponse
     {
         return MockResponse::make(
-            '<html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1>Access is denied. Retrying will not help. Please verify your <pre>key=</pre> parameter.</body></html>',
+            <<<'HTML'
+                <html>
+                    <head>
+                        <title>Unauthorized</title>
+                    </head>
+                    <body>
+                        <h1>Unauthorized</h1>
+                        Access is denied. Retrying will not help. Please verify your <pre>key=</pre>
+                        parameter.
+                    </body>
+                </html>
+                HTML,
             401,
         );
     }
@@ -529,7 +557,17 @@ final class SteamResponse
     public static function apiKeyMissing(): MockResponse
     {
         return MockResponse::make(
-            "<html><head><title>Bad Request</title></head><body><h1>Bad Request</h1>Please verify that all required parameters are being sent.<pre>Parameter 'key' is missing</pre></body></html>",
+            <<<'HTML'
+                <html>
+                    <head>
+                        <title>Bad Request</title>
+                    </head>
+                    <body>
+                        <h1>Bad Request</h1>
+                        Required parameter 'key' is missing
+                    </body>
+                </html>
+                HTML,
             400,
         );
     }

@@ -307,6 +307,8 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     'apiKeyUnauthorized()' => [SteamResponse::apiKeyUnauthorized(...), 'Errors/unauthorized-key'],
     'apiKeyMissing()' => [SteamResponse::apiKeyMissing(...), 'Errors/missing-key'],
     'playerBans() of no players' => [static fn (): MockResponse => SteamResponse::playerBans(), 'ISteamUser/GetPlayerBans/empty'],
+    'friendList() of no friends' => [static fn (): MockResponse => SteamResponse::friendList(), 'ISteamUser/GetFriendList/empty'],
+    'userGroupList() of no groups' => [static fn (): MockResponse => SteamResponse::userGroupList(), 'ISteamUser/GetUserGroupList/empty'],
     'vanityUrl()' => [static fn (): MockResponse => SteamResponse::vanityUrl(fakedId()), 'ISteamUser/ResolveVanityUrl/success'],
     'ownedGames() of no games' => [static fn (): MockResponse => SteamResponse::ownedGames(), 'IPlayerService/GetOwnedGames/not_owned'],
     'recentlyPlayedGames() of nothing played' => [

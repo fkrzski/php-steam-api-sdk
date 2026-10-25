@@ -9,9 +9,6 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\AppVersionCheckFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\GameServerFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
@@ -29,51 +26,6 @@ use Saloon\Http\PendingRequest;
  */
 final class SteamResponse
 {
-    public static function upToDateCheck(AppVersionCheckFactory $check): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'success' => true,
-                ...$check->toArray(),
-            ],
-        ]);
-    }
-
-    /**
-     * An address with no servers on it still succeeds, and Steam says so in a
-     * `message` it sends only then.
-     */
-    public static function serversAtAddress(GameServerFactory ...$servers): MockResponse
-    {
-        $payload = [
-            'success' => true,
-            'servers' => array_map(
-                static fn (GameServerFactory $server): array => $server->toArray(),
-                $servers,
-            ),
-        ];
-
-        if ($servers === []) {
-            $payload['message'] = 'No servers found at that address';
-        }
-
-        return MockResponse::make([
-            'response' => $payload,
-        ]);
-    }
-
-    /**
-     * The config sits at the top level, without the `response` wrapper, beside
-     * the `success` flag Steam sends with it.
-     */
-    public static function sdrConfig(SdrConfigFactory $config): MockResponse
-    {
-        return MockResponse::make([
-            ...$config->toArray(),
-            'success' => true,
-        ]);
-    }
-
     /**
      * `count` is Steam's own total for the filter, so it is independent of how
      * many items the payload lists — see {@see AppNewsFactory::total()}.
@@ -141,63 +93,6 @@ final class SteamResponse
                 ),
             ],
         ]);
-    }
-
-    /**
-     * `UpToDateCheck` answers 200 with `success: false` alike for an app ID Steam
-     * does not know and for an app running no versioned servers, raising
-     * `AppVersionUnavailableException` either way.
-     */
-    public static function appVersionUnavailable(): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'success' => false,
-                'error' => "Couldn't get app info for the app specified.",
-            ],
-        ]);
-    }
-
-    /**
-     * An address `GetServersAtAddress` rejects, raising `InvalidServerAddressException`.
-     * The request tells it apart from {@see self::serversAtAddressRefused()} by the
-     * `'addr' param` in the message alone.
-     */
-    public static function invalidServerAddress(): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'success' => false,
-                'message' => "'addr' param should specify a valid IPv4 or IPv4:queryport",
-            ],
-        ]);
-    }
-
-    /**
-     * An address `GetServersAtAddress` refuses to look up at all. The SDK raises
-     * it as the root `SteamApiException`, so nothing in the type names this failure.
-     */
-    public static function serversAtAddressRefused(): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'success' => false,
-                'message' => "Please don't call this API more often than once per minute for a given IP.",
-            ],
-        ]);
-    }
-
-    /**
-     * An app ID `GetSDRConfig` does not know, the third shape of it after
-     * {@see Fakes\StatsFake::currentPlayersAppNotFound()} and {@see Fakes\StatsFake::schemaAppNotFound()}. The request
-     * raises `AppNotFoundException` before the connector can retry the 500.
-     */
-    public static function sdrConfigAppNotFound(): MockResponse
-    {
-        return MockResponse::make([
-            'success' => false,
-            'message' => 'Failed to get appinfo',
-        ], 500);
     }
 
     /**

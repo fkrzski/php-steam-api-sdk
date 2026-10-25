@@ -8,7 +8,7 @@ use Fkrzski\SteamApiSdk\Dto\AppVersionCheck;
 
 /**
  * Builds the `response` payload Steam returns for `UpToDateCheck`, less the
- * `success` flag `SteamResponse::upToDateCheck()` adds.
+ * `success` flag `AppsFake::upToDateCheck()` adds.
  *
  * Defaults describe a server running the current version.
  */

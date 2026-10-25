@@ -3,30 +3,17 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\AppNews;
-use Fkrzski\SteamApiSdk\Dto\AppVersionCheck;
-use Fkrzski\SteamApiSdk\Dto\SdrConfig;
 use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
-use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
-use Fkrzski\SteamApiSdk\Exceptions\AppVersionUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
-use Fkrzski\SteamApiSdk\Exceptions\InvalidServerAddressException;
-use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetCommunityBadgeProgressRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetSdrConfigRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetServersAtAddressRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\UpToDateCheckRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetServerInfoRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\AppVersionCheckFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\GameServerFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrPointOfPresenceFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
@@ -50,37 +37,6 @@ function bodyOf(MockResponse $response): mixed
 }
 
 // Envelopes
-
-test('flags the version check as successful', function (): void {
-    expect(bodyOf(SteamResponse::upToDateCheck(AppVersionCheckFactory::new()->outOfDate())))->toBe([
-        'response' => [
-            'success' => true,
-            ...AppVersionCheckFactory::new()->outOfDate()->toArray(),
-        ],
-    ]);
-});
-
-test('flags the server list as successful', function (): void {
-    expect(bodyOf(SteamResponse::serversAtAddress(
-        GameServerFactory::new(),
-        GameServerFactory::new()->address('108.181.62.21:27025'),
-    )))->toBe([
-        'response' => [
-            'success' => true,
-            'servers' => [
-                GameServerFactory::new()->toArray(),
-                GameServerFactory::new()->address('108.181.62.21:27025')->toArray(),
-            ],
-        ],
-    ]);
-});
-
-test('puts the sdr config at the top level beside a success flag', function (): void {
-    expect(bodyOf(SteamResponse::sdrConfig(SdrConfigFactory::new())))->toBe([
-        ...SdrConfigFactory::new()->toArray(),
-        'success' => true,
-    ]);
-});
 
 test('nests app news under the appnews key', function (): void {
     expect(bodyOf(SteamResponse::appNews(
@@ -129,16 +85,11 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     expect($builder()->status())->toBe($captured->statusCode)
         ->and((string) $builder()->body())->toBe(is_string($captured->data) ? $captured->data : json_encode($captured->data, JSON_THROW_ON_ERROR));
 })->with([
-    'appVersionUnavailable()' => [SteamResponse::appVersionUnavailable(...), 'ISteamApps/UpToDateCheck/unavailable'],
-    'invalidServerAddress()' => [SteamResponse::invalidServerAddress(...), 'ISteamApps/GetServersAtAddress/invalid-address'],
-    'serversAtAddressRefused()' => [SteamResponse::serversAtAddressRefused(...), 'ISteamApps/GetServersAtAddress/refused'],
-    'sdrConfigAppNotFound()' => [SteamResponse::sdrConfigAppNotFound(...), 'ISteamApps/GetSDRConfig/unknown-app'],
     'appNewsUnavailable()' => [SteamResponse::appNewsUnavailable(...), 'ISteamNews/GetNewsForApp/unavailable'],
     'supportedApiListInvalidKey()' => [SteamResponse::supportedApiListInvalidKey(...), 'ISteamWebAPIUtil/GetSupportedAPIList/invalid-key'],
     'invalidApiKey()' => [SteamResponse::invalidApiKey(...), 'Errors/invalid-key'],
     'apiKeyUnauthorized()' => [SteamResponse::apiKeyUnauthorized(...), 'Errors/unauthorized-key'],
     'apiKeyMissing()' => [SteamResponse::apiKeyMissing(...), 'Errors/missing-key'],
-    'serversAtAddress() of no servers' => [static fn (): MockResponse => SteamResponse::serversAtAddress(), 'ISteamApps/GetServersAtAddress/empty'],
     'appNews() of no news' => [
         static fn (): MockResponse => SteamResponse::appNews(AppNewsFactory::new()->appId(3000000)->items()->total(0)),
         'ISteamNews/GetNewsForApp/no-news',
@@ -157,49 +108,6 @@ test('throttles with a 429 that carries Retry-After only when given one', functi
 });
 
 // Round trips through the connector
-
-test('feeds a version check back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        UpToDateCheckRequest::class => SteamResponse::upToDateCheck(AppVersionCheckFactory::new()->outOfDate()),
-    ]));
-
-    $check = $connector->apps()->upToDateCheck(appId: 440, version: 1);
-
-    expect($check->isUpToDate)->toBeFalse()
-        ->and($check->requiredVersion)->toBe(10828683)
-        ->and($check->message)->toBe('Your server is out of date, please upgrade');
-});
-
-test('feeds a server list back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetServersAtAddressRequest::class => SteamResponse::serversAtAddress(
-            GameServerFactory::new()->withoutSpectatorPort(),
-        ),
-    ]));
-
-    $servers = $connector->apps()->serversAtAddress('108.181.62.21');
-
-    expect($servers)->toHaveCount(1)
-        ->and($servers[0]->address)->toBe('108.181.62.21:27015')
-        ->and($servers[0]->spectatorPort)->toBeNull();
-});
-
-test('feeds an sdr config back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetSdrConfigRequest::class => SteamResponse::sdrConfig(SdrConfigFactory::new()->pointsOfPresence(
-            SdrPointOfPresenceFactory::new()->code('waw')->latitude(52.22)->longitude(21),
-            SdrPointOfPresenceFactory::new()->code('eat')->aliases('mwh')->withoutRelays(),
-        )),
-    ]));
-
-    $pointsOfPresence = $connector->apps()->sdrConfig(appId: 730)->pointsOfPresence;
-
-    expect(array_keys($pointsOfPresence))->toBe(['waw', 'eat'])
-        ->and($pointsOfPresence['waw']->latitude)->toBe(52.22)
-        ->and($pointsOfPresence['waw']->longitude)->toBe(21.0)
-        ->and($pointsOfPresence['eat']->aliases)->toBe(['mwh'])
-        ->and($pointsOfPresence['eat']->relays)->toBeEmpty();
-});
 
 test('feeds app news back through the connector', function (): void {
     $connector = fakedConnector(new MockClient([
@@ -305,36 +213,6 @@ test('feeds the supported api list back through the connector', function (): voi
 
 // Failures — these pin the contract with the SDK's exception mapping
 
-test('raises an unavailable app version from an unsuccessful version check', function (): void {
-    $connector = fakedConnector(new MockClient([UpToDateCheckRequest::class => SteamResponse::appVersionUnavailable()]));
-
-    expect(fn (): AppVersionCheck => $connector->apps()->upToDateCheck(appId: 999999999, version: 1))
-        ->toThrow(AppVersionUnavailableException::class);
-});
-
-test('raises an invalid server address from a rejected address', function (): void {
-    $connector = fakedConnector(new MockClient([GetServersAtAddressRequest::class => SteamResponse::invalidServerAddress()]));
-
-    expect(fn (): array => $connector->apps()->serversAtAddress('not-an-ip'))
-        ->toThrow(InvalidServerAddressException::class);
-});
-
-// InvalidServerAddressException is a SteamApiException too, so only the message
-// says the SDK fell through to the root type.
-test('raises the root exception from a refused server lookup', function (): void {
-    $connector = fakedConnector(new MockClient([GetServersAtAddressRequest::class => SteamResponse::serversAtAddressRefused()]));
-
-    expect(fn (): array => $connector->apps()->serversAtAddress('127.0.0.1'))
-        ->toThrow(SteamApiException::class, 'once per minute for a given IP');
-});
-
-test('raises a missing app from an app id the sdr config does not know', function (): void {
-    $connector = fakedConnector(new MockClient([GetSdrConfigRequest::class => SteamResponse::sdrConfigAppNotFound()]));
-
-    expect(fn (): SdrConfig => $connector->apps()->sdrConfig(appId: 999999999))
-        ->toThrow(AppNotFoundException::class, 'No Steam app found for app ID 999999999.');
-});
-
 // Like global achievements, the request claims this 403 before the connector can
 // read it as a rejected key or a hidden profile.
 test('raises unavailable news from a 403 on the news endpoint', function (): void {
@@ -352,16 +230,6 @@ test('raises an invalid api key from a key the supported api list rejects', func
         InvalidApiKeyException::class,
         'GetSupportedAPIList: Steam rejected the API key. Check that it is valid and active.',
     );
-});
-
-test('claims an app the sdr config does not know before the retry loop', function (): void {
-    $mock = new MockClient([GetSdrConfigRequest::class => SteamResponse::sdrConfigAppNotFound()]);
-    $connector = fakedConnector($mock, new SteamConfig('test-key', tries: 3));
-
-    expect(fn (): SdrConfig => $connector->apps()->sdrConfig(appId: 999999999))
-        ->toThrow(AppNotFoundException::class);
-
-    $mock->assertSentCount(1);
 });
 
 test('raises an invalid api key from a rejected key', function (): void {

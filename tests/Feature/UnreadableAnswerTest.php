@@ -31,6 +31,7 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListReques
 use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use Fkrzski\SteamApiSdk\Testing\SteamFake;
 use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use GuzzleHttp\Psr7\NoSeekStream;
 use GuzzleHttp\Psr7\Response as PsrResponse;
@@ -296,7 +297,7 @@ test('an empty envelope still reads as a hidden profile', function (string $body
 })->with(['{"response":[]}', '{"response":{}}']);
 
 test('a refusal Steam explains still raises its own exception', function (): void {
-    $exception = failureFrom(static fn (): array => fakedConnector(new MockClient([SteamResponse::invalidServerAddress()]))->apps()->serversAtAddress('not-an-ip'));
+    $exception = failureFrom(static fn (): array => fakedConnector(new SteamFake()->apps()->serversAtAddressInvalid())->apps()->serversAtAddress('not-an-ip'));
 
     expect($exception::class)->toBe(InvalidServerAddressException::class);
 });

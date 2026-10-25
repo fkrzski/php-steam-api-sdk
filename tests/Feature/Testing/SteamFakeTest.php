@@ -3,15 +3,9 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\AppNews;
-use Fkrzski\SteamApiSdk\Dto\AppVersionCheck;
 use Fkrzski\SteamApiSdk\Dto\NewsItem;
-use Fkrzski\SteamApiSdk\Dto\SdrConfig;
 use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
-use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
-use Fkrzski\SteamApiSdk\Exceptions\AppVersionUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
-use Fkrzski\SteamApiSdk\Exceptions\InvalidServerAddressException;
-use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
@@ -19,7 +13,6 @@ use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\PlayerBadgesFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\RecentlyPlayedGamesFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\AppVersionCheckFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\GameServerFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
@@ -75,23 +68,6 @@ test('hands the same mock back from every endpoint', function (Closure $fakeEndp
     ],
     'supported api list' => [fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList()],
 ]);
-
-test('fakes every apps endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->apps()->upToDateCheck(AppVersionCheckFactory::new()->outOfDate())
-        ->apps()->serversAtAddress(GameServerFactory::new(), GameServerFactory::new()->withoutSpectatorPort())
-        ->apps()->sdrConfig(SdrConfigFactory::new()->revision(42));
-    $connector = fakedConnector($fake);
-
-    $servers = $connector->apps()->serversAtAddress('108.181.62.21');
-
-    expect($connector->apps()->upToDateCheck(appId: 440, version: 1)->isUpToDate)->toBeFalse()
-        ->and($servers)->toHaveCount(2)
-        ->and($servers[1]->spectatorPort)->toBeNull()
-        ->and($connector->apps()->sdrConfig(appId: 730)->revision)->toBe(42);
-
-    $fake->assertSentCount(3);
-});
 
 test('fakes the news endpoint through the chain', function (): void {
     $fake = new SteamFake()
@@ -158,28 +134,6 @@ test('raises what the sdk raises for a named failure', function (
     expect($fail($fake))->toBe($fake)
         ->and(fn (): mixed => $call($connector))->toThrow($exception, $message);
 })->with([
-    'up to date check unavailable' => [
-        fn (SteamFake $fake): SteamFake => $fake->apps()->upToDateCheckUnavailable(),
-        fn (SteamConnector $connector): AppVersionCheck => $connector->apps()->upToDateCheck(appId: 999999999, version: 1),
-        AppVersionUnavailableException::class,
-    ],
-    'servers at address invalid' => [
-        fn (SteamFake $fake): SteamFake => $fake->apps()->serversAtAddressInvalid(),
-        fn (SteamConnector $connector): array => $connector->apps()->serversAtAddress('not-an-ip'),
-        InvalidServerAddressException::class,
-    ],
-    // InvalidServerAddressException is a SteamApiException too, so the message tells them apart.
-    'servers at address refused' => [
-        fn (SteamFake $fake): SteamFake => $fake->apps()->serversAtAddressRefused(),
-        fn (SteamConnector $connector): array => $connector->apps()->serversAtAddress('127.0.0.1'),
-        SteamApiException::class,
-        'once per minute for a given IP',
-    ],
-    'sdr config app not found' => [
-        fn (SteamFake $fake): SteamFake => $fake->apps()->sdrConfigAppNotFound(),
-        fn (SteamConnector $connector): SdrConfig => $connector->apps()->sdrConfig(appId: 999999999),
-        AppNotFoundException::class,
-    ],
     'app news unavailable' => [
         fn (SteamFake $fake): SteamFake => $fake->news()->appNewsUnavailable(),
         fn (SteamConnector $connector): AppNews => $connector->news()->appNews(appId: 480),

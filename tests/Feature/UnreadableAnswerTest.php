@@ -31,11 +31,12 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListReques
 use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
+use Fkrzski\SteamApiSdk\Testing\SteamFake;
 use GuzzleHttp\Psr7\NoSeekStream;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use GuzzleHttp\Psr7\Utils;
 use Saloon\Enums\Method;
+use Saloon\Http\Faking\Fixture;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Request;
@@ -220,13 +221,13 @@ test('a request asking for another format reads its own body', function (string 
     'vdf' => ['vdf', '"response" { "serverlist" { } }'],
 ]);
 
-test('an error status keeps its own exception whatever the body', function (MockResponse $answer, string $class, int $status): void {
+test('an error status keeps its own exception whatever the body', function (MockResponse|Fixture $answer, string $class, int $status): void {
     $exception = failureFrom(static fn (): Response => fakedConnector(new MockClient([$answer]))->send(friendListRequest()));
 
     expect($exception::class)->toBe($class)
         ->and($exception->getCode())->toBe($status);
 })->with([
-    'a key error in HTML' => [SteamResponse::apiKeyMissing(), InvalidApiKeyException::class, 400],
+    'a key error in HTML' => [MockResponse::fixture('Errors/missing-key'), InvalidApiKeyException::class, 400],
     'an HTML 5xx' => [MockResponse::make('<html>Server Error</html>', 503), SteamApiException::class, 503],
 ]);
 
@@ -296,7 +297,7 @@ test('an empty envelope still reads as a hidden profile', function (string $body
 })->with(['{"response":[]}', '{"response":{}}']);
 
 test('a refusal Steam explains still raises its own exception', function (): void {
-    $exception = failureFrom(static fn (): array => fakedConnector(new MockClient([SteamResponse::invalidServerAddress()]))->apps()->serversAtAddress('not-an-ip'));
+    $exception = failureFrom(static fn (): array => fakedConnector(new SteamFake()->apps()->serversAtAddressInvalid())->apps()->serversAtAddress('not-an-ip'));
 
     expect($exception::class)->toBe(InvalidServerAddressException::class);
 });

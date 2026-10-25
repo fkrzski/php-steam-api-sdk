@@ -6,7 +6,6 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\Testing\SteamFake;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Saloon\Contracts\Sender;
 use Saloon\Http\BaseResource;
 use Saloon\Http\Connector;
@@ -93,10 +92,6 @@ arch('test factories are final readonly classes')
     ->toBeFinal()
     ->toBeReadonly()
     ->toHaveSuffix('Factory');
-
-arch('the response builders are final')
-    ->expect(SteamResponse::class)
-    ->toBeFinal();
 
 arch('resource fakes are final readonly classes')
     ->expect('Fkrzski\SteamApiSdk\Testing\Fakes')

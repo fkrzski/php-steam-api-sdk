@@ -15,8 +15,7 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\FriendFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementFactory;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
-use Saloon\Http\Faking\MockClient;
+use Fkrzski\SteamApiSdk\Testing\SteamFake;
 
 covers([Badge::class, Friend::class, NewsItem::class, PlayerAchievement::class, PlayerSummary::class, GetServerInfoRequest::class]);
 
@@ -42,7 +41,7 @@ test('a timestamp comes back in UTC whatever date.timezone says', function (Clos
     'achievement unlocked at' => [static fn (DateTimeImmutable $moment): ?DateTimeImmutable => PlayerAchievementFactory::new()->unlocked($moment)->make()->unlockedAt],
     'server time' => [static function (DateTimeImmutable $moment): DateTimeImmutable {
         $connector = new SteamConnector(new SteamConfig);
-        $connector->withMockClient(new MockClient([GetServerInfoRequest::class => SteamResponse::serverInfo($moment)]));
+        $connector->withMockClient(new SteamFake()->webApi()->serverInfo($moment));
 
         return $connector->webApi()->serverTime();
     }],

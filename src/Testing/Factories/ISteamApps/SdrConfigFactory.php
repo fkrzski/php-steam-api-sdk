@@ -8,7 +8,7 @@ use Fkrzski\SteamApiSdk\Dto\SdrConfig;
 
 /**
  * Builds the payload Steam returns for `GetSDRConfig`, less the `success` flag
- * `SteamResponse::sdrConfig()` adds.
+ * `AppsFake::sdrConfig()` adds.
  */
 final readonly class SdrConfigFactory
 {

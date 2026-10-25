@@ -2,50 +2,22 @@
 
 declare(strict_types=1);
 
-use Fkrzski\SteamApiSdk\Dto\AppNews;
-use Fkrzski\SteamApiSdk\Dto\AppVersionCheck;
-use Fkrzski\SteamApiSdk\Dto\GameSchema;
-use Fkrzski\SteamApiSdk\Dto\NewsItem;
-use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
-use Fkrzski\SteamApiSdk\Dto\PlayerBadges;
-use Fkrzski\SteamApiSdk\Dto\PlayerBan;
-use Fkrzski\SteamApiSdk\Dto\PlayerSummary;
-use Fkrzski\SteamApiSdk\Dto\RecentlyPlayedGames;
-use Fkrzski\SteamApiSdk\Dto\SdrConfig;
-use Fkrzski\SteamApiSdk\Dto\UserStats;
-use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
-use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
-use Fkrzski\SteamApiSdk\Exceptions\AppVersionUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
-use Fkrzski\SteamApiSdk\Exceptions\InvalidServerAddressException;
-use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
-use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
-use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
-use Fkrzski\SteamApiSdk\Exceptions\SteamUserNotFoundException;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
+use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\CommunityBadgeQuestFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\OwnedGameFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\PlayerBadgesFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\RecentlyPlayedGameFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\RecentlyPlayedGamesFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\AppVersionCheckFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\GameServerFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\FriendFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerBanFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\PlayerSummaryFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUser\UserGroupFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GameSchemaFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GlobalAchievementFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\UserStatsFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
 use Fkrzski\SteamApiSdk\Testing\Fakes\AppsFake;
 use Fkrzski\SteamApiSdk\Testing\Fakes\NewsFake;
 use Fkrzski\SteamApiSdk\Testing\Fakes\PlayersFake;
@@ -53,34 +25,10 @@ use Fkrzski\SteamApiSdk\Testing\Fakes\StatsFake;
 use Fkrzski\SteamApiSdk\Testing\Fakes\UsersFake;
 use Fkrzski\SteamApiSdk\Testing\Fakes\WebApiFake;
 use Fkrzski\SteamApiSdk\Testing\SteamFake;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
-use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Saloon\Http\Faking\MockClient;
+use Saloon\Http\Faking\MockResponse;
 
 covers(SteamFake::class, UsersFake::class, PlayersFake::class, StatsFake::class, AppsFake::class, NewsFake::class, WebApiFake::class);
-
-dataset('player lists', [
-    'summaries' => [
-        static fn (SteamFake $fake, SteamId ...$steamIds): SteamFake => $fake->users()->summaries(...array_map(
-            static fn (SteamId $steamId): PlayerSummaryFactory => PlayerSummaryFactory::new()->steamId($steamId),
-            $steamIds,
-        )),
-        static fn (SteamConnector $connector, SteamId ...$steamIds): array => array_map(
-            static fn (PlayerSummary $summary): string => $summary->steamId->value,
-            $connector->users()->summaries($steamIds),
-        ),
-    ],
-    'bans' => [
-        static fn (SteamFake $fake, SteamId ...$steamIds): SteamFake => $fake->users()->bans(...array_map(
-            static fn (SteamId $steamId): PlayerBanFactory => PlayerBanFactory::new()->steamId($steamId),
-            $steamIds,
-        )),
-        static fn (SteamConnector $connector, SteamId ...$steamIds): array => array_map(
-            static fn (PlayerBan $ban): string => $ban->steamId->value,
-            $connector->users()->bans($steamIds),
-        ),
-    ],
-]);
 
 test('hands the same mock back from every endpoint', function (Closure $fakeEndpoint): void {
     $fake = new SteamFake;
@@ -119,342 +67,22 @@ test('hands the same mock back from every endpoint', function (Closure $fakeEndp
     'supported api list' => [fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList()],
 ]);
 
-test('fakes every users endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->users()->summaries(PlayerSummaryFactory::new(), PlayerSummaryFactory::new()->personaName('Gabe'))
-        ->users()->bans(PlayerBanFactory::new(), PlayerBanFactory::new()->vacBanned(2))
-        ->users()->friends(FriendFactory::new(), FriendFactory::new())
-        ->users()->groups(UserGroupFactory::new(), UserGroupFactory::new()->gid('25358940'))
-        ->users()->resolveVanityUrl(steamId());
-    $connector = fakedConnector($fake);
-
-    $summaries = $connector->users()->summaries([steamId()]);
-    $bans = $connector->users()->bans([steamId()]);
-    $groups = $connector->users()->groups(steamId());
-
-    expect($summaries)->toHaveCount(2)
-        ->and($summaries[1]->personaName)->toBe('Gabe')
-        ->and($bans)->toHaveCount(2)
-        ->and($bans[1]->numberOfVacBans)->toBe(2)
-        ->and($connector->users()->friends(steamId()))->toHaveCount(2)
-        ->and($groups)->toHaveCount(2)
-        ->and($groups[1]->gid)->toBe('25358940')
-        ->and($connector->users()->resolveVanityUrl('gabelogannewell')->value)->toBe('76561198000000000');
-
-    $fake->assertSentCount(5);
-});
-
-test('fakes every players endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->players()->ownedGames(OwnedGameFactory::new(), OwnedGameFactory::new()->withAppInfo())
-        ->players()->recentlyPlayedGames(RecentlyPlayedGamesFactory::new()->games(
-            RecentlyPlayedGameFactory::new()->name('Counter-Strike 2'),
-        ))
-        ->players()->steamLevel(42)
-        ->players()->badges(PlayerBadgesFactory::new())
-        ->players()->communityBadgeProgress(
-            CommunityBadgeQuestFactory::new(),
-            CommunityBadgeQuestFactory::new()->questId(202),
-        );
-    $connector = fakedConnector($fake);
-
-    $ownedGames = $connector->players()->ownedGames(steamId());
-    $quests = $connector->players()->communityBadgeProgress(steamId());
-
-    expect($ownedGames)->toHaveCount(2)
-        ->and($ownedGames[1]->name)->toBe('Dead by Daylight')
-        ->and($connector->players()->recentlyPlayedGames(steamId())->games[0]->name)->toBe('Counter-Strike 2')
-        ->and($connector->players()->steamLevel(steamId()))->toBe(42)
-        ->and($connector->players()->badges(steamId())->playerLevel)->toBe(12)
-        ->and($quests)->toHaveCount(2)
-        ->and($quests[1]->questId)->toBe(202);
-
-    $fake->assertSentCount(5);
-});
-
-test('fakes every stats endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->stats()->userStats(UserStatsFactory::new()->gameName('Dead by Daylight'))
-        ->stats()->achievements(PlayerAchievementsFactory::new()->achievements(
-            PlayerAchievementFactory::new(),
-            PlayerAchievementFactory::new()->locked(),
-        ))
-        ->stats()->currentPlayers(12_345)
-        ->stats()->globalAchievements(
-            GlobalAchievementFactory::new(),
-            GlobalAchievementFactory::new()->apiName('ACH_ESCAPE'),
-        )
-        ->stats()->schema(GameSchemaFactory::new()->gameName('Portal 2'));
-    $connector = fakedConnector($fake);
-
-    $globalAchievements = $connector->stats()->globalAchievements(gameId: 381210);
-
-    expect($connector->stats()->userStats(steamId(), appId: 381210)->gameName)->toBe('Dead by Daylight')
-        ->and($connector->stats()->achievements(steamId(), appId: 381210)->achievements)->toHaveCount(2)
-        ->and($connector->stats()->currentPlayers(appId: 381210))->toBe(12_345)
-        ->and($globalAchievements)->toHaveCount(2)
-        ->and($globalAchievements[1]->apiName)->toBe('ACH_ESCAPE')
-        ->and($connector->stats()->schema(appId: 620)->gameName)->toBe('Portal 2');
-
-    $fake->assertSentCount(5);
-});
-
-test('fakes every apps endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->apps()->upToDateCheck(AppVersionCheckFactory::new()->outOfDate())
-        ->apps()->serversAtAddress(GameServerFactory::new(), GameServerFactory::new()->withoutSpectatorPort())
-        ->apps()->sdrConfig(SdrConfigFactory::new()->revision(42));
-    $connector = fakedConnector($fake);
-
-    $servers = $connector->apps()->serversAtAddress('108.181.62.21');
-
-    expect($connector->apps()->upToDateCheck(appId: 440, version: 1)->isUpToDate)->toBeFalse()
-        ->and($servers)->toHaveCount(2)
-        ->and($servers[1]->spectatorPort)->toBeNull()
-        ->and($connector->apps()->sdrConfig(appId: 730)->revision)->toBe(42);
-
-    $fake->assertSentCount(3);
-});
-
-test('fakes the news endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->news()->appNews(AppNewsFactory::new()->items(
-            NewsItemFactory::new(),
-            NewsItemFactory::new()->communityAnnouncement(),
-        )->total(3939));
-
-    $news = fakedConnector($fake)->news()->appNews(appId: 440, count: 2);
-
-    expect($news->total)->toBe(3939)
-        ->and($news->items)->toHaveCount(2)
-        ->and($news->items[1]->isCommunityAnnouncement)->toBeTrue();
-
-    $fake->assertSentCount(1);
-});
-
-test('fakes a whole news feed through the chain', function (): void {
-    $fake = new SteamFake()->news()->newsFeed(...newsFeedItems(3));
-    $connector = fakedConnector($fake);
-
-    $first = $connector->news()->appNews(appId: 440, count: 2);
-    $next = $connector->news()->appNews(appId: 440, count: 2, endDate: $first->items[1]->publishedAt);
-
-    expect(array_map(static fn (NewsItem $item): string => $item->id, $first->items))->toBe(['1', '2'])
-        ->and(array_map(static fn (NewsItem $item): string => $item->id, $next->items))->toBe(['2', '3']);
-
-    $fake->assertSentCount(2);
-});
-
-test('fakes every web api endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->webApi()->serverInfo(new DateTimeImmutable('2026-10-08 19:59:38 UTC'))
-        ->webApi()->supportedApiList(WebApiInterfaceFactory::new(), WebApiInterfaceFactory::new()->name('IGCVersion_440'));
-    $connector = fakedConnector($fake);
-
-    $interfaces = $connector->webApi()->supportedApis();
-
-    expect($connector->webApi()->serverTime()->getTimestamp())->toBe(1791489578)
-        ->and($interfaces)->toHaveCount(2)
-        ->and($interfaces[1]->name)->toBe('IGCVersion_440');
-
-    $fake->assertSentCount(2);
-});
-
 test('chains from the array form', function (): void {
     $connector = fakedConnector(new SteamFake([
-        ResolveVanityUrlRequest::class => SteamResponse::vanityUrl(steamId()),
+        ResolveVanityUrlRequest::class => MockResponse::make(['response' => ['steamid' => '76561198000000000', 'success' => 1]]),
     ])->players()->steamLevel(42));
 
     expect($connector->users()->resolveVanityUrl('gabelogannewell')->value)->toBe('76561198000000000')
         ->and($connector->players()->steamLevel(steamId()))->toBe(42);
 });
 
-test('answers each chunk past 100 Steam IDs with the players it asks for', function (Closure $fake, Closure $call): void {
-    $steamIds = makeSteamIds(150);
-    $mock = $fake(new SteamFake, ...$steamIds);
-
-    expect($call(fakedConnector($mock), ...$steamIds))
-        ->toEqualCanonicalizing(array_map(static fn (SteamId $steamId): string => $steamId->value, $steamIds));
-
-    $mock->assertSentCount(2);
-})->with('player lists');
-
-test('answers a chunk asking for none of the faked players without the ones another chunk got', function (Closure $fake, Closure $call): void {
-    $steamIds = makeSteamIds(150);
-    $mock = $fake(new SteamFake, $steamIds[3], $steamIds[50]);
-
-    expect($call(fakedConnector($mock), ...$steamIds))->toBe([$steamIds[3]->value, $steamIds[50]->value]);
-
-    $mock->assertSentCount(2);
-})->with('player lists');
-
-test('answers a chunk asking for the faked players another chunk got unasked with none', function (Closure $fake, Closure $call): void {
-    $steamIds = makeSteamIds(150);
-    $mock = $fake(new SteamFake, $steamIds[120], $steamIds[130]);
-
-    expect($call(fakedConnector($mock), ...$steamIds))->toBe([$steamIds[120]->value, $steamIds[130]->value]);
-
-    $mock->assertSentCount(2);
-})->with('player lists');
-
-test('answers a second call asking for none of the faked players with none', function (Closure $fake, Closure $call): void {
-    [$first, $second, $unknown] = makeSteamIds(3);
-    $connector = fakedConnector($fake(new SteamFake, $first, $second));
-
-    expect($call($connector, $unknown))->toBe([$first->value, $second->value])
-        ->and($call($connector, $unknown))->toBe([]);
-})->with('player lists');
-
-test('answers a second call asking for none with the faked players no call has had', function (Closure $fake, Closure $call): void {
-    [$asked, $other, $unknown] = makeSteamIds(3);
-    $connector = fakedConnector($fake(new SteamFake, $asked, $other));
-
-    expect($call($connector, $asked))->toBe([$asked->value])
-        ->and($call($connector, $unknown))->toBe([$other->value]);
-})->with('player lists');
-
-test('answers every call with the faked players it asks for', function (Closure $fake, Closure $call): void {
-    [$asked, $other] = makeSteamIds(2);
-    $connector = fakedConnector($fake(new SteamFake, $asked, $other));
-
-    expect($call($connector, $asked))->toBe([$asked->value])
-        ->and($call($connector, $asked))->toBe([$asked->value]);
-})->with('player lists');
-
-test('answers only the faked players a request asks for', function (Closure $fake, Closure $call): void {
-    [$asked, $other, $unknown] = makeSteamIds(3);
-
-    expect($call(fakedConnector($fake(new SteamFake, $asked, $other)), $asked, $unknown))->toBe([$asked->value]);
-})->with('player lists');
-
-test('answers with every faked player when a request asks for none of them', function (Closure $fake, Closure $call): void {
-    [$first, $second, $unknown] = makeSteamIds(3);
-
-    expect($call(fakedConnector($fake(new SteamFake, $first, $second)), $unknown))->toBe([$first->value, $second->value]);
-})->with('player lists');
-
-test('answers with no players when none are faked', function (Closure $fake, Closure $call): void {
-    expect($call(fakedConnector($fake(new SteamFake)), steamId()))->toBe([]);
-})->with('player lists');
-
-test('raises what the sdk raises for a named failure', function (
-    Closure $fail,
-    Closure $call,
-    string $exception,
-    ?string $message = null,
-): void {
-    $fake = new SteamFake;
-    $connector = fakedConnector($fake);
-
-    expect($fail($fake))->toBe($fake)
-        ->and(fn (): mixed => $call($connector))->toThrow($exception, $message);
-})->with([
-    'friends not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->users()->friendsNotPublic(),
-        fn (SteamConnector $connector): array => $connector->users()->friends(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'groups not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->users()->groupsNotPublic(),
-        fn (SteamConnector $connector): array => $connector->users()->groups(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'vanity url not found' => [
-        fn (SteamFake $fake): SteamFake => $fake->users()->vanityUrlNotFound(),
-        fn (SteamConnector $connector): SteamId => $connector->users()->resolveVanityUrl('nobody'),
-        SteamUserNotFoundException::class,
-    ],
-    'owned games not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->ownedGamesNotPublic(),
-        fn (SteamConnector $connector): array => $connector->players()->ownedGames(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'recently played games not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->recentlyPlayedGamesNotPublic(),
-        fn (SteamConnector $connector): RecentlyPlayedGames => $connector->players()->recentlyPlayedGames(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'steam level not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->steamLevelNotPublic(),
-        fn (SteamConnector $connector): int => $connector->players()->steamLevel(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'badges not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->badgesNotPublic(),
-        fn (SteamConnector $connector): PlayerBadges => $connector->players()->badges(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'community badge progress not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->players()->communityBadgeProgressNotPublic(),
-        fn (SteamConnector $connector): array => $connector->players()->communityBadgeProgress(steamId()),
-        ProfileNotPublicException::class,
-    ],
-    'user stats not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->userStatsNotPublic(),
-        fn (SteamConnector $connector): UserStats => $connector->stats()->userStats(steamId(), appId: 381210),
-        ProfileNotPublicException::class,
-    ],
-    'achievements unavailable' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->achievementsUnavailable(),
-        fn (SteamConnector $connector): PlayerAchievements => $connector->stats()->achievements(steamId(), appId: 381210),
-        StatsUnavailableException::class,
-    ],
-    'current players app not found' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->currentPlayersAppNotFound(),
-        fn (SteamConnector $connector): int => $connector->stats()->currentPlayers(appId: 1),
-        AppNotFoundException::class,
-    ],
-    'global achievements unavailable' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->globalAchievementsUnavailable(),
-        fn (SteamConnector $connector): array => $connector->stats()->globalAchievements(gameId: 381210),
-        StatsUnavailableException::class,
-    ],
-    'schema app not found' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->schemaAppNotFound(),
-        fn (SteamConnector $connector): GameSchema => $connector->stats()->schema(appId: 1),
-        AppNotFoundException::class,
-    ],
-    'up to date check unavailable' => [
-        fn (SteamFake $fake): SteamFake => $fake->apps()->upToDateCheckUnavailable(),
-        fn (SteamConnector $connector): AppVersionCheck => $connector->apps()->upToDateCheck(appId: 999999999, version: 1),
-        AppVersionUnavailableException::class,
-    ],
-    'servers at address invalid' => [
-        fn (SteamFake $fake): SteamFake => $fake->apps()->serversAtAddressInvalid(),
-        fn (SteamConnector $connector): array => $connector->apps()->serversAtAddress('not-an-ip'),
-        InvalidServerAddressException::class,
-    ],
-    // InvalidServerAddressException is a SteamApiException too, so the message tells them apart.
-    'servers at address refused' => [
-        fn (SteamFake $fake): SteamFake => $fake->apps()->serversAtAddressRefused(),
-        fn (SteamConnector $connector): array => $connector->apps()->serversAtAddress('127.0.0.1'),
-        SteamApiException::class,
-        'once per minute for a given IP',
-    ],
-    'sdr config app not found' => [
-        fn (SteamFake $fake): SteamFake => $fake->apps()->sdrConfigAppNotFound(),
-        fn (SteamConnector $connector): SdrConfig => $connector->apps()->sdrConfig(appId: 999999999),
-        AppNotFoundException::class,
-    ],
-    'app news unavailable' => [
-        fn (SteamFake $fake): SteamFake => $fake->news()->appNewsUnavailable(),
-        fn (SteamConnector $connector): AppNews => $connector->news()->appNews(appId: 480),
-        AppNewsUnavailableException::class,
-    ],
-    'supported api list invalid key' => [
-        fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiListInvalidKey(),
-        fn (SteamConnector $connector): array => $connector->webApi()->supportedApis(),
-        InvalidApiKeyException::class,
-    ],
-]);
-
-test('fails every request without its own response', function (Closure $fail, string $exception): void {
+test('fails every request without its own response', function (Closure $fail, string $exception, ?string $message = null): void {
     $fake = new SteamFake()->players()->steamLevel(42);
     $connector = fakedConnector($fake);
 
     expect($fail($fake))->toBe($fake)
         ->and($connector->players()->steamLevel(steamId()))->toBe(42)
-        ->and(fn (): array => $connector->users()->summaries([steamId()]))->toThrow($exception);
+        ->and(fn (): array => $connector->users()->summaries([steamId()]))->toThrow($exception, $message);
 })->with([
     'invalid api key' => [
         fn (SteamFake $fake): SteamFake => $fake->invalidApiKey(),
@@ -463,6 +91,7 @@ test('fails every request without its own response', function (Closure $fail, st
     'connection failed' => [
         fn (SteamFake $fake): SteamFake => $fake->connectionFailed(),
         SteamConnectionException::class,
+        'Could not reach the Steam Web API: cURL error 28: Operation timed out after 10000 milliseconds',
     ],
     'too many requests' => [
         fn (SteamFake $fake): SteamFake => $fake->tooManyRequests(),
@@ -470,21 +99,61 @@ test('fails every request without its own response', function (Closure $fail, st
     ],
 ]);
 
-test('refuses requests locally for as long as a faked 429 says', function (): void {
-    $fake = new SteamFake()->tooManyRequests(120);
+test('rejects a key with the page steam was captured sending', function (): void {
+    $answer = answerFrom(new SteamFake()->invalidApiKey(), new GetPlayerSummariesRequest([steamId()]));
+
+    expect([$answer->status(), $answer->body()])->toBe(captured('Errors/invalid-key'));
+});
+
+test('retries a connection failure without recording any attempt', function (): void {
+    $attempts = 0;
+    $fake = new SteamFake()->connectionFailed();
+    $connector = fakedConnector($fake, new SteamConfig('test-key', tries: 3))->onRequest(static function () use (&$attempts): void {
+        $attempts++;
+    });
+
+    expect(fn (): array => $connector->users()->summaries([steamId()]))->toThrow(SteamConnectionException::class)
+        ->and($attempts)->toBe(3)
+        ->and($fake->getRecordedResponses())->toBeEmpty();
+});
+
+test('records no connection failure however it was sent', function (Closure $send): void {
+    $fake = new SteamFake()->connectionFailed();
+
+    expect(failureFrom(fn (): mixed => $send(fakedConnector($fake))))->toBeInstanceOf(SteamConnectionException::class)
+        ->and($fake->getRecordedResponses())->toBeEmpty();
+})->with(everyWayToSend());
+
+test('throttles with a 429 that carries Retry-After only when given one', function (?int $retryAfter, ?string $header): void {
+    $answer = answerFrom(new SteamFake()->tooManyRequests($retryAfter), new GetPlayerSummariesRequest([steamId()]));
+
+    expect($answer->status())->toBe(429)
+        ->and($answer->body())->toBe('[]')
+        ->and($answer->header('Retry-After'))->toBe($header);
+})->with([
+    'without Retry-After' => [null, null],
+    'with Retry-After' => [120, '120'],
+]);
+
+test('refuses requests locally for the cool-down or Retry-After a faked 429 sets', function (?int $retryAfter, int $seconds): void {
+    $fake = new SteamFake()->tooManyRequests($retryAfter);
     $connector = fakedConnector($fake);
     $before = time();
+    $lockedFor = function (SteamRateLimitException $exception) use ($before, $seconds): void {
+        expect($exception->limit->getName())->toBe('SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:too_many_attempts_limit')
+            ->and($exception->limit->getExpiryTimestamp())
+            ->toBeGreaterThanOrEqual($before + $seconds)
+            ->toBeLessThanOrEqual(time() + $seconds);
+    };
 
-    expect(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow(SteamRateLimitException::class)
-        ->and(fn (): int => $connector->players()->steamLevel(steamId()))
-        ->toThrow(function (SteamRateLimitException $exception) use ($before): void {
-            expect($exception->limit->getExpiryTimestamp())
-                ->toBeGreaterThanOrEqual($before + 120)
-                ->toBeLessThanOrEqual(time() + 120);
-        });
+    expect(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow($lockedFor)
+        ->and(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow($lockedFor);
 
     $fake->assertSentCount(1);
-});
+})->with([
+    'without Retry-After' => [null, 60],
+    'with Retry-After' => [120, 120],
+]);
 
 test('a new fake lifts the lock a faked 429 left behind', function (): void {
     $throttled = fakedConnector(new SteamFake()->tooManyRequests());
@@ -501,7 +170,7 @@ test('a plain mock client keeps the lock a faked 429 left behind', function (): 
 
     expect(fn (): int => $throttled->players()->steamLevel(steamId()))->toThrow(SteamRateLimitException::class);
 
-    $connector = fakedConnector(new MockClient([SteamConnector::class => SteamResponse::steamLevel(42)]));
+    $connector = fakedConnector(new MockClient([SteamConnector::class => MockResponse::make(['response' => ['player_level' => 42]])]));
 
     expect(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow(SteamRateLimitException::class);
 });

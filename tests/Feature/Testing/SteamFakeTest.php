@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use Fkrzski\SteamApiSdk\Dto\AppNews;
-use Fkrzski\SteamApiSdk\Dto\NewsItem;
-use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
@@ -69,35 +66,6 @@ test('hands the same mock back from every endpoint', function (Closure $fakeEndp
     'supported api list' => [fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList()],
 ]);
 
-test('fakes the news endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->news()->appNews(AppNewsFactory::new()->items(
-            NewsItemFactory::new(),
-            NewsItemFactory::new()->communityAnnouncement(),
-        )->total(3939));
-
-    $news = fakedConnector($fake)->news()->appNews(appId: 440, count: 2);
-
-    expect($news->total)->toBe(3939)
-        ->and($news->items)->toHaveCount(2)
-        ->and($news->items[1]->isCommunityAnnouncement)->toBeTrue();
-
-    $fake->assertSentCount(1);
-});
-
-test('fakes a whole news feed through the chain', function (): void {
-    $fake = new SteamFake()->news()->newsFeed(...newsFeedItems(3));
-    $connector = fakedConnector($fake);
-
-    $first = $connector->news()->appNews(appId: 440, count: 2);
-    $next = $connector->news()->appNews(appId: 440, count: 2, endDate: $first->items[1]->publishedAt);
-
-    expect(array_map(static fn (NewsItem $item): string => $item->id, $first->items))->toBe(['1', '2'])
-        ->and(array_map(static fn (NewsItem $item): string => $item->id, $next->items))->toBe(['2', '3']);
-
-    $fake->assertSentCount(2);
-});
-
 test('fakes every web api endpoint through the chain', function (): void {
     $fake = new SteamFake()
         ->webApi()->serverInfo(new DateTimeImmutable('2026-10-08 19:59:38 UTC'))
@@ -134,11 +102,6 @@ test('raises what the sdk raises for a named failure', function (
     expect($fail($fake))->toBe($fake)
         ->and(fn (): mixed => $call($connector))->toThrow($exception, $message);
 })->with([
-    'app news unavailable' => [
-        fn (SteamFake $fake): SteamFake => $fake->news()->appNewsUnavailable(),
-        fn (SteamConnector $connector): AppNews => $connector->news()->appNews(appId: 480),
-        AppNewsUnavailableException::class,
-    ],
     'supported api list invalid key' => [
         fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiListInvalidKey(),
         fn (SteamConnector $connector): array => $connector->webApi()->supportedApis(),

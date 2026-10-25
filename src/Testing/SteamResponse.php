@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Testing;
 
-use Closure;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
 use GuzzleHttp\Exception\ConnectException;
-use LogicException;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\PendingRequest;
@@ -26,49 +21,6 @@ use Saloon\Http\PendingRequest;
  */
 final class SteamResponse
 {
-    /**
-     * `count` is Steam's own total for the filter, so it is independent of how
-     * many items the payload lists — see {@see AppNewsFactory::total()}.
-     */
-    public static function appNews(AppNewsFactory $news): MockResponse
-    {
-        return MockResponse::make([
-            'appnews' => $news->toArray(),
-        ]);
-    }
-
-    /**
-     * A whole feed, paged the way Steam pages it: up to `count` items, 20 when the
-     * request sends none, dated on or before `enddate`, under a `count` of how many
-     * remain. Pass them newest first with their own `id()`; `feeds`, `tags` and
-     * `maxlength` are not applied.
-     *
-     * @return Closure(PendingRequest): MockResponse
-     */
-    public static function newsFeed(NewsItemFactory ...$items): Closure
-    {
-        return static function (PendingRequest $pendingRequest) use ($items): MockResponse {
-            $request = $pendingRequest->getRequest();
-
-            if (! $request instanceof GetNewsForAppRequest) {
-                throw new LogicException('A faked news feed answers GetNewsForAppRequest only.');
-            }
-
-            $remaining = array_filter(
-                $items,
-                static fn (NewsItemFactory $item): bool => ! $request->endDate instanceof DateTimeInterface
-                    || $item->make()->publishedAt->getTimestamp() <= $request->endDate->getTimestamp(),
-            );
-
-            return self::appNews(
-                AppNewsFactory::new()
-                    ->appId($request->appId)
-                    ->items(...array_slice($remaining, 0, $request->count ?? 20))
-                    ->total(count($remaining)),
-            );
-        };
-    }
-
     /**
      * `servertimestring` is the same moment in US Pacific time without an offset,
      * which nothing reads; it is here because Steam sends it.
@@ -93,17 +45,6 @@ final class SteamResponse
                 ),
             ],
         ]);
-    }
-
-    /**
-     * `GetNewsForApp` answers 403 with an empty JSON object for an app ID it does
-     * not know and for some apps that exist, such as Spacewar, raising
-     * `AppNewsUnavailableException` either way. The request claims this status
-     * before the connector can read it as a rejected key or a hidden profile.
-     */
-    public static function appNewsUnavailable(): MockResponse
-    {
-        return MockResponse::make('{}', 403);
     }
 
     /**

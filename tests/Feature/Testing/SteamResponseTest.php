@@ -2,20 +2,14 @@
 
 declare(strict_types=1);
 
-use Fkrzski\SteamApiSdk\Dto\AppNews;
-use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetCommunityBadgeProgressRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetServerInfoRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
-use Fkrzski\SteamApiSdk\SteamConnector;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiMethodFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiParameterFactory;
@@ -37,18 +31,6 @@ function bodyOf(MockResponse $response): mixed
 }
 
 // Envelopes
-
-test('nests app news under the appnews key', function (): void {
-    expect(bodyOf(SteamResponse::appNews(
-        AppNewsFactory::new()->items(NewsItemFactory::new())->total(3939),
-    )))->toBe([
-        'appnews' => [
-            'appid' => 440,
-            'newsitems' => [NewsItemFactory::new()->toArray()],
-            'count' => 3939,
-        ],
-    ]);
-});
 
 test('writes the pacific string without moving a mutable date', function (): void {
     $time = new DateTime('2026-10-12 19:31:26 UTC');
@@ -85,15 +67,10 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     expect($builder()->status())->toBe($captured->statusCode)
         ->and((string) $builder()->body())->toBe(is_string($captured->data) ? $captured->data : json_encode($captured->data, JSON_THROW_ON_ERROR));
 })->with([
-    'appNewsUnavailable()' => [SteamResponse::appNewsUnavailable(...), 'ISteamNews/GetNewsForApp/unavailable'],
     'supportedApiListInvalidKey()' => [SteamResponse::supportedApiListInvalidKey(...), 'ISteamWebAPIUtil/GetSupportedAPIList/invalid-key'],
     'invalidApiKey()' => [SteamResponse::invalidApiKey(...), 'Errors/invalid-key'],
     'apiKeyUnauthorized()' => [SteamResponse::apiKeyUnauthorized(...), 'Errors/unauthorized-key'],
     'apiKeyMissing()' => [SteamResponse::apiKeyMissing(...), 'Errors/missing-key'],
-    'appNews() of no news' => [
-        static fn (): MockResponse => SteamResponse::appNews(AppNewsFactory::new()->appId(3000000)->items()->total(0)),
-        'ISteamNews/GetNewsForApp/no-news',
-    ],
     'serverInfo()' => [
         static fn (): MockResponse => SteamResponse::serverInfo(new DateTimeImmutable('2026-10-08 19:59:38 UTC')),
         'ISteamWebAPIUtil/GetServerInfo/default',
@@ -108,68 +85,6 @@ test('throttles with a 429 that carries Retry-After only when given one', functi
 });
 
 // Round trips through the connector
-
-test('feeds app news back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetNewsForAppRequest::class => SteamResponse::appNews(
-            AppNewsFactory::new()
-                ->items(
-                    NewsItemFactory::new()->communityAnnouncement()->tags('patchnotes'),
-                    NewsItemFactory::new()->withoutAuthor(),
-                )
-                ->total(3939),
-        ),
-    ]));
-
-    $news = $connector->news()->appNews(appId: 440, count: 2);
-
-    expect($news->total)->toBe(3939)
-        ->and($news->items)->toHaveCount(2)
-        ->and($news->items[0]->isCommunityAnnouncement)->toBeTrue()
-        ->and($news->items[0]->tags)->toBe(['patchnotes'])
-        ->and($news->items[1]->author)->toBeNull()
-        ->and($news->items[1]->tags)->toBeEmpty();
-});
-
-test('pages a news feed the way steam does', function (): void {
-    $items = newsFeedItems(3);
-
-    $connector = fakedConnector(new MockClient([GetNewsForAppRequest::class => SteamResponse::newsFeed(...$items)]));
-
-    $first = $connector->news()->appNews(appId: 570, count: 2);
-    $next = $connector->news()->appNews(appId: 570, count: 2, endDate: $items[1]->make()->publishedAt);
-
-    expect($first->appId)->toBe(570)
-        ->and(array_column($first->items, 'id'))->toBe(['1', '2'])
-        ->and($first->total)->toBe(3)
-        ->and(array_column($next->items, 'id'))->toBe(['2', '3'])
-        ->and($next->total)->toBe(2);
-});
-
-test('answers a news feed request without a count with twenty items', function (): void {
-    $connector = fakedConnector(new MockClient([GetNewsForAppRequest::class => SteamResponse::newsFeed(...newsFeedItems(21))]));
-
-    $news = $connector->news()->appNews(appId: 440);
-
-    expect($news->items)->toHaveCount(20)
-        ->and($news->total)->toBe(21);
-});
-
-test('answers an empty news feed with no news', function (): void {
-    $connector = fakedConnector(new MockClient([GetNewsForAppRequest::class => SteamResponse::newsFeed()]));
-
-    $news = $connector->news()->appNews(appId: 440);
-
-    expect($news->items)->toBeEmpty()
-        ->and($news->total)->toBe(0);
-});
-
-test('refuses to answer anything but the news endpoint from a news feed', function (): void {
-    $connector = fakedConnector(new MockClient([SteamConnector::class => SteamResponse::newsFeed()]));
-
-    expect(fn (): int => $connector->stats()->currentPlayers(appId: 440))
-        ->toThrow(LogicException::class, 'A faked news feed answers GetNewsForAppRequest only.');
-});
 
 test('feeds the server time back through the connector', function (): void {
     $connector = fakedConnector(new MockClient([
@@ -212,15 +127,6 @@ test('feeds the supported api list back through the connector', function (): voi
 });
 
 // Failures — these pin the contract with the SDK's exception mapping
-
-// Like global achievements, the request claims this 403 before the connector can
-// read it as a rejected key or a hidden profile.
-test('raises unavailable news from a 403 on the news endpoint', function (): void {
-    $connector = fakedConnector(new MockClient([GetNewsForAppRequest::class => SteamResponse::appNewsUnavailable()]));
-
-    expect(fn (): AppNews => $connector->news()->appNews(appId: 480))
-        ->toThrow(AppNewsUnavailableException::class, 'GetNewsForApp: Steam returned no news for app 480');
-});
 
 // The connector reads a 403 without `key=` as a hidden profile; the request claims this one first.
 test('raises an invalid api key from a key the supported api list rejects', function (): void {

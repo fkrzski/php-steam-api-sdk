@@ -4,18 +4,13 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\AppNews;
 use Fkrzski\SteamApiSdk\Dto\AppVersionCheck;
-use Fkrzski\SteamApiSdk\Dto\GameSchema;
 use Fkrzski\SteamApiSdk\Dto\NewsItem;
-use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Dto\SdrConfig;
-use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
 use Fkrzski\SteamApiSdk\Exceptions\AppVersionUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidServerAddressException;
-use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
-use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
@@ -29,8 +24,6 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GameSchemaFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GlobalAchievementFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\UserStatsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
@@ -82,33 +75,6 @@ test('hands the same mock back from every endpoint', function (Closure $fakeEndp
     ],
     'supported api list' => [fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList()],
 ]);
-
-test('fakes every stats endpoint through the chain', function (): void {
-    $fake = new SteamFake()
-        ->stats()->userStats(UserStatsFactory::new()->gameName('Dead by Daylight'))
-        ->stats()->achievements(PlayerAchievementsFactory::new()->achievements(
-            PlayerAchievementFactory::new(),
-            PlayerAchievementFactory::new()->locked(),
-        ))
-        ->stats()->currentPlayers(12_345)
-        ->stats()->globalAchievements(
-            GlobalAchievementFactory::new(),
-            GlobalAchievementFactory::new()->apiName('ACH_ESCAPE'),
-        )
-        ->stats()->schema(GameSchemaFactory::new()->gameName('Portal 2'));
-    $connector = fakedConnector($fake);
-
-    $globalAchievements = $connector->stats()->globalAchievements(gameId: 381210);
-
-    expect($connector->stats()->userStats(steamId(), appId: 381210)->gameName)->toBe('Dead by Daylight')
-        ->and($connector->stats()->achievements(steamId(), appId: 381210)->achievements)->toHaveCount(2)
-        ->and($connector->stats()->currentPlayers(appId: 381210))->toBe(12_345)
-        ->and($globalAchievements)->toHaveCount(2)
-        ->and($globalAchievements[1]->apiName)->toBe('ACH_ESCAPE')
-        ->and($connector->stats()->schema(appId: 620)->gameName)->toBe('Portal 2');
-
-    $fake->assertSentCount(5);
-});
 
 test('fakes every apps endpoint through the chain', function (): void {
     $fake = new SteamFake()
@@ -192,31 +158,6 @@ test('raises what the sdk raises for a named failure', function (
     expect($fail($fake))->toBe($fake)
         ->and(fn (): mixed => $call($connector))->toThrow($exception, $message);
 })->with([
-    'user stats not public' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->userStatsNotPublic(),
-        fn (SteamConnector $connector): UserStats => $connector->stats()->userStats(steamId(), appId: 381210),
-        ProfileNotPublicException::class,
-    ],
-    'achievements unavailable' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->achievementsUnavailable(),
-        fn (SteamConnector $connector): PlayerAchievements => $connector->stats()->achievements(steamId(), appId: 381210),
-        StatsUnavailableException::class,
-    ],
-    'current players app not found' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->currentPlayersAppNotFound(),
-        fn (SteamConnector $connector): int => $connector->stats()->currentPlayers(appId: 1),
-        AppNotFoundException::class,
-    ],
-    'global achievements unavailable' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->globalAchievementsUnavailable(),
-        fn (SteamConnector $connector): array => $connector->stats()->globalAchievements(gameId: 381210),
-        StatsUnavailableException::class,
-    ],
-    'schema app not found' => [
-        fn (SteamFake $fake): SteamFake => $fake->stats()->schemaAppNotFound(),
-        fn (SteamConnector $connector): GameSchema => $connector->stats()->schema(appId: 1),
-        AppNotFoundException::class,
-    ],
     'up to date check unavailable' => [
         fn (SteamFake $fake): SteamFake => $fake->apps()->upToDateCheckUnavailable(),
         fn (SteamConnector $connector): AppVersionCheck => $connector->apps()->upToDateCheck(appId: 999999999, version: 1),

@@ -4,17 +4,12 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Dto\AppNews;
 use Fkrzski\SteamApiSdk\Dto\AppVersionCheck;
-use Fkrzski\SteamApiSdk\Dto\GameSchema;
-use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Dto\SdrConfig;
-use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
 use Fkrzski\SteamApiSdk\Exceptions\AppVersionUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidServerAddressException;
-use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
-use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
@@ -24,11 +19,6 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetServersAtAddressRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\UpToDateCheckRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetGlobalAchievementPercentagesForAppRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetPlayerAchievementsRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetSchemaForGameRequest;
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetUserStatsForGameRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetServerInfoRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
@@ -39,11 +29,6 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrPointOfPresenceFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GameSchemaFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GlobalAchievementFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementsFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\UserStatsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiMethodFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiParameterFactory;
@@ -65,38 +50,6 @@ function bodyOf(MockResponse $response): mixed
 }
 
 // Envelopes
-
-test('nests user stats under the playerstats key', function (): void {
-    expect(bodyOf(SteamResponse::userStats(UserStatsFactory::new())))->toBe([
-        'playerstats' => UserStatsFactory::new()->toArray(),
-    ]);
-});
-
-test('nests player achievements under the playerstats key', function (): void {
-    expect(bodyOf(SteamResponse::playerAchievements(PlayerAchievementsFactory::new())))->toBe([
-        'playerstats' => PlayerAchievementsFactory::new()->toArray(),
-    ]);
-});
-
-test('nests global achievements under the achievementpercentages key', function (): void {
-    expect(bodyOf(SteamResponse::globalAchievements(
-        GlobalAchievementFactory::new(),
-        GlobalAchievementFactory::new()->apiName('ACH_ESCAPE')->percent(12.5),
-    )))->toBe([
-        'achievementpercentages' => [
-            'achievements' => [
-                GlobalAchievementFactory::new()->toArray(),
-                GlobalAchievementFactory::new()->apiName('ACH_ESCAPE')->percent(12.5)->toArray(),
-            ],
-        ],
-    ]);
-});
-
-test('nests the game schema under the game key', function (): void {
-    expect(bodyOf(SteamResponse::gameSchema(GameSchemaFactory::new())))->toBe([
-        'game' => GameSchemaFactory::new()->toArray(),
-    ]);
-});
 
 test('flags the version check as successful', function (): void {
     expect(bodyOf(SteamResponse::upToDateCheck(AppVersionCheckFactory::new()->outOfDate())))->toBe([
@@ -176,11 +129,6 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     expect($builder()->status())->toBe($captured->statusCode)
         ->and((string) $builder()->body())->toBe(is_string($captured->data) ? $captured->data : json_encode($captured->data, JSON_THROW_ON_ERROR));
 })->with([
-    'statsRefused()' => [SteamResponse::statsRefused(...), 'ISteamUserStats/GetUserStatsForGame/private'],
-    'playerAchievementsRefused()' => [SteamResponse::playerAchievementsRefused(...), 'ISteamUserStats/GetPlayerAchievements/stats-unavailable'],
-    'appNotFound()' => [SteamResponse::appNotFound(...), 'ISteamUserStats/GetNumberOfCurrentPlayers/unknown-app'],
-    'globalAchievementsRefused()' => [SteamResponse::globalAchievementsRefused(...), 'ISteamUserStats/GetGlobalAchievementPercentagesForApp/no-achievements'],
-    'schemaAppNotFound()' => [SteamResponse::schemaAppNotFound(...), 'ISteamUserStats/GetSchemaForGame/unknown-app'],
     'appVersionUnavailable()' => [SteamResponse::appVersionUnavailable(...), 'ISteamApps/UpToDateCheck/unavailable'],
     'invalidServerAddress()' => [SteamResponse::invalidServerAddress(...), 'ISteamApps/GetServersAtAddress/invalid-address'],
     'serversAtAddressRefused()' => [SteamResponse::serversAtAddressRefused(...), 'ISteamApps/GetServersAtAddress/refused'],
@@ -190,11 +138,6 @@ test('sends the body steam was captured sending', function (Closure $builder, st
     'invalidApiKey()' => [SteamResponse::invalidApiKey(...), 'Errors/invalid-key'],
     'apiKeyUnauthorized()' => [SteamResponse::apiKeyUnauthorized(...), 'Errors/unauthorized-key'],
     'apiKeyMissing()' => [SteamResponse::apiKeyMissing(...), 'Errors/missing-key'],
-    'currentPlayers()' => [static fn (): MockResponse => SteamResponse::currentPlayers(40008), 'ISteamUserStats/GetNumberOfCurrentPlayers/default'],
-    'gameSchema() of an empty schema' => [
-        static fn (): MockResponse => SteamResponse::gameSchema(GameSchemaFactory::new()->empty()),
-        'ISteamUserStats/GetSchemaForGame/empty',
-    ],
     'serversAtAddress() of no servers' => [static fn (): MockResponse => SteamResponse::serversAtAddress(), 'ISteamApps/GetServersAtAddress/empty'],
     'appNews() of no news' => [
         static fn (): MockResponse => SteamResponse::appNews(AppNewsFactory::new()->appId(3000000)->items()->total(0)),
@@ -214,64 +157,6 @@ test('throttles with a 429 that carries Retry-After only when given one', functi
 });
 
 // Round trips through the connector
-
-test('feeds user stats back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetUserStatsForGameRequest::class => SteamResponse::userStats(UserStatsFactory::new()),
-    ]));
-
-    expect($connector->stats()->userStats(fakedId(), appId: 381210)->stats)->toHaveCount(1);
-});
-
-test('feeds player achievements back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetPlayerAchievementsRequest::class => SteamResponse::playerAchievements(
-            PlayerAchievementsFactory::new()->achievements(
-                PlayerAchievementFactory::new(),
-                PlayerAchievementFactory::new()->locked(),
-            ),
-        ),
-    ]));
-
-    expect($connector->stats()->achievements(fakedId(), appId: 381210)->achievements)->toHaveCount(2);
-});
-
-test('feeds the player count back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetNumberOfCurrentPlayersRequest::class => SteamResponse::currentPlayers(12_345),
-    ]));
-
-    expect($connector->stats()->currentPlayers(appId: 381210))->toBe(12_345);
-});
-
-test('feeds global achievements back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetGlobalAchievementPercentagesForAppRequest::class => SteamResponse::globalAchievements(
-            GlobalAchievementFactory::new(),
-            GlobalAchievementFactory::new()->apiName('ACH_ESCAPE')->percent(12.5),
-        ),
-    ]));
-
-    $achievements = $connector->stats()->globalAchievements(gameId: 381210);
-
-    expect($achievements)->toHaveCount(2)
-        ->and($achievements[1]->apiName)->toBe('ACH_ESCAPE')
-        ->and($achievements[1]->percent)->toBe(12.5);
-});
-
-test('feeds the game schema back through the connector', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetSchemaForGameRequest::class => SteamResponse::gameSchema(
-            GameSchemaFactory::new()->gameName('Portal 2'),
-        ),
-    ]));
-
-    $schema = $connector->stats()->schema(appId: 620);
-
-    expect($schema->gameName)->toBe('Portal 2')
-        ->and($schema->stats)->toHaveCount(1)
-        ->and($schema->achievements)->toHaveCount(1);
-});
 
 test('feeds a version check back through the connector', function (): void {
     $connector = fakedConnector(new MockClient([
@@ -419,45 +304,6 @@ test('feeds the supported api list back through the connector', function (): voi
 });
 
 // Failures — these pin the contract with the SDK's exception mapping
-
-test('raises a not public profile from refused user stats', function (): void {
-    $connector = fakedConnector(new MockClient([GetUserStatsForGameRequest::class => SteamResponse::statsRefused()]));
-
-    expect(fn (): UserStats => $connector->stats()->userStats(fakedId(), appId: 381210))
-        ->toThrow(ProfileNotPublicException::class);
-});
-
-test('raises unavailable stats from refused player achievements', function (): void {
-    $connector = fakedConnector(new MockClient([GetPlayerAchievementsRequest::class => SteamResponse::playerAchievementsRefused()]));
-
-    expect(fn (): PlayerAchievements => $connector->stats()->achievements(fakedId(), appId: 381210))
-        ->toThrow(StatsUnavailableException::class);
-});
-
-test('raises a missing app from an unknown app id', function (): void {
-    $connector = fakedConnector(new MockClient([GetNumberOfCurrentPlayersRequest::class => SteamResponse::appNotFound()]));
-
-    expect(fn (): int => $connector->stats()->currentPlayers(appId: 1))
-        ->toThrow(AppNotFoundException::class);
-});
-
-// The connector reads a 403 as a rejected key or a hidden profile; the request
-// claims this one first, which is what the fake has to keep working.
-test('raises unavailable stats from refused global achievements', function (): void {
-    $connector = fakedConnector(new MockClient([
-        GetGlobalAchievementPercentagesForAppRequest::class => SteamResponse::globalAchievementsRefused(),
-    ]));
-
-    expect(fn (): array => $connector->stats()->globalAchievements(gameId: 381210))
-        ->toThrow(StatsUnavailableException::class);
-});
-
-test('raises a missing app from an app id the schema endpoint does not know', function (): void {
-    $connector = fakedConnector(new MockClient([GetSchemaForGameRequest::class => SteamResponse::schemaAppNotFound()]));
-
-    expect(fn (): GameSchema => $connector->stats()->schema(appId: 1))
-        ->toThrow(AppNotFoundException::class);
-});
 
 test('raises an unavailable app version from an unsuccessful version check', function (): void {
     $connector = fakedConnector(new MockClient([UpToDateCheckRequest::class => SteamResponse::appVersionUnavailable()]));

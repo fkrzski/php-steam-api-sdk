@@ -14,10 +14,6 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\GameServerFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamApps\SdrConfigFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\AppNewsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamNews\NewsItemFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GameSchemaFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\GlobalAchievementFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\PlayerAchievementsFactory;
-use Fkrzski\SteamApiSdk\Testing\Factories\ISteamUserStats\UserStatsFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactory;
 use GuzzleHttp\Exception\ConnectException;
 use LogicException;
@@ -33,52 +29,6 @@ use Saloon\Http\PendingRequest;
  */
 final class SteamResponse
 {
-    public static function userStats(UserStatsFactory $stats): MockResponse
-    {
-        return MockResponse::make([
-            'playerstats' => $stats->toArray(),
-        ]);
-    }
-
-    public static function playerAchievements(PlayerAchievementsFactory $achievements): MockResponse
-    {
-        return MockResponse::make([
-            'playerstats' => $achievements->toArray(),
-        ]);
-    }
-
-    public static function currentPlayers(int $count): MockResponse
-    {
-        return MockResponse::make([
-            'response' => [
-                'player_count' => $count,
-                'result' => 1,
-            ],
-        ]);
-    }
-
-    public static function globalAchievements(GlobalAchievementFactory ...$achievements): MockResponse
-    {
-        return MockResponse::make([
-            'achievementpercentages' => [
-                'achievements' => array_map(
-                    static fn (GlobalAchievementFactory $achievement): array => $achievement->toArray(),
-                    $achievements,
-                ),
-            ],
-        ]);
-    }
-
-    public static function gameSchema(GameSchemaFactory $schema): MockResponse
-    {
-        $game = $schema->toArray();
-
-        // An empty array encodes as `[]`, where Steam sends `{}`.
-        return MockResponse::make([
-            'game' => $game === [] ? (object) [] : $game,
-        ]);
-    }
-
     public static function upToDateCheck(AppVersionCheckFactory $check): MockResponse
     {
         return MockResponse::make([
@@ -194,61 +144,6 @@ final class SteamResponse
     }
 
     /**
-     * A hidden profile `GetUserStatsForGame` answers with 400 and an empty JSON object,
-     * raised as `ProfileNotPublicException`.
-     */
-    public static function statsRefused(): MockResponse
-    {
-        return MockResponse::make('{}', 400);
-    }
-
-    /**
-     * `GetPlayerAchievements` answers 400 with this body for an app without stats and for
-     * a hidden profile alike, raising `StatsUnavailableException` either way.
-     */
-    public static function playerAchievementsRefused(): MockResponse
-    {
-        return MockResponse::make([
-            'playerstats' => [
-                'error' => 'Requested app has no stats',
-                'success' => false,
-            ],
-        ], 400);
-    }
-
-    /**
-     * An app ID Steam does not know, which `GetNumberOfCurrentPlayers` raises as
-     * `AppNotFoundException`. The request reads the status alone; `result: 42` is
-     * here because that is what Steam sends with it.
-     */
-    public static function appNotFound(): MockResponse
-    {
-        return MockResponse::make(['response' => ['result' => 42]], 404);
-    }
-
-    /**
-     * `GetGlobalAchievementPercentagesForApp` answers 403 with an empty JSON object
-     * for a game carrying no achievements and for a game ID it does not know alike,
-     * raising `StatsUnavailableException` either way. The request claims this status
-     * before the connector can read it as a rejected key or a hidden profile.
-     */
-    public static function globalAchievementsRefused(): MockResponse
-    {
-        return MockResponse::make('{}', 403);
-    }
-
-    /**
-     * An app ID `GetSchemaForGame` does not know, which it raises as
-     * `AppNotFoundException`. Byte for byte what {@see self::statsRefused()} returns,
-     * because Steam answers both with a bare 400 — the two keep their own names since
-     * nothing but the endpoint says which failure a test is faking.
-     */
-    public static function schemaAppNotFound(): MockResponse
-    {
-        return MockResponse::make('{}', 400);
-    }
-
-    /**
      * `UpToDateCheck` answers 200 with `success: false` alike for an app ID Steam
      * does not know and for an app running no versioned servers, raising
      * `AppVersionUnavailableException` either way.
@@ -294,7 +189,7 @@ final class SteamResponse
 
     /**
      * An app ID `GetSDRConfig` does not know, the third shape of it after
-     * {@see self::appNotFound()} and {@see self::schemaAppNotFound()}. The request
+     * {@see Fakes\StatsFake::currentPlayersAppNotFound()} and {@see Fakes\StatsFake::schemaAppNotFound()}. The request
      * raises `AppNotFoundException` before the connector can retry the 500.
      */
     public static function sdrConfigAppNotFound(): MockResponse

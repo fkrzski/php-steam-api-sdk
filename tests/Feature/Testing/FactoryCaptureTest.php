@@ -48,13 +48,11 @@ use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiInterfaceFactor
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiMethodFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\ISteamWebAPIUtil\WebApiParameterFactory;
 use Fkrzski\SteamApiSdk\Testing\SteamFake;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Request;
 
 covers(
-    SteamResponse::class,
     AppNewsFactory::class,
     AppVersionCheckFactory::class,
     BadgeFactory::class,

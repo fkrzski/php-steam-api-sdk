@@ -5,7 +5,9 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
+use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\PlayerBadgesFactory;
 use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\RecentlyPlayedGamesFactory;
@@ -74,13 +76,13 @@ test('chains from the array form', function (): void {
         ->and($connector->players()->steamLevel(steamId()))->toBe(42);
 });
 
-test('fails every request without its own response', function (Closure $fail, string $exception): void {
+test('fails every request without its own response', function (Closure $fail, string $exception, ?string $message = null): void {
     $fake = new SteamFake()->players()->steamLevel(42);
     $connector = fakedConnector($fake);
 
     expect($fail($fake))->toBe($fake)
         ->and($connector->players()->steamLevel(steamId()))->toBe(42)
-        ->and(fn (): array => $connector->users()->summaries([steamId()]))->toThrow($exception);
+        ->and(fn (): array => $connector->users()->summaries([steamId()]))->toThrow($exception, $message);
 })->with([
     'invalid api key' => [
         fn (SteamFake $fake): SteamFake => $fake->invalidApiKey(),
@@ -89,6 +91,7 @@ test('fails every request without its own response', function (Closure $fail, st
     'connection failed' => [
         fn (SteamFake $fake): SteamFake => $fake->connectionFailed(),
         SteamConnectionException::class,
+        'Could not reach the Steam Web API: cURL error 28: Operation timed out after 10000 milliseconds',
     ],
     'too many requests' => [
         fn (SteamFake $fake): SteamFake => $fake->tooManyRequests(),
@@ -96,21 +99,61 @@ test('fails every request without its own response', function (Closure $fail, st
     ],
 ]);
 
-test('refuses requests locally for as long as a faked 429 says', function (): void {
-    $fake = new SteamFake()->tooManyRequests(120);
+test('rejects a key with the page steam was captured sending', function (): void {
+    $answer = answerFrom(new SteamFake()->invalidApiKey(), new GetPlayerSummariesRequest([steamId()]));
+
+    expect([$answer->status(), $answer->body()])->toBe(captured('Errors/invalid-key'));
+});
+
+test('retries a connection failure without recording any attempt', function (): void {
+    $attempts = 0;
+    $fake = new SteamFake()->connectionFailed();
+    $connector = fakedConnector($fake, new SteamConfig('test-key', tries: 3))->onRequest(static function () use (&$attempts): void {
+        $attempts++;
+    });
+
+    expect(fn (): array => $connector->users()->summaries([steamId()]))->toThrow(SteamConnectionException::class)
+        ->and($attempts)->toBe(3)
+        ->and($fake->getRecordedResponses())->toBeEmpty();
+});
+
+test('records no connection failure however it was sent', function (Closure $send): void {
+    $fake = new SteamFake()->connectionFailed();
+
+    expect(failureFrom(fn (): mixed => $send(fakedConnector($fake))))->toBeInstanceOf(SteamConnectionException::class)
+        ->and($fake->getRecordedResponses())->toBeEmpty();
+})->with(everyWayToSend());
+
+test('throttles with a 429 that carries Retry-After only when given one', function (?int $retryAfter, ?string $header): void {
+    $answer = answerFrom(new SteamFake()->tooManyRequests($retryAfter), new GetPlayerSummariesRequest([steamId()]));
+
+    expect($answer->status())->toBe(429)
+        ->and($answer->body())->toBe('[]')
+        ->and($answer->header('Retry-After'))->toBe($header);
+})->with([
+    'without Retry-After' => [null, null],
+    'with Retry-After' => [120, '120'],
+]);
+
+test('refuses requests locally for the cool-down or Retry-After a faked 429 sets', function (?int $retryAfter, int $seconds): void {
+    $fake = new SteamFake()->tooManyRequests($retryAfter);
     $connector = fakedConnector($fake);
     $before = time();
+    $lockedFor = function (SteamRateLimitException $exception) use ($before, $seconds): void {
+        expect($exception->limit->getName())->toBe('SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:too_many_attempts_limit')
+            ->and($exception->limit->getExpiryTimestamp())
+            ->toBeGreaterThanOrEqual($before + $seconds)
+            ->toBeLessThanOrEqual(time() + $seconds);
+    };
 
-    expect(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow(SteamRateLimitException::class)
-        ->and(fn (): int => $connector->players()->steamLevel(steamId()))
-        ->toThrow(function (SteamRateLimitException $exception) use ($before): void {
-            expect($exception->limit->getExpiryTimestamp())
-                ->toBeGreaterThanOrEqual($before + 120)
-                ->toBeLessThanOrEqual(time() + 120);
-        });
+    expect(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow($lockedFor)
+        ->and(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow($lockedFor);
 
     $fake->assertSentCount(1);
-});
+})->with([
+    'without Retry-After' => [null, 60],
+    'with Retry-After' => [120, 120],
+]);
 
 test('a new fake lifts the lock a faked 429 left behind', function (): void {
     $throttled = fakedConnector(new SteamFake()->tooManyRequests());

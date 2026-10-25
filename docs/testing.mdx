@@ -81,53 +81,50 @@ The fake swaps the HTTP client, not the connector, so a request that needs a key
 `ApiKeyNotConfiguredException` on a config [without one](/php-steam-api-sdk/configuration#without-an-api-key).
 Give the test config any key: it never leaves the machine.
 
-`new SteamFake()` also takes a map of request class → response, for a
-[request of your own](/php-steam-api-sdk/custom-requests) or a `MockResponse` the chain does not
-build. `SteamResponse` holds the builder behind every method, and the map combines with a chain:
+`new SteamFake()` also takes a map of request class → `MockResponse`, for a
+[request of your own](/php-steam-api-sdk/custom-requests) or an answer the chain does not build,
+and the map combines with a chain:
 
 ```php
-use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerBansRequest;
-use Fkrzski\SteamApiSdk\Testing\SteamResponse;
+use Saloon\Http\Faking\MockResponse;
 
 $fake = new SteamFake([
-    GetPlayerBansRequest::class => SteamResponse::playerBans(
-        PlayerBanFactory::new()->vacBanned(),
-    ),
+    GetCmListRequest::class => MockResponse::make(['response' => ['serverlist' => []]]),
 ])->users()->summaries();
 ```
 
-<Aside title="Why a builder per endpoint">
+<Aside title="Why a method per endpoint">
 No two endpoints agree on where the collection goes: `GetPlayerBans` puts it at the top level,
 `GetFriendList` under `friendslist.friends`, `GetOwnedGames` under `response.games` beside the
 `game_count` the SDK reads to decide whether the profile is public at all.
 </Aside>
 
-| Chain | Builder | Request |
-| --- | --- | --- |
-| `->users()->summaries()` | `SteamResponse::playerSummaries()` | `GetPlayerSummariesRequest` |
-| `->users()->bans()` | `SteamResponse::playerBans()` | `GetPlayerBansRequest` |
-| `->users()->friends()` | `SteamResponse::friendList()` | `GetFriendListRequest` |
-| `->users()->groups()` | `SteamResponse::userGroupList()` | `GetUserGroupListRequest` |
-| `->users()->resolveVanityUrl()` | `SteamResponse::vanityUrl()` | `ResolveVanityUrlRequest` |
-| `->players()->ownedGames()` | `SteamResponse::ownedGames()` | `GetOwnedGamesRequest` |
-| `->players()->recentlyPlayedGames()` | `SteamResponse::recentlyPlayedGames()` | `GetRecentlyPlayedGamesRequest` |
-| `->players()->steamLevel()` | `SteamResponse::steamLevel()` | `GetSteamLevelRequest` |
-| `->players()->badges()` | `SteamResponse::badges()` | `GetBadgesRequest` |
-| `->players()->communityBadgeProgress()` | `SteamResponse::communityBadgeProgress()` | `GetCommunityBadgeProgressRequest` |
-| `->stats()->userStats()` | `SteamResponse::userStats()` | `GetUserStatsForGameRequest` |
-| `->stats()->achievements()` | `SteamResponse::playerAchievements()` | `GetPlayerAchievementsRequest` |
-| `->stats()->currentPlayers()` | `SteamResponse::currentPlayers()` | `GetNumberOfCurrentPlayersRequest` |
-| `->stats()->globalAchievements()` | `SteamResponse::globalAchievements()` | `GetGlobalAchievementPercentagesForAppRequest` |
-| `->stats()->schema()` | `SteamResponse::gameSchema()` | `GetSchemaForGameRequest` |
-| `->apps()->upToDateCheck()` | `SteamResponse::upToDateCheck()` | `UpToDateCheckRequest` |
-| `->apps()->serversAtAddress()` | `SteamResponse::serversAtAddress()` | `GetServersAtAddressRequest` |
-| `->apps()->sdrConfig()` | `SteamResponse::sdrConfig()` | `GetSdrConfigRequest` |
-| `->news()->appNews()` | `SteamResponse::appNews()` | `GetNewsForAppRequest` |
-| `->news()->newsFeed()` | `SteamResponse::newsFeed()` | `GetNewsForAppRequest` |
-| `->webApi()->serverInfo()` | `SteamResponse::serverInfo()` | `GetServerInfoRequest` |
-| `->webApi()->supportedApiList()` | `SteamResponse::supportedApiList()` | `GetSupportedApiListRequest` |
+| Chain | Request |
+| --- | --- |
+| `->users()->summaries()` | `GetPlayerSummariesRequest` |
+| `->users()->bans()` | `GetPlayerBansRequest` |
+| `->users()->friends()` | `GetFriendListRequest` |
+| `->users()->groups()` | `GetUserGroupListRequest` |
+| `->users()->resolveVanityUrl()` | `ResolveVanityUrlRequest` |
+| `->players()->ownedGames()` | `GetOwnedGamesRequest` |
+| `->players()->recentlyPlayedGames()` | `GetRecentlyPlayedGamesRequest` |
+| `->players()->steamLevel()` | `GetSteamLevelRequest` |
+| `->players()->badges()` | `GetBadgesRequest` |
+| `->players()->communityBadgeProgress()` | `GetCommunityBadgeProgressRequest` |
+| `->stats()->userStats()` | `GetUserStatsForGameRequest` |
+| `->stats()->achievements()` | `GetPlayerAchievementsRequest` |
+| `->stats()->currentPlayers()` | `GetNumberOfCurrentPlayersRequest` |
+| `->stats()->globalAchievements()` | `GetGlobalAchievementPercentagesForAppRequest` |
+| `->stats()->schema()` | `GetSchemaForGameRequest` |
+| `->apps()->upToDateCheck()` | `UpToDateCheckRequest` |
+| `->apps()->serversAtAddress()` | `GetServersAtAddressRequest` |
+| `->apps()->sdrConfig()` | `GetSdrConfigRequest` |
+| `->news()->appNews()` | `GetNewsForAppRequest` |
+| `->news()->newsFeed()` | `GetNewsForAppRequest` |
+| `->webApi()->serverInfo()` | `GetServerInfoRequest` |
+| `->webApi()->supportedApiList()` | `GetSupportedApiListRequest` |
 
-A `MockResponse` of your own needs the envelope its builder sends: without it the call raises
+A `MockResponse` of your own needs the envelope the chain method builds: without it the call raises
 `UnreadableResponseException`, except an empty `GetFriendListRequest` body, which reads as no
 friends. A maintenance page in place of JSON raises it on every request:
 `MockResponse::make('<html>maintenance</html>')`.
@@ -285,35 +282,33 @@ $older = $connector->news()->appNews(appId: 440, count: 20, endDate: array_last(
 
 Steam counts `endDate` in, so the next page opens on the item the last one ended with.
 `feeds`, `tags` and `maxlength` are not applied, so pass only the items a filtered feed would
-hold. `SteamResponse::newsFeed()` returns the closure behind it, which the map takes too.
+hold.
 
 ## Faking failures
 
 Each endpoint names the refusals Steam answers it with beside it, so the test gets the
 exception the SDK raises for that endpoint:
 
-| Chain | Builder | Raises |
-| --- | --- | --- |
-| `->users()->friendsNotPublic()` | `SteamResponse::friendListNotPublic()` | `ProfileNotPublicException` |
-| `->users()->groupsNotPublic()` | `SteamResponse::userGroupListNotPublic()` | `ProfileNotPublicException` |
-| `->players()->ownedGamesNotPublic()`, and the same on the other four IPlayerService endpoints | `SteamResponse::playerServiceNotPublic()` | `ProfileNotPublicException` |
-| `->stats()->userStatsNotPublic()` | `SteamResponse::statsRefused()` | `ProfileNotPublicException` |
-| `->stats()->achievementsUnavailable()` | `SteamResponse::playerAchievementsRefused()` | `StatsUnavailableException` |
-| `->stats()->currentPlayersAppNotFound()` | `SteamResponse::appNotFound()` | `AppNotFoundException` |
-| `->stats()->schemaAppNotFound()` | `SteamResponse::schemaAppNotFound()` | `AppNotFoundException` |
-| `->stats()->globalAchievementsUnavailable()` | `SteamResponse::globalAchievementsRefused()` | `StatsUnavailableException` |
-| `->users()->vanityUrlNotFound()` | `SteamResponse::vanityNotFound()` | `SteamUserNotFoundException` |
-| `->apps()->upToDateCheckUnavailable()` | `SteamResponse::appVersionUnavailable()` | `AppVersionUnavailableException` |
-| `->apps()->serversAtAddressInvalid()` | `SteamResponse::invalidServerAddress()` | `InvalidServerAddressException` |
-| `->apps()->serversAtAddressRefused()` | `SteamResponse::serversAtAddressRefused()` | `SteamApiException` |
-| `->apps()->sdrConfigAppNotFound()` | `SteamResponse::sdrConfigAppNotFound()` | `AppNotFoundException` |
-| `->news()->appNewsUnavailable()` | `SteamResponse::appNewsUnavailable()` | `AppNewsUnavailableException` |
-| `->webApi()->supportedApiListInvalidKey()` | `SteamResponse::supportedApiListInvalidKey()` | `InvalidApiKeyException` |
-| `->invalidApiKey()` | `SteamResponse::invalidApiKey()` | `InvalidApiKeyException` |
-| — | `SteamResponse::apiKeyUnauthorized()` | `InvalidApiKeyException` |
-| — | `SteamResponse::apiKeyMissing()` | `InvalidApiKeyException` |
-| `->connectionFailed()` | `SteamResponse::connectionFailed()` | `SteamConnectionException` |
-| `->tooManyRequests()` | `SteamResponse::tooManyRequests()` | `SteamRateLimitException` |
+| Chain | Raises |
+| --- | --- |
+| `->users()->friendsNotPublic()` | `ProfileNotPublicException` |
+| `->users()->groupsNotPublic()` | `ProfileNotPublicException` |
+| `->players()->ownedGamesNotPublic()`, and the same on the other four IPlayerService endpoints | `ProfileNotPublicException` |
+| `->stats()->userStatsNotPublic()` | `ProfileNotPublicException` |
+| `->stats()->achievementsUnavailable()` | `StatsUnavailableException` |
+| `->stats()->currentPlayersAppNotFound()` | `AppNotFoundException` |
+| `->stats()->schemaAppNotFound()` | `AppNotFoundException` |
+| `->stats()->globalAchievementsUnavailable()` | `StatsUnavailableException` |
+| `->users()->vanityUrlNotFound()` | `SteamUserNotFoundException` |
+| `->apps()->upToDateCheckUnavailable()` | `AppVersionUnavailableException` |
+| `->apps()->serversAtAddressInvalid()` | `InvalidServerAddressException` |
+| `->apps()->serversAtAddressRefused()` | `SteamApiException` |
+| `->apps()->sdrConfigAppNotFound()` | `AppNotFoundException` |
+| `->news()->appNewsUnavailable()` | `AppNewsUnavailableException` |
+| `->webApi()->supportedApiListInvalidKey()` | `InvalidApiKeyException` |
+| `->invalidApiKey()` | `InvalidApiKeyException` |
+| `->connectionFailed()` | `SteamConnectionException` |
+| `->tooManyRequests()` | `SteamRateLimitException` |
 
 <Tabs syncKey="php-test-runner">
   <TabItem label="Pest">
@@ -344,36 +339,34 @@ exception the SDK raises for that endpoint:
 
 `->invalidApiKey()`, `->connectionFailed()` and `->tooManyRequests()` sit on the fake itself
 and answer every request that has no response of its own, so a chain can fake one endpoint and
-let the rest fail. The key builders without a method fit any request class in the map.
+let the rest fail.
 
-Every builder above but `connectionFailed()` and `tooManyRequests()` sends the status and body
+Every failure above but `connectionFailed()` and `tooManyRequests()` sends the status and body
 Steam was captured sending, byte for byte, so code that reads the response itself through
 `body()` or `object()` sees what Steam sends.
 
-A hidden profile looks different on every endpoint. `friendListNotPublic()` is a `401` with an
-empty JSON object, and `userGroupListNotPublic()` a `403` carrying `Private profile`.
-`playerServiceNotPublic()` is a **`200`** whose only tell is the missing key the endpoint reads
+A hidden profile looks different on every endpoint. `friendsNotPublic()` is a `401` with an
+empty JSON object, and `groupsNotPublic()` a `403` carrying `Private profile`. The five
+IPlayerService ones are a **`200`** whose only tell is the missing key the endpoint reads
 (`game_count` for `ownedGames()`, `player_level` for `steamLevel()` and `badges()`).
-`statsRefused()` is a `400` with an empty JSON object. `playerAchievementsRefused()` is the `400`
+`userStatsNotPublic()` is a `400` with an empty JSON object. `achievementsUnavailable()` is the `400`
 carrying `Requested app has no stats`, which Steam sends for a hidden profile too, so the SDK
 raises `StatsUnavailableException` rather than guess.
 
-The endpoints taking an app ID refuse it four more ways: `appNotFound()` is a `404` carrying
-`result: 42`, `schemaAppNotFound()` a bare `400`, `globalAchievementsRefused()` a `403` with an
-empty JSON object for a game with no achievements and an unknown one alike, and
+The endpoints taking an app ID refuse it four more ways: `currentPlayersAppNotFound()` is a
+`404` carrying `result: 42`, `schemaAppNotFound()` a bare `400`, `globalAchievementsUnavailable()`
+a `403` with an empty JSON object for a game with no achievements and an unknown one alike, and
 `sdrConfigAppNotFound()` a `500` carrying `Failed to get appinfo`, raised before the connector
-can retry it. `schemaAppNotFound()` returns byte for byte what `statsRefused()` does and keeps
-its own name because only the endpoint says which failure a test is faking.
-`appNewsUnavailable()` is the empty `403` again, which `GetNewsForApp` answers an unknown app
+can retry it. `appNewsUnavailable()` is the empty `403` again, which `GetNewsForApp` answers an unknown app
 and one whose news it does not publish with.
 
 `UpToDateCheck` and `GetServersAtAddress` refuse with a `200` and `success: false`.
-`appVersionUnavailable()` covers an unknown app and one without server versions alike, and
+`upToDateCheckUnavailable()` covers an unknown app and one without server versions alike, and
 `serversAtAddressRefused()` is the per-IP refusal the SDK raises as the root
-`SteamApiException`, so only the builder's name says which failure it is.
+`SteamApiException`, so only the method's name says which failure it is.
 
-A rejected key lands on `403` or `401`, whichever the endpoint picks: `invalidApiKey()` fakes
-the first, `apiKeyUnauthorized()` the second, which `GetCommunityBadgeProgress` answers with.
+`invalidApiKey()` fakes the `403` page Steam rejects a key with. `GetCommunityBadgeProgress`
+sends the same page on a `401`, which raises the same `InvalidApiKeyException`.
 `invalidApiKey()` is for requests that send the key, the only ones Steam rejects a key on. A
 request sent without it still gets the faked `403`: `GetNewsForApp` and
 `GetGlobalAchievementPercentagesForApp` raise their own refusal from it, the rest
@@ -388,7 +381,7 @@ pass them. A `429` on a keyed request leaves requests
 [sent without the key](/php-steam-api-sdk/rate-limiting#requests-sent-without-the-key) alone, and
 the other way round.
 `TooManySteamIdsException` comes from a request constructor given more than 100 IDs, and a
-spent local budget from the limiter before any response exists, so neither has a builder.
+spent local budget from the limiter before any response exists, so the fake has neither.
 
 ## Rate limits in tests
 

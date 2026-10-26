@@ -15,6 +15,7 @@ use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetSteamLevelRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetServersAtAddressRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\UpToDateCheckRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
@@ -32,6 +33,7 @@ covers([
     GetServersAtAddressRequest::class,
     UpToDateCheckRequest::class,
     ResolveVanityUrlRequest::class,
+    SteamApiRequest::class,
 ]);
 
 function payloadFailureConnector(MockClient $mockClient, int $tries = 1): SteamConnector

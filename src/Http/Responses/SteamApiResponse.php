@@ -48,7 +48,7 @@ final class SteamApiResponse extends Response
     }
 
     /**
-     * Requests decode the body in their own failure checks, so an unreadable one fails before they run.
+     * A request reads the answer in its failure check, so an unreadable one fails before it runs.
      */
     #[Override]
     public function failed(): bool

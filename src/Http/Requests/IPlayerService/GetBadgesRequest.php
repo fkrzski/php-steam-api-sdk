@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\IPlayerService;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\PlayerBadges;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetBadgesRequest extends Request implements HasRequiredPaths
+/**
+ * @extends SteamApiRequest<PlayerBadges>
+ */
+final class GetBadgesRequest extends SteamApiRequest
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -37,29 +38,7 @@ final class GetBadgesRequest extends Request implements HasRequiredPaths
      * A SteamID64 that belongs to no account still gets the zeroed progress fields, so
      * only a withheld profile drops them — which makes it the one identifiable cause.
      */
-    #[Override]
-    public function hasRequestFailed(Response $response): ?bool
-    {
-        // No opinion off a 200: false would overrule Saloon's own 4xx and 5xx check.
-        if ($response->status() !== 200) {
-            return null;
-        }
-
-        /** @var array{response?: array{player_level?: int}} $body */
-        $body = $response->json();
-
-        return ! array_key_exists('player_level', $body['response'] ?? []);
-    }
-
-    #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
-    {
-        return $this->hasRequestFailed($response) === true
-            ? ProfileNotPublicException::forSteamId($this->steamId, $response)
-            : null;
-    }
-
-    public function createDtoFromResponse(Response $response): PlayerBadges
+    protected function read(Response $response): PlayerBadges|ProfileNotPublicException
     {
         /**
          * @var array{response: array{badges?: list<array{
@@ -71,9 +50,13 @@ final class GetBadgesRequest extends Request implements HasRequiredPaths
          *     communityitemid?: string,
          *     border_color?: int,
          *     scarcity: int,
-         * }>, player_xp: int, player_level: int, player_xp_needed_to_level_up: int, player_xp_needed_current_level: int}} $body
+         * }>, player_xp: int, player_level?: int, player_xp_needed_to_level_up: int, player_xp_needed_current_level: int}} $body
          */
         $body = $response->json();
+
+        if (! array_key_exists('player_level', $body['response'])) {
+            return ProfileNotPublicException::forSteamId($this->steamId, $response);
+        }
 
         return PlayerBadges::fromArray($body['response']);
     }

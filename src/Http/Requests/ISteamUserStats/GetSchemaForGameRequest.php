@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
 use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\GameSchema;
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetSchemaForGameRequest extends Request implements HasLanguage, HasRequiredPaths
+/**
+ * @extends SteamApiRequest<GameSchema>
+ */
+final class GetSchemaForGameRequest extends SteamApiRequest implements HasLanguage
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -41,7 +42,7 @@ final class GetSchemaForGameRequest extends Request implements HasLanguage, HasR
      * merely publishes no schema answers 200, so it stays a DTO rather than a failure.
      */
     #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    protected function readError(Response $response): ?AppNotFoundException
     {
         if ($response->status() !== 400 || ! json_validate($response->body())) {
             return null;
@@ -50,7 +51,7 @@ final class GetSchemaForGameRequest extends Request implements HasLanguage, HasR
         return AppNotFoundException::forAppId($this->appId, $response);
     }
 
-    public function createDtoFromResponse(Response $response): GameSchema
+    protected function read(Response $response): GameSchema
     {
         /**
          * @var array{game: array{

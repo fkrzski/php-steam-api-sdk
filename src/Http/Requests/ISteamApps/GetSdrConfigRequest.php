@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamApps;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Dto\SdrConfig;
 use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetSdrConfigRequest extends Request implements HasRequiredPaths, SendsNoApiKey
+/**
+ * @extends SteamApiRequest<SdrConfig>
+ */
+final class GetSdrConfigRequest extends SteamApiRequest implements SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -38,7 +39,7 @@ final class GetSdrConfigRequest extends Request implements HasRequiredPaths, Sen
      * connector would otherwise retry as a server error before flattening it.
      */
     #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    protected function readError(Response $response): ?AppNotFoundException
     {
         if ($response->status() !== 500 || ! str_contains($response->body(), 'Failed to get appinfo')) {
             return null;
@@ -47,7 +48,7 @@ final class GetSdrConfigRequest extends Request implements HasRequiredPaths, Sen
         return AppNotFoundException::forAppId($this->appId, $response);
     }
 
-    public function createDtoFromResponse(Response $response): SdrConfig
+    protected function read(Response $response): SdrConfig
     {
         /**
          * @var array{

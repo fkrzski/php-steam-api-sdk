@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil;
 
 use DateTimeImmutable;
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-final class GetServerInfoRequest extends Request implements HasRequiredPaths, SendsNoApiKey
+/**
+ * @extends SteamApiRequest<DateTimeImmutable>
+ */
+final class GetServerInfoRequest extends SteamApiRequest implements SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -27,7 +29,7 @@ final class GetServerInfoRequest extends Request implements HasRequiredPaths, Se
         return ['servertime'];
     }
 
-    public function createDtoFromResponse(Response $response): DateTimeImmutable
+    protected function read(Response $response): DateTimeImmutable
     {
         /** @var array{servertime: int} $body */
         $body = $response->json();

@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\PlayerBan;
 use Fkrzski\SteamApiSdk\Exceptions\TooManySteamIdsException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use InvalidArgumentException;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-final class GetPlayerBansRequest extends Request implements HasRequiredPaths
+/**
+ * @extends SteamApiRequest<list<PlayerBan>>
+ */
+final class GetPlayerBansRequest extends SteamApiRequest
 {
     public const int MAX_STEAM_IDS = 100;
 
@@ -51,7 +53,7 @@ final class GetPlayerBansRequest extends Request implements HasRequiredPaths
     /**
      * @return list<PlayerBan>
      */
-    public function createDtoFromResponse(Response $response): array
+    protected function read(Response $response): array
     {
         /**
          * Unlike the other ISteamUser endpoints, GetPlayerBans returns the player

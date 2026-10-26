@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\IPlayerService;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\RecentlyPlayedGames;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetRecentlyPlayedGamesRequest extends Request implements HasRequiredPaths
+/**
+ * @extends SteamApiRequest<RecentlyPlayedGames>
+ */
+final class GetRecentlyPlayedGamesRequest extends SteamApiRequest
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -38,32 +39,10 @@ final class GetRecentlyPlayedGamesRequest extends Request implements HasRequired
      * A player with nothing played still gets `total_count: 0`; only a withheld profile
      * drops the key, which makes its absence the discriminator.
      */
-    #[Override]
-    public function hasRequestFailed(Response $response): ?bool
-    {
-        // No opinion off a 200: false would overrule Saloon's own 4xx and 5xx check.
-        if ($response->status() !== 200) {
-            return null;
-        }
-
-        /** @var array{response?: array{total_count?: int}} $body */
-        $body = $response->json();
-
-        return ! array_key_exists('total_count', $body['response'] ?? []);
-    }
-
-    #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
-    {
-        return $this->hasRequestFailed($response) === true
-            ? ProfileNotPublicException::forPrivateOrMissing($this->steamId, $response)
-            : null;
-    }
-
-    public function createDtoFromResponse(Response $response): RecentlyPlayedGames
+    protected function read(Response $response): RecentlyPlayedGames|ProfileNotPublicException
     {
         /**
-         * @var array{response: array{total_count: int, games?: list<array{
+         * @var array{response: array{total_count?: int, games?: list<array{
          *     appid: int,
          *     name: string,
          *     playtime_2weeks: int,
@@ -76,6 +55,10 @@ final class GetRecentlyPlayedGamesRequest extends Request implements HasRequired
          * }>}} $body
          */
         $body = $response->json();
+
+        if (! array_key_exists('total_count', $body['response'])) {
+            return ProfileNotPublicException::forPrivateOrMissing($this->steamId, $response);
+        }
 
         return RecentlyPlayedGames::fromArray($body['response']);
     }

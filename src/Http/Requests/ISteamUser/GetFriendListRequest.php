@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\Friend;
 use Fkrzski\SteamApiSdk\Enums\FriendRelationship;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-final class GetFriendListRequest extends Request implements HasRequiredPaths
+/**
+ * @extends SteamApiRequest<list<Friend>>
+ */
+final class GetFriendListRequest extends SteamApiRequest
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -39,7 +41,7 @@ final class GetFriendListRequest extends Request implements HasRequiredPaths
     /**
      * @return list<Friend>
      */
-    public function createDtoFromResponse(Response $response): array
+    protected function read(Response $response): array
     {
         /**
          * @var array{friendslist?: array{friends?: list<array{

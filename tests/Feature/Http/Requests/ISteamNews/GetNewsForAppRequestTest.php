@@ -7,12 +7,13 @@ use Fkrzski\SteamApiSdk\Dto\NewsItem;
 use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamNews\GetNewsForAppRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
-covers([GetNewsForAppRequest::class, AppNews::class, NewsItem::class, AppNewsUnavailableException::class]);
+covers([GetNewsForAppRequest::class, SteamApiRequest::class, AppNews::class, NewsItem::class, AppNewsUnavailableException::class]);
 
 function newsForAppMock(string $fixture): MockClient
 {

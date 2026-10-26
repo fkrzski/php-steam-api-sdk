@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\UserGroup;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-final class GetUserGroupListRequest extends Request implements HasRequiredPaths
+/**
+ * @extends SteamApiRequest<list<UserGroup>>
+ */
+final class GetUserGroupListRequest extends SteamApiRequest
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -34,7 +36,7 @@ final class GetUserGroupListRequest extends Request implements HasRequiredPaths
     /**
      * @return list<UserGroup>
      */
-    public function createDtoFromResponse(Response $response): array
+    protected function read(Response $response): array
     {
         /** @var array{response?: array{groups?: list<array{gid: string}>}} $body */
         $body = $response->json();

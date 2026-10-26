@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\UserStats;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetUserStatsForGameRequest extends Request implements HasRequiredPaths
+/**
+ * @extends SteamApiRequest<UserStats>
+ */
+final class GetUserStatsForGameRequest extends SteamApiRequest
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -39,7 +40,7 @@ final class GetUserStatsForGameRequest extends Request implements HasRequiredPat
      * answers 400 with HTML, which belongs to the connector.
      */
     #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    protected function readError(Response $response): ?ProfileNotPublicException
     {
         if ($response->status() !== 400 || ! json_validate($response->body())) {
             return null;
@@ -48,7 +49,7 @@ final class GetUserStatsForGameRequest extends Request implements HasRequiredPat
         return ProfileNotPublicException::forSteamId($this->steamId, $response);
     }
 
-    public function createDtoFromResponse(Response $response): UserStats
+    protected function read(Response $response): UserStats
     {
         /**
          * @var array{playerstats: array{

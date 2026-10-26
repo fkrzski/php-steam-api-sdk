@@ -5,18 +5,19 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
 use Fkrzski\SteamApiSdk\Contracts\HasLanguage;
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\PlayerAchievements;
 use Fkrzski\SteamApiSdk\Enums\Language;
 use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetPlayerAchievementsRequest extends Request implements HasLanguage, HasRequiredPaths
+/**
+ * @extends SteamApiRequest<PlayerAchievements>
+ */
+final class GetPlayerAchievementsRequest extends SteamApiRequest implements HasLanguage
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -43,7 +44,7 @@ final class GetPlayerAchievementsRequest extends Request implements HasLanguage,
      * 400 but as HTML, which the connector claims.
      */
     #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    protected function readError(Response $response): ?StatsUnavailableException
     {
         if ($response->status() !== 400 || ! json_validate($response->body())) {
             return null;
@@ -52,7 +53,7 @@ final class GetPlayerAchievementsRequest extends Request implements HasLanguage,
         return StatsUnavailableException::forAppId($this->appId, $response);
     }
 
-    public function createDtoFromResponse(Response $response): PlayerAchievements
+    protected function read(Response $response): PlayerAchievements
     {
         /**
          * @var array{playerstats: array{

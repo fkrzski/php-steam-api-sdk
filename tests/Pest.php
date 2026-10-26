@@ -254,6 +254,16 @@ function fakedConnector(MockClient $mockClient, SteamConfig $config = new SteamC
 }
 
 /**
+ * @param  list<Throwable>  $failures
+ */
+function recordingFailures(SteamConnector $connector, array &$failures): SteamConnector
+{
+    return $connector->onFailure(static function (Throwable $throwable) use (&$failures): void {
+        $failures[] = $throwable;
+    });
+}
+
+/**
  * The response the fake answered the request with, even one the SDK raises an exception from.
  */
 function answerFrom(MockClient $mockClient, Request $request): Response

@@ -66,7 +66,7 @@ sends the request and hands back the DTO, so nothing needs importing:
 $summaries = $connector->users()->summaries([$id]);
 ```
 
-Behind every resource method sits a plain Saloon `Request`, still public and unchanged.
+Behind every resource method sits a Saloon `Request`, still public and unchanged.
 Build one yourself when you want the response rather than only the DTO, or a Saloon
 feature that takes a request — `pool()` or `sendAsync()`:
 
@@ -84,8 +84,9 @@ DTO is built — always as an [SDK exception](/php-steam-api-sdk/exceptions), ne
 one. The same holds when no response comes back at all, through `send()`, `sendAsync()` and
 `pool()` alike. A `200` whose payload reports a failure, one of the two `200` rows in the
 [mapping table](/php-steam-api-sdk/exceptions#how-statuses-are-mapped), fails the same way, so
-`send()` never hands back its response. Which call returns which DTO is in the
-[API reference](/php-steam-api-sdk/api-reference).
+`send()` never hands back its response. The call builds the DTO before it settles and `dto()`
+hands back that one, so a DTO Steam's answer cannot fill fails the call itself. Which call
+returns which DTO is in the [API reference](/php-steam-api-sdk/api-reference).
 
 ### Concurrent requests
 

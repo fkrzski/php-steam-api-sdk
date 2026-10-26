@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A non-error answer whose body is not JSON, or lacks the key its method decides on or returns, raises the new `UnreadableResponseException` under `send()`, `sendAsync()` and `pool()` and fires `onFailure()` once, unless the request asks Steam for another `format`. It used to pass as an empty list, a hidden profile or an unknown user, or escape as a raw `JsonException`, `TypeError` or PHP warning, and a hand-made `MockResponse` without its envelope now raises it too ([#160](https://github.com/fkrzski/php-steam-api-sdk/issues/160)).
 - `debugResponse()`, like any connector middleware ordered `PipeOrder::FIRST`, sees Steam's `429`; the rate limiter used to throw before it ran ([#163](https://github.com/fkrzski/php-steam-api-sdk/issues/163)).
 - Faked responses send the status and body Steam was captured sending: the IPlayerService `…NotPublic()` methods and `schema()` of an empty schema an empty JSON object rather than `[]`, `currentPlayers()` with `result: 1`, and `invalidApiKey()` Steam's HTML page ([#164](https://github.com/fkrzski/php-steam-api-sdk/issues/164)).
+- A body cut off after an error status maps by that status under Saloon 4.5.1 too: a `404` or `503` raises `SteamApiException`, and a `429` raises `SteamRateLimitException` and locks the key. Saloon 4.5.1 turned all three into `SteamConnectionException`, which left a `429` without the lock.
 
 ## [0.9.0] - 2026-10-09
 

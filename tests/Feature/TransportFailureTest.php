@@ -11,11 +11,21 @@ use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ResponseTimeoutException;
+use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Request as PsrRequest;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Saloon\Contracts\Sender;
+use Saloon\Data\FactoryCollection;
+use Saloon\Exceptions\Request\FatalRequestException;
+use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
+use Saloon\Http\Response;
+use Saloon\Http\Senders\GuzzleSender;
 
 covers([SteamApiResponse::class, SteamConnectionException::class, SteamConnector::class, SteamSender::class]);
 
@@ -189,6 +199,77 @@ test('a 429 cut off mid-body still locks the key', function (Closure $cutOff): v
         ->and($second::class)->toBe(SteamRateLimitException::class)
         ->and($history)->toHaveCount(1);
 })->with(cutOffAfterTheHeaders());
+
+/**
+ * What Saloon's GuzzleSender throws from 4.5.1 on for a body cut off after the headers, whatever the status.
+ */
+function senderFailingTheTransfer(Throwable $cause): Sender
+{
+    return new readonly class($cause) implements Sender
+    {
+        public function __construct(private Throwable $cause) {}
+
+        public function getFactoryCollection(): FactoryCollection
+        {
+            return new GuzzleSender()->getFactoryCollection();
+        }
+
+        public function send(PendingRequest $pendingRequest): Response
+        {
+            throw $this->failure($pendingRequest);
+        }
+
+        public function sendAsync(PendingRequest $pendingRequest): PromiseInterface
+        {
+            return Create::rejectionFor($this->failure($pendingRequest));
+        }
+
+        private function failure(PendingRequest $pendingRequest): FatalRequestException
+        {
+            return new FatalRequestException($this->cause, $pendingRequest);
+        }
+    };
+}
+
+test('a transfer the sender fails after an error status maps by that status', function (Closure $send, int $status): void {
+    $connector = new SteamConnector(new SteamConfig('any', sender: senderFailingTheTransfer(transferFailure(new PsrResponse($status, [], '{"error":"Not')))));
+
+    $thrown = failureFrom(fn (): mixed => $send($connector));
+
+    expect($thrown::class)->toBe(SteamApiException::class)
+        ->and($thrown->getCode())->toBe($status);
+})->with(everyWayToSend())->with([404, 503]);
+
+test('a transfer the sender fails after a 429 still locks the key', function (): void {
+    $connector = new SteamConnector(new SteamConfig('any', sender: senderFailingTheTransfer(transferFailure(new PsrResponse(429, [], '{"error":"Too')))));
+
+    $first = failureFrom(fn (): mixed => $connector->send(friendListRequest()));
+    $second = failureFrom(fn (): mixed => $connector->send(friendListRequest()));
+
+    expect($first::class)->toBe(SteamRateLimitException::class)
+        ->and($second::class)->toBe(SteamRateLimitException::class);
+});
+
+test('a transfer the sender fails after a 200 is still no answer', function (Closure $send): void {
+    $connector = new SteamConnector(new SteamConfig('any', sender: senderFailingTheTransfer(transferFailure(new PsrResponse(200, [], '{"friendslist":{"fri')))));
+
+    expect(failureFrom(fn (): mixed => $send($connector))::class)->toBe(SteamConnectionException::class);
+})->with(everyWayToSend());
+
+test('a failure the sender wraps without a Guzzle response is still no answer', function (Throwable $cause): void {
+    $connector = new SteamConnector(new SteamConfig('any', sender: senderFailingTheTransfer($cause)));
+
+    expect(failureFrom(fn (): mixed => $connector->send(friendListRequest()))::class)->toBe(SteamConnectionException::class);
+})->with([
+    'a Guzzle failure with no response' => [new RequestException('cURL error 52: Empty reply from server', new PsrRequest('GET', 'https://api.steampowered.com'))],
+    "another client's failure carrying a response" => [new class extends RuntimeException
+    {
+        public function getResponse(): ResponseInterface
+        {
+            return new PsrResponse(200, [], '{"friendslist":{"fri');
+        }
+    }],
+]);
 
 test('the key stays masked when the cut-off transfer quotes the URI', function (): void {
     $connector = connectorAnswering(

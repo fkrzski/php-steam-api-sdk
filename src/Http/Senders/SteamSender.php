@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Senders;
 
 use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
+use Psr\Http\Message\ResponseInterface;
 use Saloon\Contracts\Sender;
 use Saloon\Data\FactoryCollection;
 use Saloon\Exceptions\Request\FatalRequestException;
@@ -36,6 +38,8 @@ final readonly class SteamSender implements Sender
             $response = $this->sender->send($pendingRequest);
         } catch (NetworkExceptionInterface $networkException) {
             throw new FatalRequestException($networkException, $pendingRequest);
+        } catch (FatalRequestException $fatalRequestException) {
+            $response = self::cutOffAnswer($fatalRequestException) ?? throw $fatalRequestException;
         }
 
         $failedTransfer = SteamApiResponse::failedTransfer($response);
@@ -52,9 +56,28 @@ final readonly class SteamSender implements Sender
         }
 
         return $promise->otherwise(
-            static fn (mixed $reason): PromiseInterface => $reason instanceof NetworkExceptionInterface
-                ? throw new FatalRequestException($reason, $pendingRequest)
-                : Create::rejectionFor($reason),
+            static fn (mixed $reason): PromiseInterface|Response => match (true) {
+                $reason instanceof NetworkExceptionInterface => throw new FatalRequestException($reason, $pendingRequest),
+                $reason instanceof FatalRequestException => self::cutOffAnswer($reason) ?? Create::rejectionFor($reason),
+                default => Create::rejectionFor($reason),
+            },
         );
+    }
+
+    /**
+     * Saloon 4.5.1 fails a body cut off after the headers at any status; failedTransfer() decides by it again.
+     */
+    private static function cutOffAnswer(FatalRequestException $exception): ?Response
+    {
+        $cutOff = $exception->getPrevious();
+        $psrResponse = $cutOff instanceof RequestException && method_exists($cutOff, 'getResponse') ? $cutOff->getResponse() : null;
+
+        if (! $psrResponse instanceof ResponseInterface) {
+            return null;
+        }
+
+        $pendingRequest = $exception->getPendingRequest();
+
+        return $pendingRequest->getResponseClass()::fromPsrResponse($psrResponse, $pendingRequest, $cutOff->getRequest(), $cutOff);
     }
 }

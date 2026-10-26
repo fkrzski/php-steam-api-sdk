@@ -8,12 +8,13 @@ use Fkrzski\SteamApiSdk\Dto\SdrRelay;
 use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamApps\GetSdrConfigRequest;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 
-covers([GetSdrConfigRequest::class, SdrConfig::class, SdrPointOfPresence::class, SdrRelay::class, AppNotFoundException::class]);
+covers([GetSdrConfigRequest::class, SteamApiRequest::class, SdrConfig::class, SdrPointOfPresence::class, SdrRelay::class, AppNotFoundException::class]);
 
 function sdrConfigMock(string $fixture): MockClient
 {

@@ -53,16 +53,6 @@ function emptyAnswer(): PsrResponse
     return new PsrResponse(200, [], '{}');
 }
 
-/**
- * @param  list<Throwable>  $failures
- */
-function recordingFailures(SteamConnector $connector, array &$failures): SteamConnector
-{
-    return $connector->onFailure(static function (Throwable $throwable) use (&$failures): void {
-        $failures[] = $throwable;
-    });
-}
-
 function callerGets(Closure $call): Throwable
 {
     try {

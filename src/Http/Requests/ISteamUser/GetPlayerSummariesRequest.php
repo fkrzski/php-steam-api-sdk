@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUser;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\PlayerSummary;
 use Fkrzski\SteamApiSdk\Exceptions\TooManySteamIdsException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use InvalidArgumentException;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
 
-final class GetPlayerSummariesRequest extends Request implements HasRequiredPaths
+/**
+ * @extends SteamApiRequest<list<PlayerSummary>>
+ */
+final class GetPlayerSummariesRequest extends SteamApiRequest
 {
     public const int MAX_STEAM_IDS = 100;
 
@@ -51,7 +53,7 @@ final class GetPlayerSummariesRequest extends Request implements HasRequiredPath
     /**
      * @return list<PlayerSummary>
      */
-    public function createDtoFromResponse(Response $response): array
+    protected function read(Response $response): array
     {
         /**
          * @var array{response?: array{players?: list<array{

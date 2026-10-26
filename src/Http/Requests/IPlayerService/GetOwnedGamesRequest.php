@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\IPlayerService;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\OwnedGame;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetOwnedGamesRequest extends Request implements HasRequiredPaths
+/**
+ * @extends SteamApiRequest<list<OwnedGame>>
+ */
+final class GetOwnedGamesRequest extends SteamApiRequest
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -41,36 +42,13 @@ final class GetOwnedGamesRequest extends Request implements HasRequiredPaths
 
     /**
      * A private profile answers 200 too, only without `game_count`.
+     *
+     * @return list<OwnedGame>|ProfileNotPublicException
      */
-    #[Override]
-    public function hasRequestFailed(Response $response): ?bool
-    {
-        // No opinion off a 200: false would overrule Saloon's own 4xx and 5xx check.
-        if ($response->status() !== 200) {
-            return null;
-        }
-
-        /** @var array{response?: array{game_count?: int}} $body */
-        $body = $response->json();
-
-        return ! array_key_exists('game_count', $body['response'] ?? []);
-    }
-
-    #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
-    {
-        return $this->hasRequestFailed($response) === true
-            ? ProfileNotPublicException::forSteamId($this->steamId, $response)
-            : null;
-    }
-
-    /**
-     * @return list<OwnedGame>
-     */
-    public function createDtoFromResponse(Response $response): array
+    protected function read(Response $response): array|ProfileNotPublicException
     {
         /**
-         * @var array{response: array{game_count: int, games?: list<array{
+         * @var array{response: array{game_count?: int, games?: list<array{
          *     appid: int,
          *     playtime_forever: int,
          *     playtime_2weeks?: int,
@@ -80,6 +58,10 @@ final class GetOwnedGamesRequest extends Request implements HasRequiredPaths
          * }>}} $body
          */
         $body = $response->json();
+
+        if (! array_key_exists('game_count', $body['response'])) {
+            return ProfileNotPublicException::forSteamId($this->steamId, $response);
+        }
 
         return array_map(OwnedGame::fromArray(...), $body['response']['games'] ?? []);
     }

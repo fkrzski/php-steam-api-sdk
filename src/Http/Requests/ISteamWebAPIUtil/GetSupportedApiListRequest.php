@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsOptionalApiKey;
 use Fkrzski\SteamApiSdk\Dto\WebApiInterface;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetSupportedApiListRequest extends Request implements HasRequiredPaths, SendsOptionalApiKey
+/**
+ * @extends SteamApiRequest<list<WebApiInterface>>
+ */
+final class GetSupportedApiListRequest extends SteamApiRequest implements SendsOptionalApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -34,7 +35,7 @@ final class GetSupportedApiListRequest extends Request implements HasRequiredPat
      * which the connector would otherwise take for a profile that is not public.
      */
     #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    protected function readError(Response $response): ?InvalidApiKeyException
     {
         if ($response->status() !== 403) {
             return null;
@@ -46,7 +47,7 @@ final class GetSupportedApiListRequest extends Request implements HasRequiredPat
     /**
      * @return list<WebApiInterface>
      */
-    public function createDtoFromResponse(Response $response): array
+    protected function read(Response $response): array
     {
         /**
          * @var array{apilist: array{interfaces: list<array{

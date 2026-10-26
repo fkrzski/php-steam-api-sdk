@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Dto\GlobalAchievement;
 use Fkrzski\SteamApiSdk\Exceptions\StatsUnavailableException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetGlobalAchievementPercentagesForAppRequest extends Request implements HasRequiredPaths, SendsNoApiKey
+/**
+ * @extends SteamApiRequest<list<GlobalAchievement>>
+ */
+final class GetGlobalAchievementPercentagesForAppRequest extends SteamApiRequest implements SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -42,7 +43,7 @@ final class GetGlobalAchievementPercentagesForAppRequest extends Request impleme
      * goes out on this endpoint, which is what leaves every 403 to this request.
      */
     #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    protected function readError(Response $response): ?StatsUnavailableException
     {
         if ($response->status() !== 403) {
             return null;
@@ -54,7 +55,7 @@ final class GetGlobalAchievementPercentagesForAppRequest extends Request impleme
     /**
      * @return list<GlobalAchievement>
      */
-    public function createDtoFromResponse(Response $response): array
+    protected function read(Response $response): array
     {
         /**
          * @var array{achievementpercentages: array{achievements: list<array{

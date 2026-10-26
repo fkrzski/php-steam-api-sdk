@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\IPlayerService;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Dto\CommunityBadgeQuest;
 use Fkrzski\SteamApiSdk\Exceptions\ProfileNotPublicException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetCommunityBadgeProgressRequest extends Request implements HasRequiredPaths
+/**
+ * @extends SteamApiRequest<list<CommunityBadgeQuest>>
+ */
+final class GetCommunityBadgeProgressRequest extends SteamApiRequest
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -33,35 +34,17 @@ final class GetCommunityBadgeProgressRequest extends Request implements HasRequi
         return ['response'];
     }
 
-    #[Override]
-    public function hasRequestFailed(Response $response): ?bool
-    {
-        // No opinion off a 200: false would overrule Saloon's own 4xx and 5xx check.
-        if ($response->status() !== 200) {
-            return null;
-        }
-
-        /** @var array{response?: array{quests?: list<mixed>}} $body */
-        $body = $response->json();
-
-        return ! isset($body['response']['quests']);
-    }
-
-    #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
-    {
-        return $this->hasRequestFailed($response) === true
-            ? ProfileNotPublicException::forPrivateOrMissing($this->steamId, $response)
-            : null;
-    }
-
     /**
-     * @return list<CommunityBadgeQuest>
+     * @return list<CommunityBadgeQuest>|ProfileNotPublicException
      */
-    public function createDtoFromResponse(Response $response): array
+    protected function read(Response $response): array|ProfileNotPublicException
     {
-        /** @var array{response: array{quests: list<array{questid: int, completed: bool}>}} $body */
+        /** @var array{response: array{quests?: list<array{questid: int, completed: bool}>}} $body */
         $body = $response->json();
+
+        if (! isset($body['response']['quests'])) {
+            return ProfileNotPublicException::forPrivateOrMissing($this->steamId, $response);
+        }
 
         return array_map(CommunityBadgeQuest::fromArray(...), $body['response']['quests']);
     }

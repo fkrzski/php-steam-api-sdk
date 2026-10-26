@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats;
 
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Exceptions\AppNotFoundException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetNumberOfCurrentPlayersRequest extends Request implements HasRequiredPaths, SendsNoApiKey
+/**
+ * @extends SteamApiRequest<int>
+ */
+final class GetNumberOfCurrentPlayersRequest extends SteamApiRequest implements SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -37,7 +38,7 @@ final class GetNumberOfCurrentPlayersRequest extends Request implements HasRequi
      * connector would otherwise flatten into a bare SteamApiException.
      */
     #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    protected function readError(Response $response): ?AppNotFoundException
     {
         if ($response->status() !== 404) {
             return null;
@@ -46,7 +47,7 @@ final class GetNumberOfCurrentPlayersRequest extends Request implements HasRequi
         return AppNotFoundException::forAppId($this->appId, $response);
     }
 
-    public function createDtoFromResponse(Response $response): int
+    protected function read(Response $response): int
     {
         /** @var array{response: array{player_count: int}} $body */
         $body = $response->json();

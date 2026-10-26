@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `debugResponse()`, like any connector middleware ordered `PipeOrder::FIRST`, sees Steam's `429`; the rate limiter used to throw before it ran ([#163](https://github.com/fkrzski/php-steam-api-sdk/issues/163)).
 - Faked responses send the status and body Steam was captured sending: the IPlayerService `…NotPublic()` methods and `schema()` of an empty schema an empty JSON object rather than `[]`, `currentPlayers()` with `result: 1`, and `invalidApiKey()` Steam's HTML page ([#164](https://github.com/fkrzski/php-steam-api-sdk/issues/164)).
 - A body cut off after an error status maps by that status under Saloon 4.5.1 too: a `404` or `503` raises `SteamApiException`, and a `429` raises `SteamRateLimitException` and locks the key. Saloon 4.5.1 turned all three into `SteamConnectionException`, which left a `429` without the lock.
+- A DTO the SDK cannot build from Steam's answer fails `send()`, `sendAsync()` and `pool()` with whatever building it raised, such as `InvalidSteamIdException` for a malformed `steamid` or PHP's `ValueError` for a friend `relationship` the SDK does not list, and fires `onFailure()` once. It used to escape from the resource call or `dto()` after the call had returned, past `onFailure()` ([#161](https://github.com/fkrzski/php-steam-api-sdk/issues/161)).
+- `dto()` on the response of a failure a request reads from Steam's answer, such as `ProfileNotPublicException` for a hidden library, throws that failure again, and on any other `4xx` or `5xx` a `LogicException`, rather than building a DTO from it. A hidden library used to come back as `[]` ([#161](https://github.com/fkrzski/php-steam-api-sdk/issues/161)).
 
 ## [0.9.0] - 2026-10-09
 

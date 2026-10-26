@@ -3,6 +3,7 @@
 declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\Testing\SteamFake;
@@ -52,8 +53,13 @@ arch('enums are backed enums')
     ->toBeEnums()
     ->toImplement(BackedEnum::class);
 
-arch('requests extend the Saloon Request base class')
+arch('requests read their answer through SteamApiRequest')
     ->expect('Fkrzski\SteamApiSdk\Http\Requests')
+    ->toExtend(SteamApiRequest::class)
+    ->ignoring(SteamApiRequest::class);
+
+arch('SteamApiRequest is a Saloon request')
+    ->expect(SteamApiRequest::class)
     ->toExtend(Request::class);
 
 arch('requests name the paths their answer carries')

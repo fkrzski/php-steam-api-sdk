@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace Fkrzski\SteamApiSdk\Http\Requests\ISteamNews;
 
 use DateTimeInterface;
-use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Contracts\SendsNoApiKey;
 use Fkrzski\SteamApiSdk\Dto\AppNews;
 use Fkrzski\SteamApiSdk\Exceptions\AppNewsUnavailableException;
+use Fkrzski\SteamApiSdk\Http\Requests\SteamApiRequest;
 use Override;
 use Saloon\Enums\Method;
-use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Throwable;
 
-final class GetNewsForAppRequest extends Request implements HasRequiredPaths, SendsNoApiKey
+/**
+ * @extends SteamApiRequest<AppNews>
+ */
+final class GetNewsForAppRequest extends SteamApiRequest implements SendsNoApiKey
 {
     #[Override]
     protected Method $method = Method::GET;
@@ -49,7 +50,7 @@ final class GetNewsForAppRequest extends Request implements HasRequiredPaths, Se
      * key goes out on this endpoint, which is what leaves every 403 to this request.
      */
     #[Override]
-    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    protected function readError(Response $response): ?AppNewsUnavailableException
     {
         if ($response->status() !== 403) {
             return null;
@@ -58,7 +59,7 @@ final class GetNewsForAppRequest extends Request implements HasRequiredPaths, Se
         return AppNewsUnavailableException::forAppId($this->appId, $response);
     }
 
-    public function createDtoFromResponse(Response $response): AppNews
+    protected function read(Response $response): AppNews
     {
         /**
          * @var array{appnews: array{appid: int, newsitems: list<array{

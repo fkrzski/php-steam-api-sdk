@@ -2,6 +2,15 @@
 
 **PLEASE DON'T DISCLOSE SECURITY-RELATED ISSUES PUBLICLY, [SEE BELOW](#reporting-a-vulnerability).**
 
+## Supported Versions
+
+Security fixes land in the latest 1.x minor release.
+
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.x     | :white_check_mark: |
+| < 1.0   | :x:                |
+
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability, please report it privately using one of the following channels:

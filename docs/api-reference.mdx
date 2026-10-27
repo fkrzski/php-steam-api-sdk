@@ -5,14 +5,16 @@ description: Every endpoint the SDK ships — the resource method, the request c
 
 Every endpoint has two entry points: a resource method on the connector, which sends and
 returns the DTO, and the request class behind it, which you send yourself. Both take the
-same arguments, except the `concurrency` that `summaries()` and `bans()` add. Every argument
-that identifies a user is a [`SteamId`](/php-steam-api-sdk/guide#the-steamid-value-object); the
-shapes coming back are documented in [Data objects](/php-steam-api-sdk/dto-reference).
+same arguments, except the `concurrency` that `summaries()` and `bans()` add. Every Steam ID
+argument is a [`SteamId`](/php-steam-api-sdk/guide#the-steamid-value-object); the shapes coming
+back are documented in [Data objects](/php-steam-api-sdk/dto-reference).
 
-Badges list what a request throws on its own. On top of that, any request can raise
-`SteamRateLimitException`, `SteamConnectionException` or `SteamApiException` from the
-connector, and every request that needs a key can raise `InvalidApiKeyException`, or
-`ApiKeyNotConfiguredException` when the config carries no key at all — see
+Badges list what an endpoint raises on its own, its arguments included. On top of that, any
+request can raise `SteamRateLimitException`, `SteamConnectionException`,
+`UnreadableResponseException` or `SteamApiException` from the connector, and
+`ProfileNotPublicException` for a `401` or `403` it does not claim. Every request that needs a key
+can raise `InvalidApiKeyException`, or `ApiKeyNotConfiguredException` when the config carries no
+key at all. A DTO Steam's answer cannot fill fails with whatever building it raised — see
 [Exceptions](/php-steam-api-sdk/exceptions).
 
 Both layers are namespaced by the Steam interface they belong to — one resource per
@@ -403,10 +405,11 @@ new GetPlayerBansRequest($steamIds)
 
 <p><Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
 
-VAC, game, community and economy ban status. The request takes **1 to 100** players;
-`bans()` takes any number and [splits a longer list](/php-steam-api-sdk/guide#more-than-100-steam-ids).
-Unlike the other batch endpoint this one needs no public profile — bans come back for private
-profiles too.
+VAC, game, community and economy ban status, for any profile, a private one included. The
+request takes **1 to `MAX_STEAM_IDS`** (100) players and checks both limits in the constructor.
+`bans()` takes any non-empty list and
+[splits a longer one](/php-steam-api-sdk/guide#more-than-100-steam-ids), and throws
+`InvalidArgumentException` for a `concurrency` under 1 as well.
 
 ```php
 $bans = $connector->users()->bans([$steamId]);
@@ -426,9 +429,12 @@ new GetPlayerSummariesRequest($steamIds)
 
 <p><Badge text="throws InvalidArgumentException" variant="danger" size="small" />{' '}<Badge text="throws TooManySteamIdsException" variant="danger" size="small" /></p>
 
-Public profile summaries. The request takes **1 to 100** players and checks both limits in
-the constructor, so a bad batch costs no quota; `summaries()` takes any number and
-[splits a longer list](/php-steam-api-sdk/guide#more-than-100-steam-ids).
+Profile summaries; a hidden or friends-only profile comes back
+[stripped](/php-steam-api-sdk/dto-reference#playersummary) rather than refused. The request takes
+**1 to `MAX_STEAM_IDS`** (100) players and checks both limits in the constructor, so a bad batch
+costs no quota. `summaries()` takes any non-empty list and
+[splits a longer one](/php-steam-api-sdk/guide#more-than-100-steam-ids), and throws
+`InvalidArgumentException` for a `concurrency` under 1 as well.
 
 ```php
 $summaries = $connector->users()->summaries([$steamId]);

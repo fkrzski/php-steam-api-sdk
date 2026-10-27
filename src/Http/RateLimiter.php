@@ -52,6 +52,30 @@ final class RateLimiter
         $this->bootPlugin($pendingRequest);
     }
 
+    /**
+     * What the plugin's response pipe writes to the store, for an answer that never reached it; nothing is thrown or sent again.
+     */
+    public function record(Response $response): void
+    {
+        if ($response->getPendingRequest()->hasFakeResponse() && ! $response->isMocked()) {
+            return;
+        }
+
+        $store = $this->rateLimitStore();
+
+        foreach ($this->getLimits() as $limit) {
+            $limit->update($store);
+
+            if ($limit->usesResponse()) {
+                $limit->handleResponse($response);
+            } else {
+                $limit->hit();
+            }
+
+            $limit->save($store);
+        }
+    }
+
     protected function resolveLimits(): array
     {
         if ($this->config->rateLimits !== null) {

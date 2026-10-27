@@ -17,6 +17,7 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 use Generator;
 use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Promise\PromiseInterface;
 use InvalidArgumentException;
 use Saloon\Http\BaseResource;
 use Saloon\Http\Request;
@@ -120,19 +121,21 @@ final class UsersResource extends BaseResource
 
         $responses = [];
         $failure = null;
-
-        $failed = static function (mixed $reason) use (&$failure): void {
-            $failure ??= Create::exceptionFor($reason);
-        };
+        $connector = $this->connector;
 
         // Rejecting the pool would abandon the chunks in flight, which Steam still bills.
-        $pending = (static function () use ($requests, &$failure): Generator {
+        $pending = (static function () use ($requests, $connector, &$failure): Generator {
             foreach ($requests as $key => $request) {
                 if ($failure instanceof Throwable) {
                     return;
                 }
 
-                yield $key => $request;
+                // Noted on the chunk's own promise: the pool's handler runs after earlier chunks have pulled the next one.
+                yield $key => $connector->sendAsync($request)->otherwise(static function (mixed $reason) use (&$failure): PromiseInterface {
+                    $failure ??= Create::exceptionFor($reason);
+
+                    return Create::rejectionFor($reason);
+                });
             }
         })();
 
@@ -142,7 +145,6 @@ final class UsersResource extends BaseResource
             static function (Response $response, int|string $key) use (&$responses): void {
                 $responses[$key] = $response;
             },
-            $failed,
         )->send()->wait();
 
         if ($failure instanceof Throwable) {

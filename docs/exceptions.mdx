@@ -3,11 +3,11 @@ title: Exceptions
 description: The SteamApiException hierarchy, catching one leaf or every failure, the response a failure carries, and how each Steam status maps to an exception.
 ---
 
-Every SDK failure extends `SteamApiException`, so one catch handles them all:
+Every SDK exception extends `SteamApiException`, so one catch handles them all:
 
 ```text frame="none"
 SteamApiException                  (root, extends RuntimeException)
-├── ApiKeyNotConfiguredException   No key on the config, and the request needs one.
+├── ApiKeyNotConfiguredException   No key on the config and the request needs one, or a blank key given.
 ├── AppNewsUnavailableException    No news published for the app, or unknown app.
 ├── AppNotFoundException           No Steam app carries the given app ID.
 ├── AppVersionUnavailableException No server version to check against, or unknown app.
@@ -16,17 +16,17 @@ SteamApiException                  (root, extends RuntimeException)
 ├── InvalidRetryException          Fewer than one try, or a negative retry interval.
 ├── InvalidServerAddressException  Address is neither IPv4 nor IPv4:queryport.
 ├── InvalidSteamIdException        Malformed SteamID64.
-├── InvalidTimeoutException        Negative, non-finite or sub-millisecond timeout on SteamConfig.
-├── ProfileNotPublicException      Profile, games list, groups, or stats are private.
+├── InvalidTimeoutException        Negative, non-finite, sub-millisecond or too large timeout on SteamConfig.
+├── ProfileNotPublicException      Profile, games list, groups, or stats are private, or missing where Steam can't tell.
 ├── StatsUnavailableException      Stats withheld: none exist, unknown app, or private profile.
-├── SteamConnectionException       Steam never answered: timeout, DNS, TLS, refused connection.
+├── SteamConnectionException       Steam never answered: timeout, DNS, TLS, refused connection, cut-off body.
 ├── SteamRateLimitException        A local limit ran out, or Steam answered 429; exposes the Limit.
-├── SteamUserNotFoundException     Vanity URL unresolved or profile missing.
+├── SteamUserNotFoundException     No Steam user has the vanity name.
 ├── TooManySteamIdsException       More than 100 IDs in one request; summaries() and bans() split them.
-└── UnreadableResponseException    A 2xx answer that is not JSON, or lacks what the method reads.
+└── UnreadableResponseException    A non-error answer that is not JSON, or lacks the key its method reads.
 ```
 
-Catch the leaf you care about, or the root to handle every SDK failure uniformly:
+Catch the leaf you care about, or the root to handle every SDK exception uniformly:
 
 <Tabs syncKey="steam-error-handling">
   <TabItem label="Catch everything">
@@ -36,7 +36,7 @@ Catch the leaf you care about, or the root to handle every SDK failure uniformly
     try {
         $summaries = $connector->users()->summaries([$id]);
     } catch (SteamApiException $e) {
-        // Every SDK failure lands here — auth, privacy, quota, transport.
+        // Every SDK exception lands here — auth, privacy, quota, transport.
         $logger->error($e->getMessage(), ['status' => $e->getCode()]);
 
         $summaries = [];
@@ -63,6 +63,13 @@ Catch the leaf you care about, or the root to handle every SDK failure uniformly
 
 The [API reference](/php-steam-api-sdk/api-reference) notes which request throws which exception.
 
+<Aside type="caution" title="Some failures fall outside the tree">
+An empty ID list, given to `summaries()`, `bans()` or their request constructors, and a
+`concurrency` under 1 throw `InvalidArgumentException` before anything is sent. A DTO Steam's
+answer cannot fill fails the call with whatever building it raised, such as PHP's `ValueError`
+for a friend `relationship` the SDK does not list, and fires `onFailure()`.
+</Aside>
+
 ## Inspecting the failed response
 
 Exceptions raised from Steam's answer carry the response that produced them, and their code
@@ -84,6 +91,10 @@ method called: `GetPlayerSummaries: Steam API request failed with HTTP 500.`
 Only that prefix is [kept between releases](/php-steam-api-sdk#versioning), so match on the
 class rather than the wording.
 
+A failed answer builds no DTO: `$e->response?->dto()` throws the failure again when the request
+read it from Steam's answer, such as a hidden library, and `LogicException` on any other `4xx` or
+`5xx`. The response of an `UnreadableResponseException` has no such guard, so read its `body()`.
+
 A status the SDK gives no meaning of its own surfaces as the root `SteamApiException`.
 
 No SDK exception chains Saloon's or Guzzle's, so `getPrevious()` is `null`: Guzzle 7 quotes
@@ -94,8 +105,9 @@ stack-trace arguments. `response` still reaches it through the request it answer
 
 <Aside type="note" title="A null response is routine, not an edge case">
 `response` is `null` for every failure raised before a request went out — a malformed
-SteamID64, an oversized batch, the quota exhausted locally — and for one that went out and
-got no answer, where only the message says what failed.
+SteamID64, an oversized batch, the quota exhausted locally — for one that went out and got no
+answer, where only the message says what failed, and for an `InvalidSteamIdException` raised
+building a DTO from a malformed `steamid` in Steam's answer.
 </Aside>
 
 ## How statuses are mapped
@@ -107,12 +119,15 @@ Steam never answers at all:
 | --- | --- |
 | `400` + HTML naming the `key` parameter | `InvalidApiKeyException` (missing) |
 | `401` or `403` + HTML naming the `key` parameter | `InvalidApiKeyException` (rejected) |
-| `403` + JSON, on `GetSupportedAPIList` | `InvalidApiKeyException` (rejected) |
-| `400` or `403` + JSON, on `ISteamUserStats` | `StatsUnavailableException` / `ProfileNotPublicException` / `AppNotFoundException` |
-| `403` + `{}`, on `GetNewsForApp` | `AppNewsUnavailableException` |
-| `401` or `403` not naming the `key` parameter | `ProfileNotPublicException` |
-| `404` + JSON, on `ISteamUserStats` | `AppNotFoundException` |
+| `403`, on `GetSupportedAPIList` | `InvalidApiKeyException` (rejected) |
+| `400` + JSON, on `GetPlayerAchievements` | `StatsUnavailableException` |
+| `400` + JSON, on `GetUserStatsForGame` | `ProfileNotPublicException` |
+| `400` + JSON, on `GetSchemaForGame` | `AppNotFoundException` |
+| `403`, on `GetGlobalAchievementPercentagesForApp` | `StatsUnavailableException` |
+| `403`, on `GetNewsForApp` | `AppNewsUnavailableException` |
+| `404`, on `GetNumberOfCurrentPlayers` | `AppNotFoundException` |
 | `500` + JSON `Failed to get appinfo`, on `GetSDRConfig` | `AppNotFoundException`, never retried |
+| `401` or `403` not naming the `key` parameter | `ProfileNotPublicException` |
 | `429` | `SteamRateLimitException`, then a [cool-down](/php-steam-api-sdk/rate-limiting#after-a-429) |
 | any other `4xx` / `5xx` | `SteamApiException`, a `5xx` once the [retries](/php-steam-api-sdk/configuration#retries) are spent |
 | `200` with an empty, `success: 42` or `success: false` payload | `ProfileNotPublicException` / `SteamUserNotFoundException` / `AppVersionUnavailableException` / `InvalidServerAddressException` |
@@ -125,13 +140,11 @@ needs a key the config does not carry never reaches Steam at all.
 
 Steam overloads `400` across unrelated causes. Key errors are the one case it answers
 with HTML rather than JSON — that is what keeps a misconfigured key from surfacing as a
-data problem. Only `GetSupportedAPIList` refuses a key with JSON, so its request reads its own `403`. Which status a key error lands on is the endpoint's choice, not the SDK's:
-`ISteamUser` reports an absent key as `400`, `GetBadges` and `GetSteamLevel` answer `403`,
-and `GetCommunityBadgeProgress` answers `401`. Only `ISteamUser` separates an absent key
-from a rejected one, so everywhere else it surfaces as rejected. A JSON `400` on
-`ISteamUserStats` is endpoint-specific too: `GetSchemaForGame` is the one endpoint whose
-`400` means nothing but an app ID Steam does not know, so it is the one that raises
-`AppNotFoundException` from that status.
+data problem. Only `GetSupportedAPIList` refuses a key with JSON, so its request reads its own
+`403`. Which status a key error lands on is the endpoint's choice, not the SDK's: `ISteamUser`
+and `ISteamUserStats` report an absent key as `400`, while `IPlayerService` answers `401` or
+`403` depending on the method. Only the first two separate an absent key from a rejected one, so
+on `IPlayerService` it surfaces as rejected.
 
 <Aside type="caution" title="Six endpoints answer ambiguously">
 `GetPlayerAchievements` returns a byte-identical `Requested app has no stats` body for an app

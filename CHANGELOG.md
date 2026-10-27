@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-27
+
 ### Added
 
 - `$connector->users()->summaries()` and `bans()` take any number of Steam IDs and cut a list over 100 into requests of 100 that `pool()` sends `concurrency` at a time, 5 by default, each once. The first failure is thrown after the chunks in flight have answered, and no chunk goes out after it ([#121](https://github.com/fkrzski/php-steam-api-sdk/issues/121)).
@@ -19,12 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BC break.** `PersonaState`, `CommunityVisibility` and `CommentPermission` map a value they don't list to a new `Unknown` case rather than throwing and failing the whole batch, `PersonaState` gains `Invisible` (`7`), and `Friend`, `NewsItem` and `PlayerSummary` times come back in UTC like the other DTOs': a `match` on these enums needs the new cases, and local time needs `setTimezone()`. `SteamId::fromSteamId64()` rejects a trailing newline, and `PlayerSummary::$primaryClanId` is `null` for the ID Steam sends when a player has no primary group ([#143](https://github.com/fkrzski/php-steam-api-sdk/issues/143)).
 - DTO constructors and `fromArray()`, the `RequestSending`, `ResponseReceived` and `SteamSender` constructors, and the exceptions' named constructors are `@internal`, outside SemVer from 1.0.0. Tests build DTOs with the `Testing` factories, and PHPStan with bleeding edge reports a call from outside the SDK ([#123](https://github.com/fkrzski/php-steam-api-sdk/issues/123)).
 - Each resource fake under `Testing\Fakes` builds the envelope and refusals Steam sends its endpoints, so the bridge's `SteamResponse` builders did not come over with `SteamFake`. A map passed to `new SteamFake()` takes a `MockResponse` of the test's own, and `invalidApiKey()`, `connectionFailed()` and `tooManyRequests()` stay on the fake itself ([#165](https://github.com/fkrzski/php-steam-api-sdk/issues/165)).
+- The `webApi()` fakes are named after the resource methods they stand in for, `serverTime()`, `supportedApis()` and `supportedApisInvalidKey()`, where the bridge's were `serverInfo()`, `supportedApiList()` and `supportedApiListInvalidKey()`.
 
 ### Fixed
 
 - A request sent without the key (`SendsNoApiKey`) is limited apart from a configured key, as a connector without one would limit it: it no longer spends the daily budget or is refused while the key is spent or locked, and a `429` on it locks only requests without the key, under `SteamConnector:anonymous`. `rateLimits` count it apart as well ([#138](https://github.com/fkrzski/php-steam-api-sdk/issues/138)).
 - A read timeout or a reset after Steam sent a non-error status raises `SteamConnectionException` under `send()`, `sendAsync()` and `pool()`, and `send()` retries it. It used to pass as an answer: an empty list, `ProfileNotPublicException`, `SteamUserNotFoundException` or a raw `JsonException` ([#140](https://github.com/fkrzski/php-steam-api-sdk/issues/140)).
-- `SteamConfig` throws `InvalidTimeoutException` for a `NAN`, infinite or sub-millisecond timeout, which Guzzle refused on every send with a raw `InvalidArgumentException`. ([#141](https://github.com/fkrzski/php-steam-api-sdk/issues/141)).
+- `SteamConfig` throws `InvalidTimeoutException` for a `NAN`, infinite or sub-millisecond timeout, which Guzzle refused on every send with a raw `InvalidArgumentException` ([#141](https://github.com/fkrzski/php-steam-api-sdk/issues/141)).
 - `SteamConfig` throws `InvalidTimeoutException` for a timeout of `PHP_INT_MAX / 1000` seconds or more, whose milliseconds overflow an `int`: Guzzle refused it on every send or handed libcurl a wrapped, often negative, timeout ([#153](https://github.com/fkrzski/php-steam-api-sdk/issues/153)).
 - `SteamConfig` stores the API key trimmed, so a key read with a trailing newline is no longer refused by Steam ([#141](https://github.com/fkrzski/php-steam-api-sdk/issues/141)).
 - `SteamConnectionException` masks the key in its URL-encoded form as well, which Guzzle 7 quotes in full ([#141](https://github.com/fkrzski/php-steam-api-sdk/issues/141)).
@@ -44,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A body cut off after an error status maps by that status under Saloon 4.5.1 too: a `404` or `503` raises `SteamApiException`, and a `429` raises `SteamRateLimitException` and locks the key. Saloon 4.5.1 turned all three into `SteamConnectionException`, which left a `429` without the lock.
 - A DTO the SDK cannot build from Steam's answer fails `send()`, `sendAsync()` and `pool()` with whatever building it raised, such as `InvalidSteamIdException` for a malformed `steamid` or PHP's `ValueError` for a friend `relationship` the SDK does not list, and fires `onFailure()` once. It used to escape from the resource call or `dto()` after the call had returned, past `onFailure()` ([#161](https://github.com/fkrzski/php-steam-api-sdk/issues/161)).
 - `dto()` on the response of a failure a request reads from Steam's answer, such as `ProfileNotPublicException` for a hidden library, throws that failure again, and on any other `4xx` or `5xx` a `LogicException`, rather than building a DTO from it. A hidden library used to come back as `[]` ([#161](https://github.com/fkrzski/php-steam-api-sdk/issues/161)).
+- An answer an `onResponse()` hook throws on still counts against the rate limits, and a `429` still starts the cool-down. The hook used to skip the limiter, so the next request reached Steam during the lock.
 
 ## [0.9.0] - 2026-10-09
 
@@ -213,7 +217,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
-[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/0.9.0...HEAD
+[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/1.0.0...HEAD
+[1.0.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.0.0
 [0.9.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.9.0
 [0.8.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.8.0
 [0.7.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.7.0

@@ -26,7 +26,7 @@ final readonly class WebApiFake
      * `servertimestring` is the same moment in US Pacific time without an offset,
      * which nothing reads; it is here because Steam sends it.
      */
-    public function serverInfo(DateTimeInterface $time): SteamFake
+    public function serverTime(DateTimeInterface $time): SteamFake
     {
         $pacific = DateTimeImmutable::createFromInterface($time)->setTimezone(new DateTimeZone('America/Los_Angeles'));
 
@@ -38,7 +38,7 @@ final readonly class WebApiFake
         return $this->fake;
     }
 
-    public function supportedApiList(WebApiInterfaceFactory ...$interfaces): SteamFake
+    public function supportedApis(WebApiInterfaceFactory ...$interfaces): SteamFake
     {
         $this->fake->addResponse(MockResponse::make([
             'apilist' => [
@@ -57,7 +57,7 @@ final readonly class WebApiFake
      * than the `key=` page {@see SteamFake::invalidApiKey()} fakes. The request raises
      * `InvalidApiKeyException` itself before the connector can read it as a hidden profile.
      */
-    public function supportedApiListInvalidKey(): SteamFake
+    public function supportedApisInvalidKey(): SteamFake
     {
         $this->fake->addResponse(MockResponse::make(['apilist' => ['interfaces' => []]], 403), GetSupportedApiListRequest::class);
 

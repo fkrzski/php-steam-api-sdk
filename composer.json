@@ -2,6 +2,7 @@
     "name": "fkrzski/php-steam-api-sdk",
     "description": "Framework-agnostic PHP SDK for the Steam Web API, built on Saloon.",
     "keywords": ["php", "steam", "steam-api", "saloon", "sdk"],
+    "homepage": "https://docs.fkrzski.dev/php-steam-api-sdk",
     "license": "MIT",
     "authors": [
         {
@@ -9,6 +10,12 @@
             "email": "contact@fkrzski.dev"
         }
     ],
+    "support": {
+        "issues": "https://github.com/fkrzski/php-steam-api-sdk/issues",
+        "source": "https://github.com/fkrzski/php-steam-api-sdk",
+        "docs": "https://docs.fkrzski.dev/php-steam-api-sdk",
+        "security": "https://github.com/fkrzski/php-steam-api-sdk/security/policy"
+    },
     "require": {
         "php": "^8.5.0",
         "saloonphp/saloon": "^4.0",

@@ -62,9 +62,9 @@ test('hands the same mock back from every endpoint', function (Closure $fakeEndp
     'app news' => [fn (SteamFake $fake): SteamFake => $fake->news()->appNews(AppNewsFactory::new())],
     'news feed' => [fn (SteamFake $fake): SteamFake => $fake->news()->newsFeed(NewsItemFactory::new())],
     'server info' => [
-        fn (SteamFake $fake): SteamFake => $fake->webApi()->serverInfo(new DateTimeImmutable('2026-10-08 19:59:38 UTC')),
+        fn (SteamFake $fake): SteamFake => $fake->webApi()->serverTime(new DateTimeImmutable('2026-10-08 19:59:38 UTC')),
     ],
-    'supported api list' => [fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList()],
+    'supported api list' => [fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApis()],
 ]);
 
 test('chains from the array form', function (): void {

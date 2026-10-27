@@ -15,6 +15,7 @@ Framework-agnostic PHP SDK for the [Steam Web API](https://steamcommunity.com/de
 It powers the player profiles on [Dead by Stats](https://deadbystats.eu).
 
 - Fluent resources on the connector — `$connector->players()->ownedGames($id)`.
+- Lists past Steam's 100 IDs — `summaries()` and `bans()` cut them into concurrent requests.
 - Strong types (PHP 8.5, PHPStan max, 100% type coverage).
 - Readonly DTOs with `DateTimeImmutable` instead of framework date objects.
 - Domain exception hierarchy rooted at `SteamApiException`.
@@ -22,12 +23,13 @@ It powers the player profiles on [Dead by Stats](https://deadbystats.eu).
 - Timeouts and opt-in retries on `SteamConfig` — only a `5xx` or no answer at all is retried, since every attempt spends quota.
 - Request, response and failure hooks with key-free payloads, and `debug()` output with the key masked.
 - Requests of your own for methods the SDK does not ship, sent with the key, the budget and SDK exceptions.
+- `SteamFake` and a factory per DTO for tests, faking every endpoint and the failures Steam really sends.
 - Zero framework coupling — any Saloon `Sender` in place of Guzzle, and a [Laravel bridge package](https://docs.fkrzski.dev/laravel-steam-api-sdk) ships separately.
 
 ## Requirements
 
 - PHP **8.5+**
-- Saloon **4+**
+- Saloon **4**, with its rate limit plugin **2.5.2+**
 
 ## Installation
 
@@ -51,7 +53,7 @@ echo $summaries[0]->personaName;
 
 ## Documentation
 
-Full documentation — every request, the `SteamId` value object, configuration, rate limiting, DTOs, the exception hierarchy, debugging hooks and custom requests — lives at **[docs.fkrzski.dev/php-steam-api-sdk](https://docs.fkrzski.dev/php-steam-api-sdk)**.
+Full documentation — every request, the `SteamId` value object, configuration, rate limiting, DTOs, the exception hierarchy, hooks and debugging, custom requests, testing helpers and what SemVer covers — lives at **[docs.fkrzski.dev/php-steam-api-sdk](https://docs.fkrzski.dev/php-steam-api-sdk)**.
 
 ## License
 

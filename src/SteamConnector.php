@@ -90,6 +90,9 @@ final class SteamConnector extends Connector
         $this->tries = $steamConfig->tries;
         $this->retryInterval = $steamConfig->retryInterval;
         $this->useExponentialBackoff = $steamConfig->exponentialBackoff;
+
+        // Ahead of every pipe a caller adds, debugResponse() included: a cut-off answer reaches none of them.
+        $this->middleware()->onResponse(SteamApiResponse::refuseFailedTransfer(...), order: PipeOrder::FIRST);
     }
 
     public function resolveBaseUrl(): string
@@ -372,11 +375,7 @@ final class SteamConnector extends Connector
     private function runResponsePipeline(mixed $outcome, ?MockClient $mockClient): mixed
     {
         if ($outcome instanceof Response) {
-            $failedTransfer = SteamApiResponse::failedTransfer($outcome);
-
-            return $failedTransfer instanceof FatalRequestException
-                ? Create::rejectionFor($failedTransfer)
-                : $this->executeResponsePipeline($outcome, $mockClient);
+            return $this->executeResponsePipeline($outcome, $mockClient);
         }
 
         $response = match (true) {

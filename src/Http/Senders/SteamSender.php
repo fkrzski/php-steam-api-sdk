@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Senders;
 
-use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -35,14 +34,10 @@ final readonly class SteamSender implements Sender
     public function send(PendingRequest $pendingRequest): Response
     {
         try {
-            $response = $this->sender->send($pendingRequest);
+            return $this->sender->send($pendingRequest);
         } catch (NetworkExceptionInterface|FatalRequestException $failure) {
-            $response = self::recovered($failure, $pendingRequest);
+            return self::recovered($failure, $pendingRequest);
         }
-
-        $failedTransfer = SteamApiResponse::failedTransfer($response);
-
-        return $failedTransfer instanceof FatalRequestException ? throw $failedTransfer : $response;
     }
 
     public function sendAsync(PendingRequest $pendingRequest): PromiseInterface
@@ -73,7 +68,7 @@ final readonly class SteamSender implements Sender
     }
 
     /**
-     * Saloon 4.5.1 fails a body cut off after the headers at any status; failedTransfer() decides by it again.
+     * Saloon 4.5.1 fails a body cut off after the headers at any status; refuseFailedTransfer() decides by it again.
      */
     private static function cutOffAnswer(FatalRequestException $exception): ?Response
     {

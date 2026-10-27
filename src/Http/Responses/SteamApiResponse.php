@@ -28,15 +28,15 @@ final class SteamApiResponse extends Response
     /**
      * A body cut off after a non-error status is no answer; an error status still speaks for itself.
      */
-    public static function failedTransfer(Response $response): ?FatalRequestException
+    public static function refuseFailedTransfer(Response $response): Response
     {
         $senderException = $response->getSenderException();
 
         if (! $senderException instanceof RequestException || $response->clientError() || $response->serverError()) {
-            return null;
+            return $response;
         }
 
-        return new FatalRequestException($senderException, $response->getPendingRequest());
+        throw new FatalRequestException($senderException, $response->getPendingRequest());
     }
 
     /**
@@ -54,12 +54,6 @@ final class SteamApiResponse extends Response
     public function failed(): bool
     {
         return $this->unreadable() instanceof UnreadableResponseException || parent::failed();
-    }
-
-    #[Override]
-    public function toException(): ?Throwable
-    {
-        return self::failedTransfer($this) ?? parent::toException();
     }
 
     #[Override]

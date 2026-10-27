@@ -3,9 +3,10 @@ title: Data objects
 description: The readonly DTOs and enums the SDK decodes Steam responses into — every property with its type, plus the enum cases behind player state and visibility.
 ---
 
-Every request returns readonly DTOs — immutable objects with typed, public properties.
-Timestamps are always `DateTimeImmutable` in UTC, whatever `date.timezone` says. A nullable
-property (`?`) means Steam omitted the field, never that decoding failed; where an absent
+Most requests return readonly DTOs — immutable objects with typed, public properties; the rest
+return an `int`, a `SteamId` or a `DateTimeImmutable`. Timestamps are always `DateTimeImmutable`
+in UTC (`+00:00`), whatever `date.timezone` says. A nullable property (`?`) means Steam omitted
+the field or sent its empty value, as the row notes, never that decoding failed; where an absent
 field would be ambiguous the SDK raises a [domain exception](/php-steam-api-sdk/exceptions) instead.
 
 ## AppNews
@@ -126,7 +127,7 @@ Returned by [`GetOwnedGamesRequest`](/php-steam-api-sdk/api-reference#getownedga
 | `playtimeTwoWeeks` | `?int` | Playtime in the last two weeks, in minutes. |
 | `name` | `?string` | Game title (only with `includeAppInfo`). |
 | `imgIconUrl` | `?string` | Icon hash (only with `includeAppInfo`). |
-| `hasCommunityVisibleStats` | `bool` | Game exposes community stats. |
+| `hasCommunityVisibleStats` | `bool` | Game exposes community stats; `false` when Steam omits it. |
 
 ## PlayerAchievements
 
@@ -211,9 +212,9 @@ Returned by [`GetPlayerSummariesRequest`](/php-steam-api-sdk/api-reference#getpl
 | `avatarFullUrl` | `string` | 184×184 avatar. |
 | `avatarHash` | `string` | Avatar content hash. |
 | `communityVisibility` | `CommunityVisibility` | Whether the profile is visible to you. |
-| `hasCommunityProfile` | `bool` | Player has set up a community profile. |
+| `hasCommunityProfile` | `bool` | Player has set up a community profile; `false` when Steam omits it. |
 | `commentPermission` | `CommentPermission` | Who may comment on the profile. |
-| `personaState` | `PersonaState` | Online / away / offline, etc. |
+| `personaState` | `PersonaState` | Online / away / offline, etc.; `Offline` when Steam omits it. |
 | `realName` | `?string` | Real name, if shared. |
 | `primaryClanId` | `?string` | Primary group's 64-bit ID, `null` when the player has none. |
 | `timeCreated` | `?DateTimeImmutable` | Account creation time, if exposed. |
@@ -335,15 +336,16 @@ Each `WebApiParameter` carries:
 
 ## Enums
 
-Five of these mirror Steam's wire values, `Unknown` aside; `CommentPermission` and
-`EconomyBan` do not, and those are the two worth reading before you `match` on them.
+Six of these back onto Steam's wire values, the fallbacks aside; `CommentPermission` does not,
+and it is the one worth reading before you `match` on it.
 
 ### CommentPermission
 
 Backed by `string` — `Everyone` (`'everyone'`), `Nobody` (`'nobody'`), `FriendsOnly`
 (`'friends_only'`), `Unknown` (`'unknown'`). Steam sends `commentpermission` as an
 **integer** and omits it entirely for the friends-only case, so these backing values are the
-SDK's own vocabulary rather than the wire values. Use `fromApiValue()` to map from a raw payload.
+SDK's own vocabulary rather than the wire values. `fromApiValue()` maps a raw payload: `1` to
+`Everyone`, `2` to `Nobody`, a missing value to `FriendsOnly`, anything else to `Unknown`.
 
 ### CommunityVisibility
 
@@ -361,7 +363,8 @@ undocumented, so the value set is provably open.
 ### FriendRelationship
 
 Backed by `string` — `All` (`'all'`), `Friend` (`'friend'`). The values Steam accepts on
-the `relationship` query parameter.
+the `relationship` query parameter and sends back on each friend. It has no fallback: a
+relationship outside these two fails `friends()` with PHP's `ValueError`.
 
 ### Language
 
@@ -418,5 +421,5 @@ Backed by `int`, using Steam's `region` codes, which a game server sets with `sv
 <Aside type="caution" title="Unlisted values fall back">
 Every `fromApiValue()` maps a value it does not list to `Unknown`, or to `World` on
 `ServerRegion`, so a new value from Valve cannot fail a request. Give a `match` on these enums
-an arm for the fallback.
+an arm for the fallback; `FriendRelationship` and `Language` have none.
 </Aside>

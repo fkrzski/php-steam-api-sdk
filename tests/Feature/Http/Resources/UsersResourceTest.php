@@ -389,6 +389,17 @@ test('a failed chunk keeps the chunks not yet sent from going out', function (st
     $mockClient->assertSentCount(2);
 })->with('batched endpoints');
 
+test('a failed chunk stops the chunks the pool would start next', function (string $requestClass, string $method, Closure $call, Closure $body, int $failing): void {
+    $mockClient = usersResourceSteam($requestClass, $body, [$failing => 500]);
+
+    expect(fn (): array => $call(usersResource($mockClient), makeSteamIds(1000), 3))->toThrow(SteamApiException::class);
+
+    $mockClient->assertSentCount(3);
+})->with('batched endpoints')->with([
+    'the second of three in flight' => [1],
+    'the last of three in flight' => [2],
+]);
+
 test('chunks in flight still answer and count before the first failure is thrown', function (string $requestClass, string $method, Closure $call, Closure $body): void {
     $connector = new SteamConnector(new SteamConfig('test-key', sender: usersResourceHoldingSender($body, [0 => 500, 1 => 503])));
     $answered = [];

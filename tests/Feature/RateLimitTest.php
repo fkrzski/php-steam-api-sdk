@@ -25,6 +25,7 @@ use Saloon\Config;
 use Saloon\Contracts\Sender;
 use Saloon\Data\FactoryCollection;
 use Saloon\Enums\Method;
+use Saloon\Http\Faking\FakeResponse;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\PendingRequest;
@@ -356,6 +357,45 @@ test('a request Steam never answered costs nothing from the budget', function (C
     'send' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->send($request)],
     'sendAsync' => [static fn (SteamConnector $connector, Request $request): mixed => $connector->sendAsync($request)->wait()],
 ]);
+
+test('an answer a throwing onResponse hook fails still counts against the budget', function (Closure $send): void {
+    $failure = new RuntimeException('Hook failed.');
+    $connector = fakedConnector(new MockClient([MockResponse::make('{"friendslist":{"friends":[]}}'), MockResponse::make('{"friendslist":{"friends":[]}}')]));
+
+    $connector->send(friendListRequest());
+    $connector->onResponse(static fn (): never => throw $failure);
+
+    expect(failureFrom(fn (): mixed => $send($connector)))->toBe($failure)
+        ->and(dailyHits($connector))->toBe(2);
+})->with(everyWayToSend());
+
+test('a 429 a throwing onResponse hook fails still starts the cool-down', function (Closure $send): void {
+    $failure = new RuntimeException('Hook failed.');
+    $mockClient = new MockClient([MockResponse::make([], 429), MockResponse::make('{"friendslist":{"friends":[]}}')]);
+    $connector = fakedConnector($mockClient)->onResponse(static fn (): never => throw $failure);
+
+    expect(failureFrom(fn (): mixed => $send($connector)))->toBe($failure)
+        ->and(rateLimitOf(fn (): mixed => $send($connector))->getCode())->toBe(0)
+        ->and($mockClient->getRecordedResponses())->toHaveCount(1);
+})->with(everyWayToSend());
+
+test('a fake response a middleware hands back is not counted when a hook fails it', function (): void {
+    $connector = new SteamConnector(new SteamConfig('test-key'))
+        ->onResponse(static fn (): never => throw new RuntimeException('Hook failed.'));
+
+    $connector->middleware()->onRequest(static fn (): FakeResponse => new FakeResponse('{"friendslist":{"friends":[]}}'));
+
+    expect(fn (): mixed => $connector->send(friendListRequest()))->toThrow(RuntimeException::class, 'Hook failed.')
+        ->and(dailyHits($connector))->toBe(0);
+});
+
+test('with the limiter off a throwing onResponse hook still reaches the caller', function (): void {
+    $connector = fakedConnector(new MockClient([MockResponse::make('{"friendslist":{"friends":[]}}')]))
+        ->useRateLimitPlugin(false)
+        ->onResponse(static fn (): never => throw new RuntimeException('Hook failed.'));
+
+    expect(fn (): mixed => $connector->send(friendListRequest()))->toThrow(RuntimeException::class, 'Hook failed.');
+});
 
 test('a request refused for a missing API key never reaches the wire', function (): void {
     $connector = new SteamConnector(new SteamConfig);

@@ -177,12 +177,12 @@ final class SteamConnector extends Connector
             $pendingRequest->query()->remove('key');
         }
 
-        // The limiter turns a 429 into an exception in its first response pipe, so the hooks go in ahead of it.
-        $this->bootHooks($pendingRequest);
+        $limiter = $this->rateLimitingEnabled ? new RateLimiter($this->steamConfig, $key) : null;
 
-        if ($this->rateLimitingEnabled) {
-            new RateLimiter($this->steamConfig, $key)->boot($pendingRequest);
-        }
+        // The limiter turns a 429 into an exception in its first response pipe, so the hooks go in ahead of it.
+        $this->bootHooks($pendingRequest, $limiter);
+
+        $limiter?->boot($pendingRequest);
 
         if (! $request instanceof HasLanguage || $request->language instanceof Language) {
             return;
@@ -409,7 +409,7 @@ final class SteamConnector extends Connector
         return $this->steamConfig->apiKey;
     }
 
-    private function bootHooks(PendingRequest $pendingRequest): void
+    private function bootHooks(PendingRequest $pendingRequest, ?RateLimiter $limiter): void
     {
         $key = spl_object_id($pendingRequest->getRequest());
         $attempt = isset($this->calls[$key]) ? $this->calls[$key]->nextAttempt() : 1;
@@ -425,13 +425,20 @@ final class SteamConnector extends Connector
 
                 $sentAt = microtime(true);
             }, order: PipeOrder::LAST)
-            ->onResponse(function (Response $response) use ($attempt, &$sentAt): void {
+            ->onResponse(function (Response $response) use ($attempt, &$sentAt, $limiter): void {
                 $duration = microtime(true) - $sentAt;
                 $sending = $this->sending($response->getPendingRequest(), $attempt);
                 $received = new ResponseReceived($sending->method, $sending->query, $attempt, $response->status(), $duration);
 
-                foreach ($this->responseHooks as $hook) {
-                    $hook($received);
+                try {
+                    foreach ($this->responseHooks as $hook) {
+                        $hook($received);
+                    }
+                } catch (Throwable $throwable) {
+                    // Thrown here, the answer never reaches the limiter's pipe, which counts it and locks after a 429.
+                    $limiter?->record($response);
+
+                    throw $throwable;
                 }
             }, order: PipeOrder::FIRST);
     }

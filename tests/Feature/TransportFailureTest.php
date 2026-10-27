@@ -21,6 +21,8 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Saloon\Contracts\Sender;
 use Saloon\Data\FactoryCollection;
+use Saloon\Enums\Method;
+use Saloon\Enums\PipeOrder;
 use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
@@ -174,7 +176,34 @@ test('a body cut off after a 200 raises SteamConnectionException however it was 
     'GetFriendList, partial' => [friendListRequest(...), '{"friendslist":{"fri'],
     'GetOwnedGames, empty' => [static fn (): Request => new GetOwnedGamesRequest(steamId()), ''],
     'GetOwnedGames, partial' => [static fn (): Request => new GetOwnedGamesRequest(steamId()), '{"response":{"game'],
+    'a request with its own response class, partial' => [static fn (): Request => new class extends Request
+    {
+        protected Method $method = Method::GET;
+
+        protected ?string $response = Response::class;
+
+        public function resolveEndpoint(): string
+        {
+            return '/ISteamDirectory/GetCMList/v1/';
+        }
+    }, '{"response":{"serverl'],
 ]);
+
+test('a body cut off after a 200 reaches no response middleware however it was sent', function (Closure $send, Closure $cutOff): void {
+    $reached = 0;
+    $connector = connectorAnswering([$cutOff(noFriends())])
+        ->debugResponse(static function () use (&$reached): void {
+            $reached++;
+        });
+    $connector->middleware()->onResponse(static function (Response $response) use (&$reached): Response {
+        $reached++;
+
+        return $response;
+    }, order: PipeOrder::FIRST);
+
+    expect(failureFrom(fn (): mixed => $send($connector))::class)->toBe(SteamConnectionException::class)
+        ->and($reached)->toBe(0);
+})->with(everyWayToSend())->with(cutOffAfterTheHeaders());
 
 test('a body cut off after an error status maps by that status', function (Closure $send, Closure $cutOff, int $status, string $expected): void {
     $connector = connectorAnswering([$cutOff(new PsrResponse($status, [], '{"error":"Not'))]);

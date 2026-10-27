@@ -261,17 +261,17 @@ dataset('factory defaults', [
     ],
     'WebApiInterfaceFactory' => [
         new GetSupportedApiListRequest,
-        static fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList(WebApiInterfaceFactory::new()),
+        static fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApis(WebApiInterfaceFactory::new()),
         ['ISteamWebAPIUtil/GetSupportedAPIList/keyed', 'ISteamWebAPIUtil/GetSupportedAPIList/anonymous'],
     ],
     'WebApiMethodFactory' => [
         new GetSupportedApiListRequest,
-        static fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList(WebApiInterfaceFactory::new()->methods(WebApiMethodFactory::new())),
+        static fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApis(WebApiInterfaceFactory::new()->methods(WebApiMethodFactory::new())),
         ['ISteamWebAPIUtil/GetSupportedAPIList/keyed', 'ISteamWebAPIUtil/GetSupportedAPIList/anonymous'],
     ],
     'WebApiParameterFactory' => [
         new GetSupportedApiListRequest,
-        static fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiList(
+        static fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApis(
             WebApiInterfaceFactory::new()->methods(WebApiMethodFactory::new()->parameters(WebApiParameterFactory::new())),
         ),
         ['ISteamWebAPIUtil/GetSupportedAPIList/keyed', 'ISteamWebAPIUtil/GetSupportedAPIList/anonymous'],

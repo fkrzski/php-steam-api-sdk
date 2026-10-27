@@ -41,7 +41,7 @@ test('a timestamp comes back in UTC whatever date.timezone says', function (Clos
     'achievement unlocked at' => [static fn (DateTimeImmutable $moment): ?DateTimeImmutable => PlayerAchievementFactory::new()->unlocked($moment)->make()->unlockedAt],
     'server time' => [static function (DateTimeImmutable $moment): DateTimeImmutable {
         $connector = new SteamConnector(new SteamConfig);
-        $connector->withMockClient(new SteamFake()->webApi()->serverInfo($moment));
+        $connector->withMockClient(new SteamFake()->webApi()->serverTime($moment));
 
         return $connector->webApi()->serverTime();
     }],

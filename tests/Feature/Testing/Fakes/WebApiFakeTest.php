@@ -19,7 +19,7 @@ covers(WebApiFake::class);
 test('writes the pacific string without moving a mutable date', function (): void {
     $time = new DateTime('2026-10-12 19:31:26 UTC');
 
-    $answer = answerFrom(new SteamFake()->webApi()->serverInfo($time), new GetServerInfoRequest);
+    $answer = answerFrom(new SteamFake()->webApi()->serverTime($time), new GetServerInfoRequest);
 
     expect($answer->body())->toBe(json_encode([
         'servertime' => 1791833486,
@@ -30,7 +30,7 @@ test('writes the pacific string without moving a mutable date', function (): voi
 
 test('nests the supported api list under apilist.interfaces', function (): void {
     $answer = answerFrom(
-        new SteamFake()->webApi()->supportedApiList(WebApiInterfaceFactory::new(), WebApiInterfaceFactory::new()->name('IGCVersion_440')),
+        new SteamFake()->webApi()->supportedApis(WebApiInterfaceFactory::new(), WebApiInterfaceFactory::new()->name('IGCVersion_440')),
         new GetSupportedApiListRequest,
     );
 
@@ -45,7 +45,7 @@ test('nests the supported api list under apilist.interfaces', function (): void 
 });
 
 test('answers an empty supported api list with no interfaces', function (): void {
-    $answer = answerFrom(new SteamFake()->webApi()->supportedApiList(), new GetSupportedApiListRequest);
+    $answer = answerFrom(new SteamFake()->webApi()->supportedApis(), new GetSupportedApiListRequest);
 
     expect($answer->body())->toBe('{"apilist":{"interfaces":[]}}');
 });
@@ -55,13 +55,13 @@ test('sends the body steam was captured sending', function (Closure $fake, Reque
 
     expect([$answer->status(), $answer->body()])->toBe(captured($fixture));
 })->with([
-    'supportedApiListInvalidKey()' => [
-        fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApiListInvalidKey(),
+    'supportedApisInvalidKey()' => [
+        fn (SteamFake $fake): SteamFake => $fake->webApi()->supportedApisInvalidKey(),
         new GetSupportedApiListRequest,
         'ISteamWebAPIUtil/GetSupportedAPIList/invalid-key',
     ],
-    'serverInfo()' => [
-        fn (SteamFake $fake): SteamFake => $fake->webApi()->serverInfo(new DateTimeImmutable('2026-10-08 19:59:38 UTC')),
+    'serverTime()' => [
+        fn (SteamFake $fake): SteamFake => $fake->webApi()->serverTime(new DateTimeImmutable('2026-10-08 19:59:38 UTC')),
         new GetServerInfoRequest,
         'ISteamWebAPIUtil/GetServerInfo/default',
     ],
@@ -71,8 +71,8 @@ test('sends the body steam was captured sending', function (Closure $fake, Reque
 
 test('fakes every web api endpoint through the chain', function (): void {
     $fake = new SteamFake()
-        ->webApi()->serverInfo(new DateTimeImmutable('2026-10-08 21:59:38 +02:00'))
-        ->webApi()->supportedApiList(
+        ->webApi()->serverTime(new DateTimeImmutable('2026-10-08 21:59:38 +02:00'))
+        ->webApi()->supportedApis(
             WebApiInterfaceFactory::new()->name('IGCVersion_440')->methods(
                 WebApiMethodFactory::new()->name('GetClientVersion')->withoutDescription()->parameters(),
             ),
@@ -109,7 +109,7 @@ test('fakes every web api endpoint through the chain', function (): void {
 test('raises an invalid api key from a key the supported api list rejects', function (): void {
     $fake = new SteamFake;
 
-    expect($fake->webApi()->supportedApiListInvalidKey())->toBe($fake)
+    expect($fake->webApi()->supportedApisInvalidKey())->toBe($fake)
         ->and(fn (): array => fakedConnector($fake)->webApi()->supportedApis())->toThrow(
             InvalidApiKeyException::class,
             'GetSupportedAPIList: Steam rejected the API key. Check that it is valid and active.',

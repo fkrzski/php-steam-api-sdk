@@ -29,8 +29,8 @@ needs at runtime lives on that object.
    ));
    ```
 
-3. Reuse that one connector — it carries the key and the daily budget, so building a
-   fresh one per call buys you nothing.
+3. Reuse that one connector — the hooks you register live on it, while the budget lives in
+   its store, shared by every connector with the same key and store.
 
 </Steps>
 
@@ -45,16 +45,16 @@ picks the same way, through [marker interfaces](/php-steam-api-sdk/custom-reques
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `apiKey` | `?string` | `null` | Your Steam Web API key. Leave it out to reach only the anonymous endpoints. |
-| `rateLimitStore` | `?RateLimitStore` | `MemoryStore` | Where the request budget, and the lock after a `429`, are [kept](/php-steam-api-sdk/rate-limiting#sharing-the-budget-across-processes). |
-| `sender` | `?Sender` | `GuzzleSender` | The HTTP client requests go out through. |
+| `apiKey` | `?string` | `null` | Your Steam Web API key, trimmed. Leave it out to reach only the anonymous endpoints. |
+| `rateLimitStore` | `?RateLimitStore` | `null`: a `MemoryStore` | Where the request budget, and the lock after a `429`, are [kept](/php-steam-api-sdk/rate-limiting#sharing-the-budget-across-processes). |
 | `language` | `?Language` | `null` | Language for endpoints that localise their payload. |
-| `connectTimeout` | `?float` | `10.0` | Seconds to wait for a connection to Steam. |
-| `requestTimeout` | `?float` | `30.0` | Seconds the whole request may take. |
+| `connectTimeout` | `?float` | `null`: Saloon's 10 | Seconds to wait for a connection to Steam. |
+| `requestTimeout` | `?float` | `null`: Saloon's 30 | Seconds the whole request may take. |
 | `tries` | `int` | `1` | Attempts per request, the first one included. |
 | `retryInterval` | `int` | `0` | Milliseconds to pause before a retry. |
 | `exponentialBackoff` | `bool` | `false` | Double the pause after every retry. |
-| `rateLimits` | `?array<Limit>` | 100 000 a day with a key | [Limits](/php-steam-api-sdk/rate-limiting#your-own-limits) that replace the daily budget; `[]` meters nothing locally. |
+| `rateLimits` | `?array<Limit>` | `null`: 100 000 a day with a key | [Limits](/php-steam-api-sdk/rate-limiting#your-own-limits) that replace the daily budget; `[]` meters nothing locally. |
+| `sender` | `?Sender` | `null`: a `GuzzleSender` | The HTTP client requests go out through. |
 | `tooManyRequestsCooldown` | `int` | `60` | Seconds a `429` without `Retry-After` [refuses requests](/php-steam-api-sdk/rate-limiting#after-a-429) locally. |
 
 <Aside type="note" title="Readonly, so replace rather than mutate">
@@ -76,9 +76,10 @@ $connector->users()->summaries([$steamId]);   // ApiKeyNotConfiguredException
 ```
 
 <Aside type="caution" title="A blank key is not the same as no key">
-`new SteamConfig(apiKey: '')` throws where `null` is accepted. A blank string would
-otherwise travel to Steam as `key=` and come back refused a round trip later. The key is
-trimmed, so one read from a secret file with a trailing newline goes out as the key alone.
+`new SteamConfig(apiKey: '')`, or a key of whitespace alone, throws
+`ApiKeyNotConfiguredException` where `null` is accepted. A blank string would otherwise travel
+to Steam as `key=` and come back refused a round trip later. The key is trimmed, so one read
+from a secret file with a trailing newline goes out as the key alone.
 </Aside>
 
 ## Default language
@@ -146,7 +147,8 @@ the config above pauses 500 ms, then 1 s. Fewer than one try or a negative inter
 Only what can change by the next attempt is retried: Steam unreachable, a timeout, a `5xx`.
 A `4xx` is thrown at once, and so is `SteamRateLimitException`, whether the budget ran out
 locally or Steam answered `429`. So are the `500` `GetSDRConfig` answers for an app ID Steam
-does not know, as `AppNotFoundException`, and a failure Steam reports in a `200` payload.
+does not know, as `AppNotFoundException`, a failure Steam reports in a `200` payload, and an
+answer the SDK cannot read, as `UnreadableResponseException`.
 Once the tries are spent, the last attempt's exception is thrown. `sendAsync()` and `pool()`
 send every request once, and so do `summaries()` and `bans()` with
 [more than 100 IDs](/php-steam-api-sdk/guide#more-than-100-steam-ids).
@@ -180,7 +182,8 @@ The connector wraps whatever you pass in `SteamSender`, so a request Steam never
 still raises `SteamConnectionException` and is [retried](/php-steam-api-sdk/configuration#retries),
 and a `4xx` or `5xx` maps the same under `send()`, `sendAsync()` and `pool()`.
 `$connector->sender()` returns that wrapper rather than a `GuzzleSender`, so keep your own
-handle to reach Guzzle.
+handle to reach Guzzle. Saloon's global sender, `Config::$defaultSender` or
+`Config::setSenderResolver()`, is not consulted: pass `sender` instead.
 
 <Aside type="caution" title="Middleware sees the key">
 A Guzzle middleware gets the request Steam receives, `key=` in its query. Log the method and

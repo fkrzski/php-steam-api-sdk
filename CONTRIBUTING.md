@@ -27,7 +27,9 @@ What SemVer covers is listed under [Versioning](https://docs.fkrzski.dev/php-ste
 * **New classes are `final`.** `SteamApiException` is the one class meant to be extended, and the `@internal` `SteamApiRequest` the base every SDK request extends.
 * **Mark what the SDK builds `@internal`:** a new DTO's constructor and `fromArray()`, a hook payload's constructor and an exception's named constructors. `InternalApiTest` fails without it.
 * **A minor release** may add an endpoint, a DTO property, an exception leaf under the parent it narrows, a `SteamConfig` argument appended with a default, or raise the minimum PHP.
+* **Tag what a minor adds `@since`** with its version, as `@since 1.1.0`: a class, method, property or `SteamConfig` argument. Anything without the tag dates from 1.0.0.
 * **A major release** is needed to remove or rename anything covered, add a required argument, raise another exception for a documented Steam answer, or move to a new Saloon or rate limit plugin major. Its changelog entry starts with `**BC break.**`.
+* **Deprecate in a minor first.** What a major removes or renames is marked `@deprecated` in an earlier minor, naming its replacement, and listed under `Deprecated` in the changelog.
 
 ## Changelog
 

@@ -95,12 +95,14 @@ final class LocalisedRequest extends Request implements HasLanguage
 
 A request with no mapping of its own fails as the [status table](/php-steam-api-sdk/exceptions#how-statuses-are-mapped)
 says for any endpoint: a key error raises `InvalidApiKeyException`, any other `401` or `403`
-raises `ProfileNotPublicException`, and every other `4xx` or `5xx` raises `SteamApiException`. A
-`5xx` and a request Steam never answered are [retried](/php-steam-api-sdk/configuration#retries).
+raises `ProfileNotPublicException`, a `429` `SteamRateLimitException`, and every other `4xx` or
+`5xx` `SteamApiException`. A `5xx` and a request Steam never answered are
+[retried](/php-steam-api-sdk/configuration#retries).
 
 A non-error answer whose body is not JSON raises `UnreadableResponseException` from `send()`, before
 `createDtoFromResponse()` reads it. A request that asks Steam for another `format`, such as `xml` or
-`vdf`, gets its body as it came.
+`vdf`, gets its body as it came. `createDtoFromResponse()` itself runs when you call `dto()`, after
+the call has settled, so what it throws reaches neither `onFailure()` nor the SDK's mapping.
 
 <Aside type="caution" title="A 403 is not always about a profile">
 The connector reads every `401` or `403` that does not name the key as a hidden profile, so a
@@ -108,8 +110,9 @@ method refusing access for any other reason surfaces as `ProfileNotPublicExcepti
 </Aside>
 
 The request's own `getRequestException()` runs before the connector's, and `null` hands the
-response back to it, so map only the statuses you know. Extending `SteamApiException` keeps one
-catch covering everything, and handing it the response sets the code and the method prefix:
+response back to it, so map only the statuses you know. An exception it returns is final: a `5xx`
+it maps is not retried. Extending `SteamApiException` keeps one catch covering everything, and
+handing it the response sets the code and the method prefix:
 
 ```php "extends SteamApiException"
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;

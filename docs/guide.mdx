@@ -46,7 +46,7 @@ compare with `$id->equals($other)`.
 
 <Aside type="caution" title="extractVanityName() never fails">
 It extracts a slug, it does not validate one — anything that is not a `/id/<name>` URL
-comes back unchanged. [`ResolveVanityUrlRequest`](/php-steam-api-sdk/api-reference#resolvevanityurlrequest)
+comes back as given, trimmed. [`ResolveVanityUrlRequest`](/php-steam-api-sdk/api-reference#resolvevanityurlrequest)
 is what rejects an unknown name.
 </Aside>
 
@@ -85,8 +85,9 @@ one. The same holds when no response comes back at all, through `send()`, `sendA
 `pool()` alike. A `200` whose payload reports a failure, one of the two `200` rows in the
 [mapping table](/php-steam-api-sdk/exceptions#how-statuses-are-mapped), fails the same way, so
 `send()` never hands back its response. The call builds the DTO before it settles and `dto()`
-hands back that one, so a DTO Steam's answer cannot fill fails the call itself. Which call
-returns which DTO is in the [API reference](/php-steam-api-sdk/api-reference).
+hands back that one, so a DTO Steam's answer cannot fill fails the call itself, with
+[whatever building it raised](/php-steam-api-sdk/exceptions). Which call returns which DTO is in
+the [API reference](/php-steam-api-sdk/api-reference).
 
 ### Concurrent requests
 
@@ -120,7 +121,7 @@ returns a promise that rejects with the same exceptions.
 ### More than 100 Steam IDs
 
 `GetPlayerSummariesRequest` and `GetPlayerBansRequest` take up to 100 IDs. `users()->summaries()`
-and `users()->bans()` take any number: up to 100 go out as one request, retried as `tries` says,
+and `users()->bans()` take any number from one: up to 100 go out as one request, retried as `tries` says,
 and a longer list is cut into requests of 100 that `pool()` sends `concurrency` at a time:
 
 ```php "concurrency: 10"
@@ -128,8 +129,8 @@ $summaries = $connector->users()->summaries($ids, concurrency: 10);
 ```
 
 Each chunk is sent once and counts as one request, so 1 000 IDs spend 10. The first failure is
-thrown once the chunks in flight have answered, and no chunk goes out after it. A `concurrency`
-under 1 throws `InvalidArgumentException`.
+thrown once the chunks in flight have answered, and no chunk goes out after it. An empty list or
+a `concurrency` under 1 throws `InvalidArgumentException`.
 
 <Aside type="caution" title="Key the result by Steam ID">
 Steam answers in no particular order, even within one request, and returns a repeated ID once

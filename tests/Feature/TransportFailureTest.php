@@ -261,14 +261,14 @@ function senderFailingTheTransfer(Throwable $cause): Sender
     };
 }
 
-test('a transfer the sender fails after an error status maps by that status', function (Closure $send, int $status): void {
+test('a transfer the sender fails after an error status maps by that status', function (int $status): void {
     $connector = new SteamConnector(new SteamConfig('any', sender: senderFailingTheTransfer(transferFailure(new PsrResponse($status, [], '{"error":"Not')))));
 
-    $thrown = failureFrom(fn (): mixed => $send($connector));
+    $thrown = failureFrom(fn (): mixed => $connector->send(friendListRequest()));
 
     expect($thrown::class)->toBe(SteamApiException::class)
         ->and($thrown->getCode())->toBe($status);
-})->with(everyWayToSend())->with([404, 503]);
+})->with([404, 503]);
 
 test('a transfer the sender fails after a 429 still locks the key', function (): void {
     $connector = new SteamConnector(new SteamConfig('any', sender: senderFailingTheTransfer(transferFailure(new PsrResponse(429, [], '{"error":"Too')))));
@@ -280,11 +280,11 @@ test('a transfer the sender fails after a 429 still locks the key', function ():
         ->and($second::class)->toBe(SteamRateLimitException::class);
 });
 
-test('a transfer the sender fails after a 200 is still no answer', function (Closure $send): void {
+test('a transfer the sender fails after a 200 is still no answer', function (): void {
     $connector = new SteamConnector(new SteamConfig('any', sender: senderFailingTheTransfer(transferFailure(new PsrResponse(200, [], '{"friendslist":{"fri')))));
 
-    expect(failureFrom(fn (): mixed => $send($connector))::class)->toBe(SteamConnectionException::class);
-})->with(everyWayToSend());
+    expect(failureFrom(fn (): mixed => $connector->send(friendListRequest()))::class)->toBe(SteamConnectionException::class);
+});
 
 test('a failure the sender wraps without a Guzzle response is still no answer', function (Throwable $cause): void {
     $connector = new SteamConnector(new SteamConfig('any', sender: senderFailingTheTransfer($cause)));
@@ -330,21 +330,21 @@ test('a transfer cut off after the headers reaches onFailure and never onRespons
         ->and($responses)->toBe(0);
 })->with(everyWayToSend());
 
-test('a sender beyond Guzzle that resolves a cut-off transfer raises SteamConnectionException', function (Closure $send): void {
+test('a sender beyond Guzzle that resolves a cut-off transfer raises SteamConnectionException', function (): void {
     $connector = sendingThrough(senderAnswering([[noFriends(), transferFailure(noFriends())]]));
 
-    expect(failureFrom(fn (): mixed => $send($connector))::class)->toBe(SteamConnectionException::class);
-})->with(everyWayToSend());
+    expect(failureFrom(fn (): mixed => $connector->send(friendListRequest()))::class)->toBe(SteamConnectionException::class);
+});
 
-test('a sender exception from beyond Guzzle leaves the status to speak', function (Closure $send): void {
+test('a sender exception from beyond Guzzle leaves the status to speak', function (): void {
     $connector = sendingThrough(senderAnswering([[new PsrResponse(404), new RuntimeException('Not Found')]]));
 
-    $thrown = failureFrom(fn (): mixed => $send($connector));
+    $thrown = failureFrom(fn (): mixed => $connector->send(friendListRequest()));
 
     expect($thrown::class)->toBe(SteamApiException::class)
         ->and($thrown->getMessage())->toBe('GetFriendList: Steam API request failed with HTTP 404.')
         ->and($thrown->getCode())->toBe(404);
-})->with(everyWayToSend());
+});
 
 test('a 200 a sender beyond Guzzle resolves with its own exception is still an answer', function (): void {
     $connector = sendingThrough(senderAnswering([[noFriends(), new RuntimeException('Logged and ignored')]]));

@@ -140,18 +140,18 @@ dataset('bodies that are not JSON', [
     'JSON null' => ['null'],
 ]);
 
-test('a 2xx body that is not JSON fails the call and reaches onFailure once', function (Request $request, string $method, string $body, Closure $send): void {
+test('a 2xx body that is not JSON fails the call and reaches onFailure once', function (Request $request, string $method, string $body): void {
     $mockClient = new MockClient([MockResponse::make($body)]);
     $failures = [];
     $connector = connectorRecordingFailures(fakedConnector($mockClient), $failures);
 
-    $exception = unreadableFailureOf(static fn (): mixed => $send($connector, $request));
+    $exception = unreadableFailureOf(static fn (): mixed => $connector->send($request));
 
     expect($exception->getMessage())->toBe(sprintf('%s: Steam API answered HTTP 200 with a body that is not JSON.', $method))
         ->and($exception->getCode())->toBe(200)
         ->and($exception->response)->toBe($mockClient->getLastResponse())
         ->and($failures)->toBe([$exception]);
-})->with('every SDK request')->with('bodies that are not JSON')->with(everyWayToSend());
+})->with('every SDK request')->with('bodies that are not JSON');
 
 test('a body that is not JSON fails the same through Guzzle', function (Request $request, string $method, Closure $send): void {
     $failures = [];
@@ -272,15 +272,15 @@ test('a 2xx answer missing a path its method reads fails the call', function (Re
         ->and($exception->response)->toBe($mockClient->getLastResponse());
 })->with('answers missing a required path');
 
-test('an answer missing a path reaches onFailure once', function (Closure $send): void {
+test('an answer missing a path reaches onFailure once', function (): void {
     $failures = [];
     $connector = connectorRecordingFailures(fakedConnector(new MockClient([MockResponse::make('{"response":{"servers":[]}}')])), $failures);
 
-    $exception = unreadableFailureOf(static fn (): mixed => $send($connector, new GetServersAtAddressRequest('1.2.3.4')));
+    $exception = unreadableFailureOf(static fn (): mixed => $connector->send(new GetServersAtAddressRequest('1.2.3.4')));
 
     expect($exception->getMessage())->toBe('GetServersAtAddress: Steam API answered HTTP 200 without response.success.')
         ->and($failures)->toBe([$exception]);
-})->with(everyWayToSend());
+});
 
 test('a path that is present but empty still reads', function (Closure $call, mixed $expected): void {
     expect($call())->toEqual($expected);

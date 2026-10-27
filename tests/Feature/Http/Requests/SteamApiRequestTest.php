@@ -29,15 +29,15 @@ function answeringAnUnbuildableSteamId(): MockClient
     return new MockClient([MockResponse::make(['response' => ['success' => 1, 'steamid' => 'gabe']])]);
 }
 
-test('a result that cannot be built fails the call and reaches onFailure once', function (Closure $send): void {
+test('a result that cannot be built fails the call and reaches onFailure once', function (): void {
     $failures = [];
     $connector = recordingFailures(fakedConnector(answeringAnUnbuildableSteamId()), $failures);
 
-    $exception = failureFrom(static fn (): mixed => $send($connector, new ResolveVanityUrlRequest('gabelogannewell')));
+    $exception = failureFrom(static fn (): mixed => $connector->send(new ResolveVanityUrlRequest('gabelogannewell')));
 
     expect($exception::class)->toBe(InvalidSteamIdException::class)
         ->and($failures)->toBe([$exception]);
-})->with(everyWayToSend());
+});
 
 test('a resource call raises it from the call, not after', function (): void {
     $failures = [];

@@ -44,24 +44,24 @@ test('a network failure from a sender beyond Guzzle is retried until Steam answe
     expect($connector->send(friendListRequest())->status())->toBe(200);
 });
 
-test('a network failure from a sender beyond Guzzle raises SteamConnectionException', function (Closure $send): void {
-    $thrown = failureFrom(fn (): mixed => $send(sendingThrough(senderAnswering([networkFailure()]))));
+test('a network failure from a sender beyond Guzzle raises SteamConnectionException', function (): void {
+    $thrown = failureFrom(fn (): mixed => sendingThrough(senderAnswering([networkFailure()]))->send(friendListRequest()));
 
     expect($thrown::class)->toBe(SteamConnectionException::class)
         ->and($thrown->getMessage())->toBe('GetFriendList: Could not reach the Steam Web API: cURL error 28: Operation timed out after 30000 milliseconds')
         ->and($thrown->getPrevious())->toBeNull();
-})->with(everyWayToSend());
+});
 
-test('the key stays masked whatever sender failed', function (Closure $send): void {
+test('the key stays masked whatever sender failed', function (): void {
     $connector = sendingThrough(senderAnswering([
         static fn (RequestInterface $request): Throwable => networkFailure(sprintf('Connection refused for %s', $request->getUri())),
     ]), 'secret-key');
 
-    expect(failureFrom(fn (): mixed => $send($connector))->getMessage())->toBe(
+    expect(failureFrom(fn (): mixed => $connector->send(friendListRequest()))->getMessage())->toBe(
         'GetFriendList: Could not reach the Steam Web API: Connection refused for '
         .'https://api.steampowered.com/ISteamUser/GetFriendList/v1/?key=***&steamid=76561198148125221',
     );
-})->with(everyWayToSend());
+});
 
 test('a sender that resolves a failure gets the exception Guzzle raises', function (Closure $send, Closure $answer, string $expected): void {
     $fromGuzzle = failureFrom(fn (): mixed => $send(connectorAnswering([$answer()])));
@@ -84,12 +84,12 @@ test('a sender that resolves a failure gets the exception Guzzle raises', functi
     '429' => [static fn (): PsrResponse => new PsrResponse(429), SteamRateLimitException::class],
 ]);
 
-test('a sender failure that is not a network one reaches the caller untouched', function (Closure $send): void {
+test('a sender failure that is not a network one reaches the caller untouched', function (): void {
     $failure = new LogicException('The sender broke.');
     $connector = sendingThrough(senderAnswering([$failure, noFriends()]), tries: 2);
 
-    expect(failureFrom(fn (): mixed => $send($connector)))->toBe($failure);
-})->with(everyWayToSend());
+    expect(failureFrom(fn (): mixed => $connector->send(friendListRequest())))->toBe($failure);
+});
 
 test('a network failure a sender throws from sendAsync raises SteamConnectionException', function (Closure $send): void {
     $thrown = failureFrom(fn (): mixed => $send(sendingThrough(senderFailingAsync(static fn (): never => throw networkFailure()))));

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http\Senders;
 
-use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -35,16 +34,10 @@ final readonly class SteamSender implements Sender
     public function send(PendingRequest $pendingRequest): Response
     {
         try {
-            $response = $this->sender->send($pendingRequest);
-        } catch (NetworkExceptionInterface $networkException) {
-            throw new FatalRequestException($networkException, $pendingRequest);
-        } catch (FatalRequestException $fatalRequestException) {
-            $response = self::cutOffAnswer($fatalRequestException) ?? throw $fatalRequestException;
+            return $this->sender->send($pendingRequest);
+        } catch (NetworkExceptionInterface|FatalRequestException $failure) {
+            return self::recovered($failure, $pendingRequest);
         }
-
-        $failedTransfer = SteamApiResponse::failedTransfer($response);
-
-        return $failedTransfer instanceof FatalRequestException ? throw $failedTransfer : $response;
     }
 
     public function sendAsync(PendingRequest $pendingRequest): PromiseInterface
@@ -56,16 +49,26 @@ final readonly class SteamSender implements Sender
         }
 
         return $promise->otherwise(
-            static fn (mixed $reason): PromiseInterface|Response => match (true) {
-                $reason instanceof NetworkExceptionInterface => throw new FatalRequestException($reason, $pendingRequest),
-                $reason instanceof FatalRequestException => self::cutOffAnswer($reason) ?? Create::rejectionFor($reason),
-                default => Create::rejectionFor($reason),
-            },
+            static fn (mixed $reason): PromiseInterface|Response => $reason instanceof NetworkExceptionInterface || $reason instanceof FatalRequestException
+                ? self::recovered($reason, $pendingRequest)
+                : Create::rejectionFor($reason),
         );
     }
 
     /**
-     * Saloon 4.5.1 fails a body cut off after the headers at any status; failedTransfer() decides by it again.
+     * Throws a failure that left no answer behind.
+     */
+    private static function recovered(NetworkExceptionInterface|FatalRequestException $failure, PendingRequest $pendingRequest): Response
+    {
+        if ($failure instanceof NetworkExceptionInterface) {
+            throw new FatalRequestException($failure, $pendingRequest);
+        }
+
+        return self::cutOffAnswer($failure) ?? throw $failure;
+    }
+
+    /**
+     * Saloon 4.5.1 fails a body cut off after the headers at any status; Call::refuseFailedTransfer() decides by it again.
      */
     private static function cutOffAnswer(FatalRequestException $exception): ?Response
     {

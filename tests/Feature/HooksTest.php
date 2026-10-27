@@ -10,6 +10,7 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
+use Fkrzski\SteamApiSdk\Http\Call;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetSteamLevelRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetSchemaForGameRequest;
 use Fkrzski\SteamApiSdk\SteamConfig;
@@ -19,7 +20,7 @@ use GuzzleHttp\Psr7\Response as PsrResponse;
 use Saloon\Http\PendingRequest;
 use Saloon\Http\Request;
 
-covers([SteamConnector::class, RequestSending::class, ResponseReceived::class]);
+covers([SteamConnector::class, RequestSending::class, ResponseReceived::class, Call::class]);
 
 /**
  * @param  list<RequestSending>  $sent

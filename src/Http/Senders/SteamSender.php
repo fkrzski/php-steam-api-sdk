@@ -36,10 +36,8 @@ final readonly class SteamSender implements Sender
     {
         try {
             $response = $this->sender->send($pendingRequest);
-        } catch (NetworkExceptionInterface $networkException) {
-            throw new FatalRequestException($networkException, $pendingRequest);
-        } catch (FatalRequestException $fatalRequestException) {
-            $response = self::cutOffAnswer($fatalRequestException) ?? throw $fatalRequestException;
+        } catch (NetworkExceptionInterface|FatalRequestException $failure) {
+            $response = self::recovered($failure, $pendingRequest);
         }
 
         $failedTransfer = SteamApiResponse::failedTransfer($response);
@@ -56,12 +54,22 @@ final readonly class SteamSender implements Sender
         }
 
         return $promise->otherwise(
-            static fn (mixed $reason): PromiseInterface|Response => match (true) {
-                $reason instanceof NetworkExceptionInterface => throw new FatalRequestException($reason, $pendingRequest),
-                $reason instanceof FatalRequestException => self::cutOffAnswer($reason) ?? Create::rejectionFor($reason),
-                default => Create::rejectionFor($reason),
-            },
+            static fn (mixed $reason): PromiseInterface|Response => $reason instanceof NetworkExceptionInterface || $reason instanceof FatalRequestException
+                ? self::recovered($reason, $pendingRequest)
+                : Create::rejectionFor($reason),
         );
+    }
+
+    /**
+     * Throws a failure that left no answer behind.
+     */
+    private static function recovered(NetworkExceptionInterface|FatalRequestException $failure, PendingRequest $pendingRequest): Response
+    {
+        if ($failure instanceof NetworkExceptionInterface) {
+            throw new FatalRequestException($failure, $pendingRequest);
+        }
+
+        return self::cutOffAnswer($failure) ?? throw $failure;
     }
 
     /**

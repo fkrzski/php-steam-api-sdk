@@ -10,6 +10,9 @@ use Fkrzski\SteamApiSdk\Enums\CommunityVisibility;
 use Fkrzski\SteamApiSdk\Enums\PersonaState;
 use Fkrzski\SteamApiSdk\ValueObjects\SteamId;
 
+/**
+ * A hidden or friends-only profile comes back without its creation time, real name, primary group or location.
+ */
 final readonly class PlayerSummary
 {
     /** The clan base with account ID 0, which Steam sends for a player without a primary group. */

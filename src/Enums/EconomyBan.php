@@ -9,6 +9,7 @@ enum EconomyBan: string
     case None = 'none';
     case Probation = 'probation';
     case Banned = 'banned';
+    /** The SDK's fallback for a value Steam sends that this enum does not list. */
     case Unknown = 'unknown';
 
     /**

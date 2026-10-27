@@ -28,6 +28,9 @@ use Saloon\RateLimitPlugin\Stores\MemoryStore;
  */
 final class SteamFake extends MockClient
 {
+    /**
+     * Clears MemoryStore, which every connector in the process shares, so build one fake per test.
+     */
     public function __construct(array $mockData = [])
     {
         // The store is static, so a 429 an earlier test faked would still lock this one out.

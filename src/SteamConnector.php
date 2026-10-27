@@ -128,6 +128,8 @@ final class SteamConnector extends Connector
     }
 
     /**
+     * Runs before every attempt goes out; an exception it throws fails the call and keeps the request unsent.
+     *
      * @param  callable(RequestSending): void  $hook
      */
     public function onRequest(callable $hook): static
@@ -138,6 +140,8 @@ final class SteamConnector extends Connector
     }
 
     /**
+     * Runs on every attempt's answer, a 429 included; an exception it throws fails the call.
+     *
      * @param  callable(ResponseReceived): void  $hook
      */
     public function onResponse(callable $hook): static
@@ -148,6 +152,8 @@ final class SteamConnector extends Connector
     }
 
     /**
+     * Runs once per failed call with the exception the caller gets; an exception it throws is dropped.
+     *
      * @param  callable(Throwable): void  $hook
      */
     public function onFailure(callable $hook): static

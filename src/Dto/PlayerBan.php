@@ -16,6 +16,7 @@ final readonly class PlayerBan
         public bool $isVacBanned,
         public int $numberOfVacBans,
         public int $numberOfGameBans,
+        /** Also 0 for a player never banned; read it with the ban counts. */
         public int $daysSinceLastBan,
         public EconomyBan $economyBan,
     ) {}

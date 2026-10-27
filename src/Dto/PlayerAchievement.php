@@ -13,7 +13,9 @@ final readonly class PlayerAchievement
         public string $apiName,
         public bool $achieved,
         public ?DateTimeImmutable $unlockedAt,
+        /** Null unless the request carries a language, its own or SteamConfig's. */
         public ?string $name,
+        /** Null unless the request carries a language, its own or SteamConfig's. */
         public ?string $description,
     ) {}
 

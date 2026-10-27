@@ -45,6 +45,9 @@ final class PlayersResource extends BaseResource
         return $request->createDtoFromResponse($this->connector->send($request));
     }
 
+    /**
+     * Level 0 also answers for a Steam ID that belongs to no account.
+     */
     public function steamLevel(SteamId $steamId): int
     {
         $request = new GetSteamLevelRequest($steamId);
@@ -52,6 +55,9 @@ final class PlayersResource extends BaseResource
         return $request->createDtoFromResponse($this->connector->send($request));
     }
 
+    /**
+     * A Steam ID that belongs to no account answers like a new one: level 0, no badges.
+     */
     public function badges(SteamId $steamId): PlayerBadges
     {
         $request = new GetBadgesRequest($steamId);

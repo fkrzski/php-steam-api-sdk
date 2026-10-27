@@ -26,6 +26,9 @@ final class StatsResource extends BaseResource
         return $request->createDtoFromResponse($this->connector->send($request));
     }
 
+    /**
+     * App ID 0 answers with everyone online across Steam.
+     */
     public function currentPlayers(int $appId): int
     {
         $request = new GetNumberOfCurrentPlayersRequest($appId);
@@ -34,6 +37,8 @@ final class StatsResource extends BaseResource
     }
 
     /**
+     * Takes an ordinary app ID, which Steam calls gameid on this endpoint alone.
+     *
      * @return list<GlobalAchievement>
      */
     public function globalAchievements(int $gameId): array
@@ -43,6 +48,9 @@ final class StatsResource extends BaseResource
         return $request->createDtoFromResponse($this->connector->send($request));
     }
 
+    /**
+     * An app with no stats or achievements answers with an empty schema, not an exception.
+     */
     public function schema(int $appId, ?Language $language = null): GameSchema
     {
         $request = new GetSchemaForGameRequest($appId, $language);

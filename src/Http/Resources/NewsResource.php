@@ -12,6 +12,8 @@ use Saloon\Http\BaseResource;
 final class NewsResource extends BaseResource
 {
     /**
+     * An unknown feed is ignored and an unknown tag matches nothing; any feed may match, every tag must.
+     *
      * @param  list<string>  $feeds
      * @param  list<string>  $tags
      */

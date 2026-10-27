@@ -11,7 +11,9 @@ final readonly class OwnedGame
         public int $appId,
         public int $playtimeForever,
         public ?int $playtimeTwoWeeks,
+        /** Null unless the request set includeAppInfo. */
         public ?string $name,
+        /** Null unless the request set includeAppInfo. */
         public ?string $imgIconUrl,
         public bool $hasCommunityVisibleStats,
     ) {}

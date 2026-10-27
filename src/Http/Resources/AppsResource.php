@@ -22,6 +22,8 @@ final class AppsResource extends BaseResource
     }
 
     /**
+     * Takes an IPv4 address, or ip:port with the query port; the game port finds nothing.
+     *
      * @return list<GameServer>
      */
     public function serversAtAddress(string $address): array
@@ -31,6 +33,9 @@ final class AppsResource extends BaseResource
         return $request->createDtoFromResponse($this->connector->send($request));
     }
 
+    /**
+     * A game publishing no server version raises the same exception as an unknown app ID.
+     */
     public function upToDateCheck(int $appId, int $version): AppVersionCheck
     {
         $request = new UpToDateCheckRequest($appId, $version);

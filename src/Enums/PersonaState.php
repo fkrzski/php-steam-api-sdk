@@ -14,6 +14,7 @@ enum PersonaState: int
     case LookingToTrade = 5;
     case LookingToPlay = 6;
     case Invisible = 7;
+    /** The SDK's fallback for a value Steam sends that this enum does not list. */
     case Unknown = -1;
 
     public static function fromApiValue(int $value): self

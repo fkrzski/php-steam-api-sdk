@@ -68,7 +68,7 @@ final readonly class SteamSender implements Sender
     }
 
     /**
-     * Saloon 4.5.1 fails a body cut off after the headers at any status; refuseFailedTransfer() decides by it again.
+     * Saloon 4.5.1 fails a body cut off after the headers at any status; Call::refuseFailedTransfer() decides by it again.
      */
     private static function cutOffAnswer(FatalRequestException $exception): ?Response
     {

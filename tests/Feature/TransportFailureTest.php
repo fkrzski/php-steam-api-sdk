@@ -6,6 +6,7 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Http\Call;
 use Fkrzski\SteamApiSdk\Http\Requests\IPlayerService\GetOwnedGamesRequest;
 use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
 use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
@@ -29,7 +30,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\Http\Senders\GuzzleSender;
 
-covers([SteamApiResponse::class, SteamConnectionException::class, SteamConnector::class, SteamSender::class]);
+covers([SteamApiResponse::class, SteamConnectionException::class, SteamConnector::class, SteamSender::class, Call::class]);
 
 /**
  * @return array<string, array{Closure(PsrResponse): Throwable}>

@@ -6,6 +6,7 @@ use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Http\Call;
 use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
@@ -21,7 +22,7 @@ use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
-covers([SteamSender::class, SteamConnector::class]);
+covers([SteamSender::class, SteamConnector::class, Call::class]);
 
 test('the connector wraps its own Guzzle sender in SteamSender', function (): void {
     $connector = new SteamConnector(new SteamConfig('any'));

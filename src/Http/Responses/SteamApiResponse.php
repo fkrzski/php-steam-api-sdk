@@ -6,9 +6,7 @@ namespace Fkrzski\SteamApiSdk\Http\Responses;
 
 use Fkrzski\SteamApiSdk\Contracts\HasRequiredPaths;
 use Fkrzski\SteamApiSdk\Exceptions\UnreadableResponseException;
-use GuzzleHttp\Exception\RequestException;
 use Override;
-use Saloon\Exceptions\Request\FatalRequestException;
 use Saloon\Http\Response;
 use Throwable;
 use WeakMap;
@@ -24,20 +22,6 @@ final class SteamApiResponse extends Response
      * @var WeakMap<Throwable, Response>|null
      */
     private static ?WeakMap $raisedBy = null;
-
-    /**
-     * A body cut off after a non-error status is no answer; an error status still speaks for itself.
-     */
-    public static function refuseFailedTransfer(Response $response): Response
-    {
-        $senderException = $response->getSenderException();
-
-        if (! $senderException instanceof RequestException || $response->clientError() || $response->serverError()) {
-            return $response;
-        }
-
-        throw new FatalRequestException($senderException, $response->getPendingRequest());
-    }
 
     /**
      * An exception a request builds itself may not carry the response it was raised for.

@@ -8,6 +8,7 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
+use Fkrzski\SteamApiSdk\Http\Call;
 use Fkrzski\SteamApiSdk\Http\RateLimiter;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetFriendListRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
@@ -33,7 +34,7 @@ use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
-covers([SteamRateLimitException::class, SteamConnector::class, RateLimiter::class, ApiKeyNotConfiguredException::class, SteamApiResponse::class]);
+covers([SteamRateLimitException::class, SteamConnector::class, RateLimiter::class, ApiKeyNotConfiguredException::class, SteamApiResponse::class, Call::class]);
 
 test("the connector's rate limit checks read the configured key's budget", function (): void {
     $store = new MemoryStore;

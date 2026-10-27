@@ -20,7 +20,13 @@ final readonly class SteamConfig
     public ?string $apiKey;
 
     /**
-     * @param  array<Limit>|null  $rateLimits
+     * @param  string|null  $apiKey  Trimmed; a blank one throws, so pass null to send none.
+     * @param  RateLimitStore|null  $rateLimitStore  MemoryStore by default, which no other process sees.
+     * @param  int  $tries  Every attempt counts against the rate limits.
+     * @param  int  $retryInterval  Milliseconds, where the timeouts and the cool-down take seconds.
+     * @param  array<Limit>|null  $rateLimits  Null keeps 100 000 a day with a key, [] meters nothing locally.
+     * @param  Sender|null  $sender  Its middleware sees the request as Steam does, key included.
+     * @param  int  $tooManyRequestsCooldown  Seconds a 429 without Retry-After refuses requests locally.
      */
     public function __construct(
         #[SensitiveParameter]

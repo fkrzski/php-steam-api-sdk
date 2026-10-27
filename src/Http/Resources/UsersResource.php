@@ -26,6 +26,8 @@ use Throwable;
 final class UsersResource extends BaseResource
 {
     /**
+     * Steam answers in no particular order and repeats a duplicated ID, so key the result by Steam ID.
+     *
      * @param  list<SteamId>  $steamIds
      * @return list<PlayerSummary>
      */
@@ -44,6 +46,8 @@ final class UsersResource extends BaseResource
     }
 
     /**
+     * Steam answers in no particular order and repeats a duplicated ID, so key the result by Steam ID.
+     *
      * @param  list<SteamId>  $steamIds
      * @return list<PlayerBan>
      */

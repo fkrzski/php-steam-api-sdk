@@ -39,6 +39,9 @@ final readonly class SteamId implements JsonSerializable, Stringable
         return new self($value);
     }
 
+    /**
+     * Reads a SteamID64 or a /profiles/ URL; a vanity name or /id/ URL comes back null.
+     */
     public static function tryFromInput(string $input): ?self
     {
         $input = trim($input);
@@ -54,6 +57,9 @@ final readonly class SteamId implements JsonSerializable, Stringable
         return null;
     }
 
+    /**
+     * Never fails: anything but an /id/ URL comes back as given, trimmed.
+     */
     public static function extractVanityName(string $input): string
     {
         $input = trim($input);

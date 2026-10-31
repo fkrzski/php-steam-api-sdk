@@ -7,7 +7,7 @@ The Steam Web API allows **100 000 requests per API key per day**. The connector
 enforces this via [`saloonphp/rate-limit-plugin`](https://github.com/saloonphp/rate-limit-plugin)
 and throws `SteamRateLimitException` once the budget is spent — locally, before a
 request leaves your process, with no `response` and code `0`. The exception carries the `Limit`
-that tripped:
+that tripped, and the connector's budget reads how long it holds requests back:
 
 ```php
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
@@ -15,12 +15,13 @@ use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 try {
     $connector->send($request)->dto();
 } catch (SteamRateLimitException $e) {
-    $seconds = $e->limit->getRemainingSeconds();
+    $seconds = $connector->rateLimitBudget()->waitAfter($e);
 }
 ```
 
-The budget resets at 00:00 UTC whatever `date.timezone` says, so `getRemainingSeconds()`
-counts down to the next midnight UTC. Valve documents no reset time; UTC is an assumption.
+The budget resets at 00:00 UTC whatever `date.timezone` says, so `waitAfter()` counts down to
+the next midnight UTC, and never below a second, even once the window has closed. Valve
+documents no reset time; UTC is an assumption.
 
 Every answer Steam sends counts — a `4xx`, `5xx` or `429` as much as a `200` — through
 `send()`, `sendAsync()` and `pool()` alike. A request that got no answer counts nothing,
@@ -95,18 +96,25 @@ takes its midnight as each window opens instead.
 
 ## Checking before you send
 
-The plugin's own methods read the store without sending anything, for a job that would
-rather wait than fail:
+The budget reads the store without sending anything, for a job that would rather wait than
+fail:
 
 ```php "0.9"
-if ($connector->hasReachedRateLimit(0.9)) {
-    $seconds = $connector->getExceededLimit(0.9)->getRemainingSeconds();
+$budget = $connector->rateLimitBudget();
+
+$seconds = $budget->wait(0.9);
+
+foreach ($budget->remaining() as $allowance) {
+    echo "{$allowance->left} of {$allowance->allow} left\n";
 }
 ```
 
-The argument is the share of a limit already spent, so `0.9` answers once 90 000 of the
+`wait()` gives the seconds until the next request may go, at least one, or `null` while there
+is room. The argument is the share of a limit already spent, so `0.9` answers once 90 000 of the
 100 000 are gone; without it each limit uses its own threshold, the whole limit unless
-`Limit::allow()` was given one. Both see the lock after a `429` too. They read the counters of
+`Limit::allow()` was given one. `wait()` sees the lock after a `429` too. `remaining()` lists each
+limit counting requests, keyed as in `rateLimits`: its `allow`, what is `left`, its `window` in
+seconds, `null` for a `UtcDayLimit`, and whether it `sleeps`. Both read the counters of
 requests sent with the key, or of every request on a connector without one. Requests sent
 without the key [count apart](#requests-sent-without-the-key): neither method reads theirs,
 though the limiter still refuses them locally.

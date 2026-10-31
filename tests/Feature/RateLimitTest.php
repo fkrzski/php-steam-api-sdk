@@ -56,6 +56,14 @@ test("the connector's rate limit checks read the configured key's budget", funct
         ->and($connector->getExceededLimit())->toBeNull();
 });
 
+test("the connector's budget reads the configured key's counters, or the anonymous ones without a key", function (): void {
+    $connector = new SteamConnector(new SteamConfig('test-key'));
+    $connector->getLimits()[0]->hit(10)->save($connector->rateLimitStore());
+
+    expect($connector->rateLimitBudget()->remaining()[0]->left)->toBe(99_990)
+        ->and(new SteamConnector(new SteamConfig)->rateLimitBudget()->remaining())->toBe([]);
+});
+
 test('a day limit of its own counts on the counter of the default budget', function (): void {
     $mockClient = new MockClient([
         ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),

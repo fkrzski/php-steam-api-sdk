@@ -53,7 +53,7 @@ Catch the leaf you care about, or the root to handle every SDK exception uniform
     } catch (ProfileNotPublicException) {
         $library = [];  // expected — a hidden library is not an error worth logging
     } catch (SteamRateLimitException $e) {
-        $logger->warning(sprintf('Steam quota spent, retry in %ds.', $e->limit->getRemainingSeconds()));
+        $logger->warning(sprintf('Steam quota spent, retry in %ds.', $connector->rateLimitBudget()->waitAfter($e)));
 
         throw $e;
     }

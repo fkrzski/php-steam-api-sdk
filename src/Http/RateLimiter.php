@@ -74,6 +74,16 @@ final class RateLimiter
         }
     }
 
+    /**
+     * The limits without the lock after a 429, which counts no requests.
+     *
+     * @return array<int|string, Limit>
+     */
+    public function countingLimits(): array
+    {
+        return array_filter($this->getLimits(), static fn (Limit $limit): bool => ! $limit->usesResponse());
+    }
+
     protected function resolveLimits(): array
     {
         if ($this->config->rateLimits !== null) {

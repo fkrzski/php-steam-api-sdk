@@ -57,6 +57,12 @@ picks the same way, through [marker interfaces](/php-steam-api-sdk/custom-reques
 | `sender` | `?Sender` | `null`: a `GuzzleSender` | The HTTP client requests go out through. |
 | `tooManyRequestsCooldown` | `int` | `60` | Seconds a `429` without `Retry-After` [refuses requests](/php-steam-api-sdk/rate-limiting#after-a-429) locally. |
 
+`InvalidTimeoutException`, `InvalidRetryException` and `InvalidRateLimitException` name the
+option they refuse in `$parameter`, such as `'connectTimeout'`, for a wrapper that maps it to a
+config key of its own. `InvalidRateLimitException` also carries `$key`, the entry of
+`rateLimits` it refused, and for a shared name `$earlierKey`, the entry that took it first;
+both are `null` for `tooManyRequestsCooldown`.
+
 <Aside type="note" title="Readonly, so replace rather than mutate">
 `SteamConfig` is `final readonly` — to change a setting, construct a new config and a
 new connector. The one in use stays readable as `$connector->steamConfig`.

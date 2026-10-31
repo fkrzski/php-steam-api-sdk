@@ -7,6 +7,7 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRateLimitException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRetryException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidTimeoutException;
+use Fkrzski\SteamApiSdk\Http\UtcDayLimit;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Limit;
@@ -220,6 +221,12 @@ test('SteamConfig rejects two rate limits under one name', function (array $rate
     'two prefixes' => [
         [Limit::allow(10)->everyMinute()->setPrefix('first'), Limit::allow(10)->everyMinute()->setPrefix('second')],
         'SteamConfig::$rateLimits[0] and [1] are both named "10_every_60". Give one of them a name of its own with ->name().',
+        1,
+        0,
+    ],
+    'two day limits' => [
+        [UtcDayLimit::requests(500_000), UtcDayLimit::requests(100_000)],
+        'SteamConfig::$rateLimits[0] and [1] are both named "utc_day". Give one of them a name of its own with ->name().',
         1,
         0,
     ],

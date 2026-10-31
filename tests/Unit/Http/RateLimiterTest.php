@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\Http\RateLimiter;
+use Fkrzski\SteamApiSdk\Http\UtcDayLimit;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Saloon\Http\Connector;
 use Saloon\Http\Faking\MockClient;
@@ -20,37 +21,16 @@ test("the key's budget is 100 000 requests a day under a hash of the key", funct
     $names = limitNames($limiter);
 
     expect($names)->toBe([
-        'SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:100000_every_utc_midnight',
+        'SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:utc_day',
         'SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:too_many_attempts_limit',
     ])
-        ->and($limiter->getLimits()[0]->getReleaseInSeconds())->toBe(86_400)
+        ->and($limiter->getLimits()[0])->toBeInstanceOf(UtcDayLimit::class)
+        ->and($limiter->getLimits()[0]->getAllow())->toBe(100_000)
         ->and(implode('', $names))->not->toContain('test-key');
 });
 
 test('the anonymous budget holds only the lock after a 429, whatever key the config carries', function (): void {
     expect(limitNames(new RateLimiter(new SteamConfig('test-key'), null)))->toBe(['SteamConnector:anonymous:too_many_attempts_limit']);
-});
-
-test('the daily budget resets at the next midnight UTC whatever date.timezone says', function (string $timezone): void {
-    $default = date_default_timezone_get();
-    date_default_timezone_set($timezone);
-
-    try {
-        $expiry = new RateLimiter(new SteamConfig, 'test-key')->getLimits()[0]->getExpiryTimestamp();
-    } finally {
-        date_default_timezone_set($default);
-    }
-
-    expect($expiry % 86_400)->toBe(0)
-        ->and($expiry - time())->toBeGreaterThan(0)->toBeLessThanOrEqual(86_400);
-})->with(['UTC', 'Pacific/Kiritimati', 'Pacific/Pago_Pago']);
-
-test('the daily budget still resets at midnight UTC when a second passes after the limit is resolved', function (): void {
-    $limit = new RateLimiter(new SteamConfig, 'test-key')->getLimits()[0];
-
-    time_sleep_until(time() + 1);
-
-    expect($limit->getExpiryTimestamp() % 86_400)->toBe(0);
 });
 
 test('configured limits replace the daily budget in either budget', function (?string $key, string $prefix): void {

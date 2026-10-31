@@ -15,6 +15,7 @@ use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUserStats\GetNumberOfCurrentPlayersRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamWebAPIUtil\GetSupportedApiListRequest;
 use Fkrzski\SteamApiSdk\Http\Responses\SteamApiResponse;
+use Fkrzski\SteamApiSdk\Http\UtcDayLimit;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use GuzzleHttp\Promise\Promise;
@@ -35,7 +36,7 @@ use Saloon\RateLimitPlugin\Contracts\RateLimitStore;
 use Saloon\RateLimitPlugin\Limit;
 use Saloon\RateLimitPlugin\Stores\MemoryStore;
 
-covers([SteamRateLimitException::class, SteamConnector::class, RateLimiter::class, ApiKeyNotConfiguredException::class, SteamApiResponse::class, Call::class]);
+covers([SteamRateLimitException::class, SteamConnector::class, RateLimiter::class, UtcDayLimit::class, ApiKeyNotConfiguredException::class, SteamApiResponse::class, Call::class]);
 
 test("the connector's rate limit checks read the configured key's budget", function (): void {
     $store = new MemoryStore;
@@ -45,7 +46,7 @@ test("the connector's rate limit checks read the configured key's budget", funct
     $daily->hit(90_000)->save($connector->rateLimitStore());
 
     expect(array_map(static fn (Limit $limit): string => $limit->getName(), $connector->getLimits()))->toBe([
-        'SteamConnector:'.hash('sha256', 'test-key').':100000_every_utc_midnight',
+        'SteamConnector:'.hash('sha256', 'test-key').':utc_day',
         'SteamConnector:'.hash('sha256', 'test-key').':too_many_attempts_limit',
     ])
         ->and($connector->rateLimitStore())->toBe($store)
@@ -53,6 +54,32 @@ test("the connector's rate limit checks read the configured key's budget", funct
         ->and($connector->hasReachedRateLimit())->toBeFalse()
         ->and($connector->getExceededLimit(0.9)?->getName())->toBe($daily->getName())
         ->and($connector->getExceededLimit())->toBeNull();
+});
+
+test('a day limit of its own counts on the counter of the default budget', function (): void {
+    $mockClient = new MockClient([
+        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),
+    ]);
+
+    fakedConnector($mockClient)->send(new ResolveVanityUrlRequest('nick'));
+    $connector = fakedConnector($mockClient, new SteamConfig('test-key', rateLimits: [UtcDayLimit::requests(500_000)]));
+    $connector->send(new ResolveVanityUrlRequest('nick'));
+
+    expect(dailyHits($connector))->toBe(2);
+});
+
+test('a day limit held in the config opens its next window at midnight UTC', function (): void {
+    $connector = fakedConnector(new MockClient([
+        ResolveVanityUrlRequest::class => MockResponse::fixture('ISteamUser/ResolveVanityUrl/success'),
+    ]), new SteamConfig('test-key', rateLimits: [UtcDayLimit::requests(5)]));
+    $name = $connector->getLimits()[0]->getName();
+    $lastMidnight = new DateTimeImmutable('today', new DateTimeZone('UTC'))->getTimestamp();
+
+    $connector->rateLimitStore()->set($name, json_encode(['timestamp' => $lastMidnight, 'hits' => 5], JSON_THROW_ON_ERROR), 60);
+
+    expect($connector->send(new ResolveVanityUrlRequest('nick'))->status())->toBe(200)
+        ->and(json_decode((string) $connector->rateLimitStore()->get($name), true, flags: JSON_THROW_ON_ERROR))
+        ->toBe(['timestamp' => $lastMidnight + 86_400, 'hits' => 1]);
 });
 
 test('a connector without a key checks the anonymous budget', function (): void {
@@ -599,6 +626,6 @@ function dailyLimitKeys(): array
 {
     return array_values(array_filter(
         array_keys((new MemoryStore)->getStore()),
-        static fn (string $key): bool => str_ends_with($key, '100000_every_utc_midnight'),
+        static fn (string $key): bool => str_ends_with($key, ':utc_day'),
     ));
 }

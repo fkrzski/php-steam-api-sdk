@@ -88,14 +88,16 @@ Every endpoint hangs off a resource named after its Steam interface — `players
 The SDK follows [SemVer](https://semver.org/) from 1.0.0. A minor or patch release keeps:
 
 - `SteamConfig` and its named arguments, and on `SteamConnector` the constructor, `$steamConfig`,
-  the resources with their methods, and `onRequest()`, `onResponse()` and `onFailure()`.
+  the resources with their methods, `rateLimitBudget()`, and `onRequest()`, `onResponse()` and
+  `onFailure()`.
 - The request classes' constructors, public properties and `MAX_STEAM_IDS`, and the DTO each
   one returns.
 - What you read off DTOs, hook payloads and exceptions: properties and their types, the
   exception hierarchy and codes, and the Steam method that opens a message.
 - `SteamId`, the enums and `fromApiValue()` where they have one, and the `HasLanguage`,
   `SendsNoApiKey` and `SendsOptionalApiKey` contracts.
-- `UtcDayLimit::requests()`, a day limit on the counter of the default budget.
+- `RateLimitBudget`'s `remaining()`, `wait()` and `waitAfter()` with the `Allowance` properties,
+  and `UtcDayLimit::requests()`, a day limit on the counter of the default budget.
 - The `SteamApiException` constructor, for [exceptions of your own](/php-steam-api-sdk/custom-requests#failures).
 - The exception each [Steam answer](/php-steam-api-sdk/exceptions#how-statuses-are-mapped) maps to,
   and what a [sender has to honour](/php-steam-api-sdk/configuration#what-a-sender-has-to-honour).
@@ -105,9 +107,10 @@ The SDK follows [SemVer](https://semver.org/) from 1.0.0. A minor or patch relea
 
 Any release may change:
 
-- Anything marked `@internal`: DTO constructors and `fromArray()`, the hook payload and
-  `SteamSender` constructors, the exceptions' named constructors such as `fromLimit()`,
-  `SteamApiException::naming()`, the `HasRequiredPaths` contract, and the `SteamApiRequest`,
+- Anything marked `@internal`: DTO constructors and `fromArray()`, the hook payload,
+  `SteamSender`, `RateLimitBudget` and `Allowance` constructors, the exceptions' named
+  constructors such as `fromLimit()`, `SteamApiException::naming()`, the `HasRequiredPaths`
+  contract, and the `SteamApiRequest`,
   `SteamApiResponse`, `Http\Call`, `Http\RateLimiter` and `Http\ApiKeyMask` classes.
   Build DTOs and failures in tests with the [testing helpers](/php-steam-api-sdk/testing);
   PHPStan with bleeding edge reports a call from your code.

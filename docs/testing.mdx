@@ -387,7 +387,8 @@ pass, or `tooManyRequestsCooldown` without them. With `useRateLimitPlugin(false)
 [sent without the key](/php-steam-api-sdk/rate-limiting#requests-sent-without-the-key) alone, and
 the other way round.
 `TooManySteamIdsException` comes from a request constructor given more than 100 IDs, and a
-spent local budget from the limiter before any response exists, so the fake has neither.
+spent local budget from the limiter before any response exists, so the fake answers neither;
+[`SteamFake::spendBudget()`](#rate-limits-in-tests) spends the budget instead.
 
 ## Rate limits in tests
 
@@ -421,6 +422,20 @@ is yours to reset:
     ```
   </TabItem>
 </Tabs>
+
+`SteamFake::spendBudget()` spends every limit counting requests on the connector's budget, so
+its next request with the key throws `SteamRateLimitException` before the fake can answer, while
+requests sent without the key still go through:
+
+```php "SteamFake::spendBudget($connector)"
+$fake = new SteamFake()->players()->steamLevel(42);
+$connector->withMockClient($fake);
+
+SteamFake::spendBudget($connector);
+```
+
+Spend it after building the fake, which clears the store. A limit set to `->sleep()` then
+waits its window out instead of throwing.
 
 <Aside type="caution" title="One fake per test">
 The store is shared by every connector in the process, so a second `SteamFake` built halfway

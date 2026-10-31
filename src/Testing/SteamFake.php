@@ -114,6 +114,23 @@ final class SteamFake extends MockClient
     }
 
     /**
+     * Spends every limit counting requests in the budget the connector checks, so its next request is refused locally.
+     * Call it after building the fake, which clears MemoryStore; a limit set to sleep() then waits its window out.
+     *
+     * @since 1.1.0
+     */
+    public static function spendBudget(SteamConnector $connector): void
+    {
+        $store = $connector->rateLimitStore();
+
+        foreach ($connector->getLimits() as $limit) {
+            if (! $limit->usesResponse()) {
+                $limit->hit($limit->getAllow())->save($store);
+            }
+        }
+    }
+
+    /**
      * Throttles every request that has no response of its own, locking out the later ones sent the same way, with the key or without.
      * The lock lasts `Retry-After` seconds, or `tooManyRequestsCooldown` without one.
      */

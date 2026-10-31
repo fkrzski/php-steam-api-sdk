@@ -5,8 +5,10 @@ declare(strict_types=1);
 use Fkrzski\SteamApiSdk\Exceptions\InvalidApiKeyException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamConnectionException;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
+use Fkrzski\SteamApiSdk\Http\Allowance;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\GetPlayerSummariesRequest;
 use Fkrzski\SteamApiSdk\Http\Requests\ISteamUser\ResolveVanityUrlRequest;
+use Fkrzski\SteamApiSdk\Http\UtcDayLimit;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Fkrzski\SteamApiSdk\SteamConnector;
 use Fkrzski\SteamApiSdk\Testing\Factories\IPlayerService\PlayerBadgesFactory;
@@ -27,6 +29,7 @@ use Fkrzski\SteamApiSdk\Testing\Fakes\WebApiFake;
 use Fkrzski\SteamApiSdk\Testing\SteamFake;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
+use Saloon\RateLimitPlugin\Limit;
 
 covers(SteamFake::class, UsersFake::class, PlayersFake::class, StatsFake::class, AppsFake::class, NewsFake::class, WebApiFake::class);
 
@@ -173,4 +176,37 @@ test('a plain mock client keeps the lock a faked 429 left behind', function (): 
     $connector = fakedConnector(new MockClient([SteamConnector::class => MockResponse::make(['response' => ['player_level' => 42]])]));
 
     expect(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow(SteamRateLimitException::class);
+});
+
+test('a spent budget refuses the next request with the key before it is sent', function (): void {
+    $fake = new SteamFake()->players()->steamLevel(42);
+    $connector = fakedConnector($fake);
+
+    SteamFake::spendBudget($connector);
+
+    expect(fn (): int => $connector->players()->steamLevel(steamId()))->toThrow(SteamRateLimitException::class)
+        ->and($connector->rateLimitBudget()->remaining()[0]->left)->toBe(0);
+
+    $fake->assertNothingSent();
+});
+
+test('a spent budget leaves requests sent without the key alone', function (): void {
+    $connector = fakedConnector(new SteamFake()->stats()->currentPlayers(7));
+
+    SteamFake::spendBudget($connector);
+
+    expect($connector->stats()->currentPlayers(440))->toBe(7);
+});
+
+test('spending the budget spends every limit counting requests and leaves the lock after a 429 alone', function (): void {
+    $connector = fakedConnector(new SteamFake, new SteamConfig('test-key', rateLimits: [
+        'burst' => Limit::allow(5)->everySeconds(1),
+        'day' => UtcDayLimit::requests(500_000),
+    ]));
+
+    SteamFake::spendBudget($connector);
+
+    expect(array_map(static fn (Allowance $allowance): int => $allowance->left, $connector->rateLimitBudget()->remaining()))
+        ->toBe(['burst' => 0, 'day' => 0])
+        ->and($connector->rateLimitStore()->get('SteamConnector:62af8704764faf8ea82fc61ce9c4c3908b6cb97d463a634e9e587d7c885db0ef:too_many_attempts_limit'))->toBeNull();
 });

@@ -6,6 +6,14 @@ namespace Fkrzski\SteamApiSdk\Exceptions;
 
 final class InvalidTimeoutException extends SteamApiException
 {
+    private function __construct(
+        string $message,
+        /** @since 1.1.0 */
+        public readonly string $parameter,
+    ) {
+        parent::__construct($message);
+    }
+
     /** @internal */
     public static function notFinite(string $option, float $value): self
     {
@@ -15,7 +23,7 @@ final class InvalidTimeoutException extends SteamApiException
             $option,
             is_nan($value) ? 'NAN' : $value,
             self::hint($option),
-        ));
+        ), $option);
     }
 
     /** @internal */
@@ -26,7 +34,7 @@ final class InvalidTimeoutException extends SteamApiException
             $option,
             $value,
             self::hint($option),
-        ));
+        ), $option);
     }
 
     /** @internal */
@@ -37,7 +45,7 @@ final class InvalidTimeoutException extends SteamApiException
             $option,
             $value,
             self::hint($option),
-        ));
+        ), $option);
     }
 
     /** @internal */
@@ -48,7 +56,7 @@ final class InvalidTimeoutException extends SteamApiException
             $option,
             $value,
             self::hint($option),
-        ));
+        ), $option);
     }
 
     private static function hint(string $option): string

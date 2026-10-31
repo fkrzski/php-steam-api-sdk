@@ -16,6 +16,7 @@ use Fkrzski\SteamApiSdk\Hooks\RequestSending;
 use Fkrzski\SteamApiSdk\Hooks\ResponseReceived;
 use Fkrzski\SteamApiSdk\Http\ApiKeyMask;
 use Fkrzski\SteamApiSdk\Http\Call;
+use Fkrzski\SteamApiSdk\Http\RateLimitBudget;
 use Fkrzski\SteamApiSdk\Http\RateLimiter;
 use Fkrzski\SteamApiSdk\Http\Resources\AppsResource;
 use Fkrzski\SteamApiSdk\Http\Resources\NewsResource;
@@ -216,6 +217,16 @@ final class SteamConnector extends Connector
     public function hasReachedRateLimit(?float $threshold = null): bool
     {
         return $this->rateLimiter()->hasReachedRateLimit($threshold);
+    }
+
+    /**
+     * Reads the same budget as getLimits().
+     *
+     * @since 1.1.0
+     */
+    public function rateLimitBudget(): RateLimitBudget
+    {
+        return new RateLimitBudget($this->rateLimiter());
     }
 
     public function useRateLimitPlugin(bool $enabled = true): static

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Fkrzski\SteamApiSdk\Exceptions\SteamApiException;
+use Fkrzski\SteamApiSdk\Http\Allowance;
+use Fkrzski\SteamApiSdk\Http\RateLimitBudget;
 use Fkrzski\SteamApiSdk\Http\Senders\SteamSender;
 
 dataset('members the SDK builds', function (): iterable {
@@ -21,6 +23,8 @@ dataset('members the SDK builds', function (): iterable {
     }
 
     yield SteamSender::class.'::__construct' => [SteamSender::class, '__construct'];
+    yield RateLimitBudget::class.'::__construct' => [RateLimitBudget::class, '__construct'];
+    yield Allowance::class.'::__construct' => [Allowance::class, '__construct'];
 
     foreach ($classesIn('Exceptions') as $class) {
         foreach (new ReflectionClass($class)->getMethods(ReflectionMethod::IS_STATIC) as $method) {

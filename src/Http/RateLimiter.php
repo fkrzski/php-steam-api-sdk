@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Fkrzski\SteamApiSdk\Http;
 
-use DateTimeImmutable;
-use DateTimeZone;
 use Fkrzski\SteamApiSdk\Exceptions\SteamRateLimitException;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Saloon\Enums\PipeOrder;
@@ -86,12 +84,7 @@ final class RateLimiter
             return [];
         }
 
-        // Not untilMidnightTonight(): that follows date.timezone, not UTC.
-        return [
-            Limit::allow(100_000)
-                ->everySeconds(86_400, 'utc_midnight')
-                ->setExpiryTimestamp(new DateTimeImmutable('tomorrow', new DateTimeZone('UTC'))->getTimestamp()),
-        ];
+        return [UtcDayLimit::requests(100_000)];
     }
 
     /**

@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Http\UtcDayLimit::requests()` builds a day limit closing at 00:00 UTC on the default budget's counter, whatever it allows. It takes its midnight as each window opens, so one held in a config past midnight doesn't run its next window 24 hours from its first request ([#179](https://github.com/fkrzski/php-steam-api-sdk/issues/179)).
+- `InvalidTimeoutException`, `InvalidRetryException` and `InvalidRateLimitException` name the `SteamConfig` argument they refuse in `$parameter`, and `InvalidRateLimitException` the entry of `rateLimits` in `$key`, with `$earlierKey` for a shared name ([#179](https://github.com/fkrzski/php-steam-api-sdk/issues/179)).
+
 ### Changed
 
+- The default daily budget counts under `utc_day`, the name every `UtcDayLimit` shares, instead of `100000_every_utc_midnight`, so counters already held in a persistent store restart from zero once ([#179](https://github.com/fkrzski/php-steam-api-sdk/issues/179)).
 - The test suite runs on Pest 5 and PHPUnit 13.
 
 ## [1.0.0] - 2026-10-27

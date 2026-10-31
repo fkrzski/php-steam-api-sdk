@@ -58,37 +58,39 @@ ones it starts afterwards are refused locally.
 `rateLimits` swaps the daily budget for your own `Limit`s — a key with a bigger budget, a
 share of one that several apps use, a window per second:
 
-```php title="steam.php" "rateLimits:"
+```php title="steam.php" "rateLimits:" "UtcDayLimit::requests(500_000)"
+use Fkrzski\SteamApiSdk\Http\UtcDayLimit;
 use Saloon\RateLimitPlugin\Limit;
 
 $connector = new SteamConnector(new SteamConfig(
     apiKey: $_ENV['STEAM_API_KEY'],
     rateLimits: [
-        Limit::allow(500_000)
-            ->everySeconds(86_400, 'utc_midnight')
-            ->setExpiryTimestamp(new DateTimeImmutable('tomorrow', new DateTimeZone('UTC'))->getTimestamp()),
+        UtcDayLimit::requests(500_000),
         Limit::allow(10)->everySeconds(1)->sleep(),
     ],
 ));
 ```
 
 The list replaces the default whole, so a per-second limit alone leaves the day unmetered.
-The first line keeps a daily budget that resets at 00:00 UTC, like the default. `[]` meters
-nothing locally, and a `429` from Steam still throws either way.
+`UtcDayLimit::requests()` keeps a daily budget that resets at 00:00 UTC on the default's
+counter whatever it allows, so changing the number mid-day keeps what was already counted.
+Give it a `->name()` to count apart, as one app's share of a key would. `[]` meters nothing
+locally, and a `429` from Steam still throws either way.
 
 The limits apply without an API key too, and still count per key, so connectors sharing a
 store don't drain each other; requests sent without the key
 [count them apart](#requests-sent-without-the-key). `->sleep()` waits for the window to pass
 instead of throwing, blocking the process meanwhile, in `pool()` as well. Two limits with one
-name throw `InvalidRateLimitException` as the config is built; give one of them a `->name()`.
-So does a limit named `too_many_attempts_limit`, the name of the lock after a `429`.
+name throw `InvalidRateLimitException` as the config is built, two `UtcDayLimit`s included;
+give one of them a `->name()`. So does a limit named `too_many_attempts_limit`, the name of the
+lock after a `429`.
 
 <Aside type="caution" title="A window counted to a moment freezes with the config">
 `setExpiryTimestamp()`, `everySeconds()` fed with `time()`, `everyDayUntil()`,
 `untilMidnightTonight()`, `untilEndOfMinute()`, `untilEndOfHour()` and `untilEndOfMonth()` fix
-their window when the `Limit` is built. In a process that keeps one
-connector for hours, build the config per job, or each window runs past the moment it was
-meant to end.
+their window when the `Limit` is built. In a process that keeps one connector for hours, build
+the config per job, or each window runs past the moment it was meant to end. `UtcDayLimit`
+takes its midnight as each window opens instead.
 </Aside>
 
 ## Checking before you send

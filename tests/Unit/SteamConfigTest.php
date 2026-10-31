@@ -7,6 +7,7 @@ use Fkrzski\SteamApiSdk\Exceptions\ApiKeyNotConfiguredException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRateLimitException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidRetryException;
 use Fkrzski\SteamApiSdk\Exceptions\InvalidTimeoutException;
+use Fkrzski\SteamApiSdk\Http\UtcDayLimit;
 use Fkrzski\SteamApiSdk\SteamConfig;
 use Saloon\Http\Senders\GuzzleSender;
 use Saloon\RateLimitPlugin\Limit;
@@ -94,7 +95,8 @@ test('SteamConfig rejects a negative timeout', function (string $option, string 
     expect(fn (): SteamConfig => new SteamConfig(...[$option => -0.5]))
         ->toThrow(function (InvalidTimeoutException $invalidTimeoutException) use ($option, $hint): void {
             expect($invalidTimeoutException->getMessage())
-                ->toBe(sprintf('SteamConfig::$%s cannot be negative, got -0.5. %s', $option, $hint));
+                ->toBe(sprintf('SteamConfig::$%s cannot be negative, got -0.5. %s', $option, $hint))
+                ->and($invalidTimeoutException->parameter)->toBe($option);
         });
 })->with('timeout hints');
 
@@ -102,7 +104,8 @@ test('SteamConfig rejects a timeout that is not finite', function (string $optio
     expect(fn (): SteamConfig => new SteamConfig(...[$option => $seconds]))
         ->toThrow(function (InvalidTimeoutException $invalidTimeoutException) use ($option, $hint, $shown): void {
             expect($invalidTimeoutException->getMessage())
-                ->toBe(sprintf('SteamConfig::$%s must be finite, got %s. %s', $option, $shown, $hint));
+                ->toBe(sprintf('SteamConfig::$%s must be finite, got %s. %s', $option, $shown, $hint))
+                ->and($invalidTimeoutException->parameter)->toBe($option);
         });
 })->with('timeout hints')->with([
     'NAN' => [NAN, 'NAN'],
@@ -114,7 +117,8 @@ test('SteamConfig rejects a timeout under a millisecond', function (string $opti
     expect(fn (): SteamConfig => new SteamConfig(...[$option => $seconds]))
         ->toThrow(function (InvalidTimeoutException $invalidTimeoutException) use ($option, $hint, $shown): void {
             expect($invalidTimeoutException->getMessage())
-                ->toBe(sprintf('SteamConfig::$%s must be 0 or at least 0.001, got %s. %s', $option, $shown, $hint));
+                ->toBe(sprintf('SteamConfig::$%s must be 0 or at least 0.001, got %s. %s', $option, $shown, $hint))
+                ->and($invalidTimeoutException->parameter)->toBe($option);
         });
 })->with('timeout hints')->with([
     'half a millisecond' => [0.0005, '0.0005'],
@@ -132,7 +136,8 @@ test('SteamConfig rejects a timeout past PHP_INT_MAX milliseconds', function (st
     expect(fn (): SteamConfig => new SteamConfig(...[$option => $seconds]))
         ->toThrow(function (InvalidTimeoutException $invalidTimeoutException) use ($option, $hint, $shown): void {
             expect($invalidTimeoutException->getMessage())
-                ->toBe(sprintf('SteamConfig::$%s must be under PHP_INT_MAX / 1000, got %s. %s', $option, $shown, $hint));
+                ->toBe(sprintf('SteamConfig::$%s must be under PHP_INT_MAX / 1000, got %s. %s', $option, $shown, $hint))
+                ->and($invalidTimeoutException->parameter)->toBe($option);
         });
 })->with('timeout hints')->with([
     'the bound itself' => [9_223_372_036_854_776.0, '9.2233720368548E+15'],
@@ -165,18 +170,20 @@ test('SteamConfig accepts a single try with no pause', function (): void {
 
 test('SteamConfig rejects fewer than one try', function (int $tries): void {
     expect(fn (): SteamConfig => new SteamConfig(tries: $tries))
-        ->toThrow(
-            InvalidRetryException::class,
-            sprintf('SteamConfig::$tries must be at least 1, got %d. Pass the total number of attempts, 1 to never retry.', $tries),
-        );
+        ->toThrow(function (InvalidRetryException $invalidRetryException) use ($tries): void {
+            expect($invalidRetryException->getMessage())
+                ->toBe(sprintf('SteamConfig::$tries must be at least 1, got %d. Pass the total number of attempts, 1 to never retry.', $tries))
+                ->and($invalidRetryException->parameter)->toBe('tries');
+        });
 })->with(['zero' => 0, 'negative' => -1]);
 
 test('SteamConfig rejects a negative retry interval', function (): void {
     expect(fn (): SteamConfig => new SteamConfig(retryInterval: -1))
-        ->toThrow(
-            InvalidRetryException::class,
-            'SteamConfig::$retryInterval cannot be negative, got -1. Pass milliseconds, 0 for no pause between attempts.',
-        );
+        ->toThrow(function (InvalidRetryException $invalidRetryException): void {
+            expect($invalidRetryException->getMessage())
+                ->toBe('SteamConfig::$retryInterval cannot be negative, got -1. Pass milliseconds, 0 for no pause between attempts.')
+                ->and($invalidRetryException->parameter)->toBe('retryInterval');
+        });
 });
 
 test('SteamConfig leaves the rate limits to the connector until they are set', function (): void {
@@ -190,39 +197,59 @@ test('SteamConfig stores the rate limits it is given', function (array $rateLimi
     'one budget over two windows' => [[Limit::allow(10)->everyMinute(), Limit::allow(10)->everyHour()]],
 ]);
 
-test('SteamConfig rejects two rate limits under one name', function (array $rateLimits, string $message): void {
+test('SteamConfig rejects two rate limits under one name', function (array $rateLimits, string $message, int|string $key, int|string $earlierKey): void {
     expect(fn (): SteamConfig => new SteamConfig(rateLimits: $rateLimits))
-        ->toThrow(function (InvalidRateLimitException $invalidRateLimitException) use ($message): void {
-            expect($invalidRateLimitException->getMessage())->toBe($message);
+        ->toThrow(function (InvalidRateLimitException $invalidRateLimitException) use ($message, $key, $earlierKey): void {
+            expect($invalidRateLimitException->getMessage())->toBe($message)
+                ->and($invalidRateLimitException->parameter)->toBe('rateLimits')
+                ->and($invalidRateLimitException->key)->toBe($key)
+                ->and($invalidRateLimitException->earlierKey)->toBe($earlierKey);
         });
 })->with([
     'one window twice' => [
         [Limit::allow(10)->everyMinute(), Limit::allow(10)->everyHour(), Limit::allow(10)->everyMinute()->sleep()],
         'SteamConfig::$rateLimits[0] and [2] are both named "10_every_60". Give one of them a name of its own with ->name().',
+        2,
+        0,
     ],
     'one custom name' => [
         ['burst' => Limit::allow(5)->everySeconds(1)->name('burst'), 'steady' => Limit::allow(100)->everyMinute()->name('burst')],
         'SteamConfig::$rateLimits[burst] and [steady] are both named "burst". Give one of them a name of its own with ->name().',
+        'steady',
+        'burst',
     ],
     'two prefixes' => [
         [Limit::allow(10)->everyMinute()->setPrefix('first'), Limit::allow(10)->everyMinute()->setPrefix('second')],
         'SteamConfig::$rateLimits[0] and [1] are both named "10_every_60". Give one of them a name of its own with ->name().',
+        1,
+        0,
+    ],
+    'two day limits' => [
+        [UtcDayLimit::requests(500_000), UtcDayLimit::requests(100_000)],
+        'SteamConfig::$rateLimits[0] and [1] are both named "utc_day". Give one of them a name of its own with ->name().',
+        1,
+        0,
     ],
 ]);
 
-test('SteamConfig rejects a rate limit under the name of the lock after a 429', function (array $rateLimits, string $message): void {
+test('SteamConfig rejects a rate limit under the name of the lock after a 429', function (array $rateLimits, string $message, int|string $key): void {
     expect(fn (): SteamConfig => new SteamConfig(rateLimits: $rateLimits))
-        ->toThrow(function (InvalidRateLimitException $invalidRateLimitException) use ($message): void {
-            expect($invalidRateLimitException->getMessage())->toBe($message);
+        ->toThrow(function (InvalidRateLimitException $invalidRateLimitException) use ($message, $key): void {
+            expect($invalidRateLimitException->getMessage())->toBe($message)
+                ->and($invalidRateLimitException->parameter)->toBe('rateLimits')
+                ->and($invalidRateLimitException->key)->toBe($key)
+                ->and($invalidRateLimitException->earlierKey)->toBeNull();
         });
 })->with([
     'listed' => [
         [Limit::allow(10)->everyMinute(), Limit::allow(5)->everyMinute()->name('too_many_attempts_limit')],
         'SteamConfig::$rateLimits[1] is named "too_many_attempts_limit", which the connector keeps for the lock after a 429. Give it a name of its own with ->name().',
+        1,
     ],
     'keyed' => [
         ['lock' => Limit::allow(5)->everyMinute()->name('too_many_attempts_limit')->setPrefix('mine')],
         'SteamConfig::$rateLimits[lock] is named "too_many_attempts_limit", which the connector keeps for the lock after a 429. Give it a name of its own with ->name().',
+        'lock',
     ],
 ]);
 
@@ -258,7 +285,10 @@ test('SteamConfig rejects a cool-down under a second', function (int $seconds): 
             expect($invalidRateLimitException->getMessage())->toBe(sprintf(
                 'SteamConfig::$tooManyRequestsCooldown must be at least 1, got %d. Pass the seconds to hold requests back after a 429 that carries no Retry-After.',
                 $seconds,
-            ));
+            ))
+                ->and($invalidRateLimitException->parameter)->toBe('tooManyRequestsCooldown')
+                ->and($invalidRateLimitException->key)->toBeNull()
+                ->and($invalidRateLimitException->earlierKey)->toBeNull();
         });
 })->with(['zero' => 0, 'negative' => -1]);
 

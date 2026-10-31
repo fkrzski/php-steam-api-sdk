@@ -6,6 +6,18 @@ namespace Fkrzski\SteamApiSdk\Exceptions;
 
 final class InvalidRateLimitException extends SteamApiException
 {
+    private function __construct(
+        string $message,
+        /** @since 1.1.0 */
+        public readonly string $parameter,
+        /** @since 1.1.0 */
+        public readonly int|string|null $key = null,
+        /** @since 1.1.0 */
+        public readonly int|string|null $earlierKey = null,
+    ) {
+        parent::__construct($message);
+    }
+
     /** @internal */
     public static function duplicateName(int|string $first, int|string $second, string $name): self
     {
@@ -14,7 +26,7 @@ final class InvalidRateLimitException extends SteamApiException
             $first,
             $second,
             $name,
-        ));
+        ), 'rateLimits', $second, $first);
     }
 
     /** @internal */
@@ -24,7 +36,7 @@ final class InvalidRateLimitException extends SteamApiException
             'SteamConfig::$rateLimits[%s] is named "%s", which the connector keeps for the lock after a 429. Give it a name of its own with ->name().',
             $key,
             $name,
-        ));
+        ), 'rateLimits', $key);
     }
 
     /** @internal */
@@ -33,6 +45,6 @@ final class InvalidRateLimitException extends SteamApiException
         return new self(sprintf(
             'SteamConfig::$tooManyRequestsCooldown must be at least 1, got %d. Pass the seconds to hold requests back after a 429 that carries no Retry-After.',
             $seconds,
-        ));
+        ), 'tooManyRequestsCooldown');
     }
 }

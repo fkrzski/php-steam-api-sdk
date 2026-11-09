@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-09
+
 ### Fixed
 
 - A non-error `GetFriendListRequest` answer without `friendslist.friends`, an empty object included, and a `GetUserGroupListRequest` answer without `response.groups` raise `UnreadableResponseException` rather than reading as no friends or no groups. Steam sends both lists even when they are empty, so only a hand-made `MockResponse` without them notices ([#183](https://github.com/fkrzski/php-steam-api-sdk/issues/183)).
@@ -235,7 +237,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
-[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/1.1.1...HEAD
+[1.1.1]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.1.1
 [1.1.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.1.0
 [1.0.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.0.0
 [0.9.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/0.9.0

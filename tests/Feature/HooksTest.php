@@ -49,11 +49,6 @@ function attemptsAndStatuses(array $received): array
     );
 }
 
-function emptyAnswer(): PsrResponse
-{
-    return new PsrResponse(200, [], '{}');
-}
-
 function callerGets(Closure $call): Throwable
 {
     try {
@@ -86,7 +81,7 @@ test('onResponse gets the status and how long Steam took', function (): void {
     $connector = hooked(connectorAnswering([static function (): PsrResponse {
         usleep(20_000);
 
-        return new PsrResponse(204);
+        return noFriends()->withStatus(202);
     }]), $sent, $received);
 
     $connector->onRequest(static function (): void {
@@ -99,7 +94,7 @@ test('onResponse gets the status and how long Steam took', function (): void {
         ->and($received[0]->method)->toBe('ISteamUser/GetFriendList/v1')
         ->and($received[0]->query)->toBe(['steamid' => '76561198148125221'])
         ->and($received[0]->attempt)->toBe(1)
-        ->and($received[0]->status)->toBe(204)
+        ->and($received[0]->status)->toBe(202)
         ->and($received[0]->duration)->toBeGreaterThanOrEqual(0.02)->toBeLessThan(0.2);
 });
 
@@ -107,7 +102,7 @@ test('every attempt fires both hooks with its number', function (): void {
     $sent = [];
     $received = [];
     $connector = hooked(connectorAnswering(
-        [new PsrResponse(503), new PsrResponse(503), emptyAnswer()],
+        [new PsrResponse(503), new PsrResponse(503), noFriends()],
         new SteamConfig('any', tries: 3),
     ), $sent, $received);
 
@@ -121,7 +116,7 @@ test('a try Steam never answered fires onRequest alone', function (): void {
     $sent = [];
     $received = [];
     $connector = hooked(connectorAnswering(
-        [connectionFailure(), emptyAnswer()],
+        [connectionFailure(), noFriends()],
         new SteamConfig('any', tries: 2),
     ), $sent, $received);
 
@@ -135,7 +130,7 @@ test('a request sent again counts from one', function (): void {
     $sent = [];
     $received = [];
     $request = friendListRequest();
-    $connector = hooked(connectorAnswering([emptyAnswer(), emptyAnswer()]), $sent, $received);
+    $connector = hooked(connectorAnswering([noFriends(), noFriends()]), $sent, $received);
 
     $connector->send($request);
     $connector->sendAsync($request)->wait();
@@ -181,7 +176,7 @@ test('a request refused locally fires no hook', function (): void {
 test('onRequest sees the query a middleware added', function (): void {
     $sent = [];
     $received = [];
-    $connector = hooked(connectorAnswering([emptyAnswer()]), $sent, $received);
+    $connector = hooked(connectorAnswering([noFriends()]), $sent, $received);
 
     $connector->middleware()->onRequest(static function (PendingRequest $pendingRequest): void {
         $pendingRequest->query()->add('format', 'json');
@@ -196,7 +191,7 @@ test('hooks fire under sendAsync and pool with attempt one', function (): void {
     $sent = [];
     $received = [];
     $connector = hooked(connectorAnswering(
-        [emptyAnswer(), new PsrResponse(503)],
+        [noFriends(), new PsrResponse(503)],
         new SteamConfig('any', tries: 3),
     ), $sent, $received);
 
@@ -212,7 +207,7 @@ test('hooks fire under sendAsync and pool with attempt one', function (): void {
 
 test('every registered hook fires in order', function (): void {
     $calls = [];
-    $connector = connectorAnswering([emptyAnswer()]);
+    $connector = connectorAnswering([noFriends()]);
 
     expect($connector->onRequest(static function () use (&$calls): void {
         $calls[] = 'request 1';
@@ -235,7 +230,7 @@ test('every registered hook fires in order', function (): void {
 
 test('a throwing hook reaches the caller', function (Closure $register, Closure $send): void {
     $failure = new RuntimeException('Hook failed.');
-    $connector = $register(connectorAnswering([emptyAnswer()]), static fn (): never => throw $failure);
+    $connector = $register(connectorAnswering([noFriends()]), static fn (): never => throw $failure);
 
     try {
         $send($connector);
@@ -253,7 +248,7 @@ test('a throwing hook reaches the caller', function (Closure $register, Closure 
 
 test('a throwing onRequest hook keeps the request from Steam', function (): void {
     $history = [];
-    $connector = connectorAnswering([emptyAnswer()], history: $history)
+    $connector = connectorAnswering([noFriends()], history: $history)
         ->onRequest(static fn (): never => throw new RuntimeException('Hook failed.'));
 
     expect(fn (): mixed => $connector->send(friendListRequest()))->toThrow(RuntimeException::class, 'Hook failed.')
@@ -343,7 +338,7 @@ test('pool fires onFailure for every failed request', function (): void {
     $failures = [];
     $rejected = [];
     $connector = recordingFailures(connectorAnswering(
-        [emptyAnswer(), new PsrResponse(503), new PsrResponse(403, [], '{}')],
+        [noFriends(), new PsrResponse(503), new PsrResponse(403, [], '{}')],
     ), $failures);
 
     $connector->pool(
@@ -361,7 +356,7 @@ test('pool fires onFailure for every failed request', function (): void {
 test('an exception from another hook reaches onFailure', function (): void {
     $failures = [];
     $failure = new RuntimeException('Hook failed.');
-    $connector = recordingFailures(connectorAnswering([emptyAnswer()]), $failures)
+    $connector = recordingFailures(connectorAnswering([noFriends()]), $failures)
         ->onResponse(static fn (): never => throw $failure);
 
     $caught = callerGets(static fn (): mixed => $connector->send(friendListRequest()));
@@ -384,7 +379,7 @@ test('a throwing onFailure hook leaves the caller its exception and the next hoo
 test('a call that succeeds fires no onFailure', function (): void {
     $failures = [];
     $connector = recordingFailures(connectorAnswering(
-        [emptyAnswer(), new PsrResponse(503), emptyAnswer()],
+        [noFriends(), new PsrResponse(503), noFriends()],
         new SteamConfig('any', tries: 2),
     ), $failures);
 

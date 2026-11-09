@@ -30,12 +30,9 @@ final class GetFriendListRequest extends SteamApiRequest
         return '/ISteamUser/GetFriendList/v1/';
     }
 
-    /**
-     * Unmeasured: the SDK has always read an empty object as an account without friends.
-     */
     public function requiredPaths(Response $response): array
     {
-        return $response->json() === [] ? [] : ['friendslist'];
+        return ['friendslist.friends'];
     }
 
     /**
@@ -44,7 +41,7 @@ final class GetFriendListRequest extends SteamApiRequest
     protected function read(Response $response): array
     {
         /**
-         * @var array{friendslist?: array{friends?: list<array{
+         * @var array{friendslist: array{friends: list<array{
          *     steamid: string,
          *     relationship: string,
          *     friend_since: int,
@@ -52,7 +49,7 @@ final class GetFriendListRequest extends SteamApiRequest
          */
         $body = $response->json();
 
-        return array_map(Friend::fromArray(...), $body['friendslist']['friends'] ?? []);
+        return array_map(Friend::fromArray(...), $body['friendslist']['friends']);
     }
 
     protected function defaultQuery(): array

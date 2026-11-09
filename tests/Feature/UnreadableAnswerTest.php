@@ -241,8 +241,10 @@ dataset('answers missing a required path', [
     'GetPlayerSummaries, no envelope' => [new GetPlayerSummariesRequest([steamId()]), 'GetPlayerSummaries', '{}', 'response.players'],
     'GetPlayerSummaries, no players' => [new GetPlayerSummariesRequest([steamId()]), 'GetPlayerSummaries', '{"response":{}}', 'response.players'],
     'GetPlayerBans' => [new GetPlayerBansRequest([steamId()]), 'GetPlayerBans', '{}', 'players'],
-    'GetFriendList, anything but an empty object' => [friendListRequest(), 'GetFriendList', '{"error":"Service Unavailable"}', 'friendslist'],
-    'GetUserGroupList' => [new GetUserGroupListRequest(steamId()), 'GetUserGroupList', '{}', 'response'],
+    'GetFriendList, no envelope' => [friendListRequest(), 'GetFriendList', '{}', 'friendslist.friends'],
+    'GetFriendList, no friends' => [friendListRequest(), 'GetFriendList', '{"friendslist":{}}', 'friendslist.friends'],
+    'GetUserGroupList, no envelope' => [new GetUserGroupListRequest(steamId()), 'GetUserGroupList', '{}', 'response.groups'],
+    'GetUserGroupList, no groups' => [new GetUserGroupListRequest(steamId()), 'GetUserGroupList', '{"response":{"success":true}}', 'response.groups'],
     'ResolveVanityURL, no envelope' => [new ResolveVanityUrlRequest('gabelogannewell'), 'ResolveVanityURL', '{}', 'response.success'],
     'ResolveVanityURL, no success' => [new ResolveVanityUrlRequest('gabelogannewell'), 'ResolveVanityURL', '{"response":{"steamid":"76561197960287930"}}', 'response.success'],
     'GetPlayerAchievements' => [new GetPlayerAchievementsRequest(steamId(), 440), 'GetPlayerAchievements', '{}', 'playerstats'],
@@ -285,7 +287,8 @@ test('an answer missing a path reaches onFailure once', function (): void {
 test('a path that is present but empty still reads', function (Closure $call, mixed $expected): void {
     expect($call())->toEqual($expected);
 })->with([
-    'an empty object for a friend list' => [static fn (): array => fakedConnector(new MockClient([MockResponse::make('{}')]))->users()->friends(steamId()), []],
+    'a friend list with no friends' => [static fn (): array => fakedConnector(new MockClient([MockResponse::fixture('ISteamUser/GetFriendList/empty')]))->users()->friends(steamId()), []],
+    'a group list with no groups' => [static fn (): array => fakedConnector(new MockClient([MockResponse::fixture('ISteamUser/GetUserGroupList/empty')]))->users()->groups(steamId()), []],
     'an empty game schema' => [static fn (): int => count(fakedConnector(new MockClient([MockResponse::make('{"game":{}}')]))->stats()->schema(440)->achievements), 0],
     'an address with no servers' => [static fn (): array => fakedConnector(new MockClient([MockResponse::fixture('ISteamApps/GetServersAtAddress/empty')]))->apps()->serversAtAddress('1.2.3.4'), []],
 ]);

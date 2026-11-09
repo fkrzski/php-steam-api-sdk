@@ -125,8 +125,7 @@ No two endpoints agree on where the collection goes: `GetPlayerBans` puts it at 
 | `->webApi()->supportedApis()` | `GetSupportedApiListRequest` |
 
 A `MockResponse` of your own needs the envelope the chain method builds: without it the call raises
-`UnreadableResponseException`, except an empty `GetFriendListRequest` body, which reads as no
-friends. A maintenance page in place of JSON raises it on every request:
+`UnreadableResponseException`. A maintenance page in place of JSON raises it on every request:
 `MockResponse::make('<html>maintenance</html>')`.
 
 ## DTO factories

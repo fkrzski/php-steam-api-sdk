@@ -14,10 +14,10 @@ covers([SteamApiResponse::class, SteamConnector::class]);
 
 dataset('answering 200s', [
     'MockClient' => [static fn (int $count): SteamConnector => new SteamConnector(new SteamConfig('any'))->withMockClient(new MockClient(
-        array_fill(0, $count, MockResponse::make('{}')),
+        array_fill(0, $count, MockResponse::make('{"friendslist":{"friends":[]}}')),
     ))],
     'Guzzle handler' => [static fn (int $count): SteamConnector => connectorAnswering(
-        array_fill(0, $count, new PsrResponse(200, [], '{}')),
+        array_fill(0, $count, noFriends()),
     )],
 ]);
 
@@ -51,7 +51,7 @@ test('a response a middleware swaps in reaches the async caller', function (Clos
     $connector = $answering(1);
 
     $connector->middleware()->onResponse(static function (Response $response) use (&$swapped): Response {
-        return $swapped = new Response(new PsrResponse(202), $response->getPendingRequest(), $response->getPsrRequest());
+        return $swapped = new Response(noFriends()->withStatus(202), $response->getPendingRequest(), $response->getPsrRequest());
     });
 
     expect($connector->sendAsync(friendListRequest())->wait())->toBe($swapped);
@@ -92,7 +92,7 @@ test('a response a middleware swaps in for a failure settles the async call', fu
     $connector = $answering(2);
 
     $connector->middleware()->onResponse(static function (Response $response) use (&$swapped): Response {
-        return $swapped[] = new Response(new PsrResponse(200, [], '{}'), $response->getPendingRequest(), $response->getPsrRequest());
+        return $swapped[] = new Response(noFriends(), $response->getPendingRequest(), $response->getPsrRequest());
     });
 
     $settled = $send($connector, $request);

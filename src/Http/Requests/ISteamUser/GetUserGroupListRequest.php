@@ -30,7 +30,7 @@ final class GetUserGroupListRequest extends SteamApiRequest
 
     public function requiredPaths(Response $response): array
     {
-        return ['response'];
+        return ['response.groups'];
     }
 
     /**
@@ -38,10 +38,10 @@ final class GetUserGroupListRequest extends SteamApiRequest
      */
     protected function read(Response $response): array
     {
-        /** @var array{response?: array{groups?: list<array{gid: string}>}} $body */
+        /** @var array{response: array{groups: list<array{gid: string}>}} $body */
         $body = $response->json();
 
-        return array_map(UserGroup::fromArray(...), $body['response']['groups'] ?? []);
+        return array_map(UserGroup::fromArray(...), $body['response']['groups']);
     }
 
     protected function defaultQuery(): array

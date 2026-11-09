@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A non-error `GetFriendListRequest` answer without `friendslist.friends`, an empty object included, and a `GetUserGroupListRequest` answer without `response.groups` raise `UnreadableResponseException` rather than reading as no friends or no groups. Steam sends both lists even when they are empty, so only a hand-made `MockResponse` without them notices ([#183](https://github.com/fkrzski/php-steam-api-sdk/issues/183)).
+
 ## [1.1.0] - 2026-10-31
 
 ### Added

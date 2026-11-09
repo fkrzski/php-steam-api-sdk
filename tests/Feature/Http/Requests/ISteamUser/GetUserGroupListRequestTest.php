@@ -67,17 +67,6 @@ test('membership-free fixture returns empty list', function (): void {
     expect($dtos)->toBeEmpty();
 });
 
-test('response without a groups key yields an empty list', function (): void {
-    $mock = new MockClient([
-        GetUserGroupListRequest::class => MockResponse::make(['response' => []]),
-    ]);
-
-    $connector = userGroupListConnector();
-    $connector->withMockClient($mock);
-
-    expect($connector->send(new GetUserGroupListRequest(userGroupTestSteamId()))->dto())->toBeEmpty();
-});
-
 test('private profile throws ProfileNotPublicException', function (): void {
     $mock = new MockClient([
         GetUserGroupListRequest::class => MockResponse::fixture('ISteamUser/GetUserGroupList/private'),

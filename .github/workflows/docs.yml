@@ -5,10 +5,12 @@ on:
     branches: [master]
     paths:
       - 'docs/**'
+      - 'CHANGELOG.md'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'docs/**'
+      - 'CHANGELOG.md'
       - '.github/workflows/docs.yml'
 
 permissions:
@@ -32,4 +34,4 @@ jobs:
 
     # Bumped by hand: Dependabot doesn't read npx calls.
     - name: Validate docs
-      run: npx --yes @fkrzski/docs-schema@0.2.0 docs
+      run: npx --yes @fkrzski/docs-schema@0.5.0 docs

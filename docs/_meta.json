@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "guide",
+    "configuration",
+    "rate-limiting",
+    "exceptions",
+    "hooks-and-debugging",
+    "custom-requests",
+    "testing"
+  ]
+}

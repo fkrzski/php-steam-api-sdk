@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-11
+
+### Changed
+
+- The docs workflow runs `@fkrzski/docs-schema` 0.5.0, which validates `CHANGELOG.md` too, and asks the docs site to rebuild once a release is published, so new docs no longer wait for its next build.
+- The docs sidebar takes its page order from `docs/_meta.json` and lists the Testing page, which it left out before.
+
 ## [1.1.1] - 2026-11-09
 
 ### Fixed
@@ -237,7 +244,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
-[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/1.1.1...HEAD
+[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/1.1.2...HEAD
+[1.1.2]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.1.2
 [1.1.1]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.1.1
 [1.1.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.1.0
 [1.0.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.0.0

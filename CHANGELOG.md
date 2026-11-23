@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-11-23
+
 ### Changed
 
 - The test workflow also runs the suite on PHP 8.6, which `^8.5.0` already allowed, with lowest and stable dependencies on every system. The coverage gate stays on PHP 8.5, since pcov doesn't build on 8.6 yet.
@@ -248,7 +250,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enums: `PersonaState`, `CommunityVisibility`, `CommentPermission`.
 - Test suite (Pest) with Saloon `MockClient` fixtures, PHPStan max, 100% type coverage, Pint and Rector.
 
-[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/1.1.2...HEAD
+[Unreleased]: https://github.com/fkrzski/php-steam-api-sdk/compare/1.1.3...HEAD
+[1.1.3]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.1.3
 [1.1.2]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.1.2
 [1.1.1]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.1.1
 [1.1.0]: https://github.com/fkrzski/php-steam-api-sdk/releases/tag/1.1.0

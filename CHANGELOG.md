@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The test workflow also runs the suite on PHP 8.6, which `^8.5.0` already allowed, with lowest and stable dependencies on every system. The coverage gate stays on PHP 8.5, since pcov doesn't build on 8.6 yet.
+
 ## [1.1.2] - 2026-11-11
 
 ### Changed

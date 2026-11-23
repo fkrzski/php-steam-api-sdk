@@ -15,8 +15,16 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        php: [8.5]
+        php: [8.5, 8.6]
         dependency-version: [prefer-lowest, prefer-stable]
+        # pcov doesn't build on PHP 8.6 yet (krakjoe/pcov#134), so the coverage gate stays on 8.5.
+        include:
+          - php: 8.5
+            coverage: pcov
+            tests: composer test:unit
+          - php: 8.6
+            coverage: none
+            tests: composer exec -- pest --parallel
 
     name: Tests P${{ matrix.php }} - ${{ matrix.os }} - ${{ matrix.dependency-version }}
 
@@ -30,7 +38,7 @@ jobs:
       with:
         php-version: ${{ matrix.php }}
         extensions: dom, mbstring, zip
-        coverage: pcov
+        coverage: ${{ matrix.coverage }}
 
     - name: Get Composer cache directory
       id: composer-cache
@@ -48,7 +56,7 @@ jobs:
       run: composer update --${{ matrix.dependency-version }} --no-interaction --prefer-dist
 
     - name: Unit Tests
-      run: composer test:unit
+      run: ${{ matrix.tests }}
 
   mutation:
     runs-on: ubuntu-latest
